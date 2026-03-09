@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 
-import { APIProvider, Map } from "@vis.gl/react-google-maps";
+import { Map } from "@vis.gl/react-google-maps";
 import type { MapMouseEvent } from "@vis.gl/react-google-maps";
 
-const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 const mapId =
   (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string) || "DEMO_MAP_ID";
 
@@ -18,18 +17,16 @@ type MapViewProps = {
 
 export function MapView({ center, onClick, children }: MapViewProps) {
   return (
-    <APIProvider apiKey={apiKey}>
-      <Map
-        defaultCenter={center ?? DEFAULT_CENTER}
-        defaultZoom={DEFAULT_ZOOM}
-        mapId={mapId}
-        disableDefaultUI={true}
-        gestureHandling="greedy"
-        className="w-full h-full"
-        onClick={onClick}
-      >
-        {children}
-      </Map>
-    </APIProvider>
+    <Map
+      defaultCenter={center ?? DEFAULT_CENTER}
+      defaultZoom={DEFAULT_ZOOM}
+      mapId={mapId}
+      disableDefaultUI={true}
+      gestureHandling="greedy"
+      className="w-full h-full"
+      onClick={onClick}
+    >
+      {children}
+    </Map>
   );
 }

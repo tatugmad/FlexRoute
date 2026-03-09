@@ -1,3 +1,4 @@
+import { APIProvider } from "@vis.gl/react-google-maps";
 import { MapView } from "@/components/map/MapView";
 import { CurrentLocationMarker } from "@/components/map/CurrentLocationMarker";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
@@ -41,19 +42,21 @@ function RouteScreen() {
   const handleMapClick = useMapClickHandler();
 
   return (
-    <div className="h-screen w-full flex">
-      <RouteEditor />
-      <div className="flex-1 relative">
-        <ErrorBoundary fallbackLabel="MapView">
-          <MapView center={position ?? undefined} onClick={handleMapClick}>
-            {position && <CurrentLocationMarker position={position} />}
-            <RoutePolyline />
-            <WaypointMarkers />
-          </MapView>
-        </ErrorBoundary>
+    <APIProvider apiKey={apiKey} libraries={["places"]}>
+      <div className="h-screen w-full flex">
+        <RouteEditor />
+        <div className="flex-1 relative">
+          <ErrorBoundary fallbackLabel="MapView">
+            <MapView center={position ?? undefined} onClick={handleMapClick}>
+              {position && <CurrentLocationMarker position={position} />}
+              <RoutePolyline />
+              <WaypointMarkers />
+            </MapView>
+          </ErrorBoundary>
+        </div>
+        <SearchModal />
       </div>
-      <SearchModal />
-    </div>
+    </APIProvider>
   );
 }
 

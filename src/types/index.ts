@@ -111,8 +111,13 @@ export type SavedRoute = Pick<
 
 // ── Routes API v2 ──
 
+export type RoutesApiLatLng = {
+  latitude: number;
+  longitude: number;
+};
+
 export type RoutesApiWaypoint = {
-  location?: { latLng: LatLng };
+  location?: { latLng: RoutesApiLatLng };
   placeId?: string;
 };
 
