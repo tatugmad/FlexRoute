@@ -29,6 +29,7 @@ type RouteActions = {
   }) => void;
   setRouteError: (error: string | null) => void;
   setIsCalculatingRoute: (isCalculating: boolean) => void;
+  clearRouteData: () => void;
   reset: () => void;
 };
 
@@ -122,6 +123,9 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
 
   setIsCalculatingRoute: (isCalculatingRoute) =>
     set({ isCalculatingRoute }),
+
+  clearRouteData: () =>
+    set({ routeSteps: [], encodedPolyline: null, routeError: null }),
 
   reset: () => set(initialState),
 }));

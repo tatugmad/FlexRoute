@@ -7,9 +7,21 @@ import { classifyRoadType, getRoadColor } from "@/utils/roadType";
 export function RoutePolyline() {
   const map = useMap();
   const steps = useRouteStore((s) => s.routeSteps);
+  const waypointCount = useRouteStore(
+    (s) => s.currentRoute?.waypoints.length ?? 0,
+  );
+  const clearRouteData = useRouteStore((s) => s.clearRouteData);
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
 
   useRouteCalculation();
+
+  useEffect(() => {
+    if (waypointCount < 2) {
+      polylinesRef.current.forEach((p) => p.setMap(null));
+      polylinesRef.current = [];
+      clearRouteData();
+    }
+  }, [waypointCount, clearRouteData]);
 
   useEffect(() => {
     if (!map) return;

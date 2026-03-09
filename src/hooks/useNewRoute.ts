@@ -5,6 +5,7 @@ import type { Route } from "@/types";
 export function useNewRoute() {
   const setCurrentRoute = useRouteStore((s) => s.setCurrentRoute);
   const setRouteName = useRouteStore((s) => s.setRouteName);
+  const clearRouteData = useRouteStore((s) => s.clearRouteData);
 
   return useCallback(() => {
     const now = Date.now();
@@ -19,7 +20,8 @@ export function useNewRoute() {
       createdAt: now,
       updatedAt: now,
     };
+    clearRouteData();
     setCurrentRoute(route);
     setRouteName("");
-  }, [setCurrentRoute, setRouteName]);
+  }, [setCurrentRoute, setRouteName, clearRouteData]);
 }

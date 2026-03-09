@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { ArrowLeft } from "lucide-react";
 import { WaypointList } from "@/components/route/WaypointList";
 import { RouteSummary } from "@/components/route/RouteSummary";
@@ -7,13 +8,19 @@ import { useUiStore } from "@/stores/uiStore";
 export function RouteEditor() {
   const routeName = useRouteStore((s) => s.routeName);
   const setRouteName = useRouteStore((s) => s.setRouteName);
+  const clearRouteData = useRouteStore((s) => s.clearRouteData);
   const setViewMode = useUiStore((s) => s.setViewMode);
+
+  const handleBack = useCallback(() => {
+    clearRouteData();
+    setViewMode("top");
+  }, [clearRouteData, setViewMode]);
 
   return (
     <aside className="w-96 h-full bg-indigo-600 text-white flex flex-col overflow-hidden">
       <header className="flex items-center gap-3 px-4 pt-5 pb-3">
         <button
-          onClick={() => setViewMode("top")}
+          onClick={handleBack}
           className="p-2 rounded-lg hover:bg-indigo-500 transition-colors"
           aria-label="戻る"
         >
