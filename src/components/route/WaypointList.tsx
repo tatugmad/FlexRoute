@@ -4,9 +4,11 @@ import { WaypointItem } from "@/components/route/WaypointItem";
 import { useRouteStore } from "@/stores/routeStore";
 import type { Waypoint } from "@/types";
 
+const EMPTY_WAYPOINTS: Waypoint[] = [];
+
 export function WaypointList() {
   const waypoints = useRouteStore(
-    (s) => s.currentRoute?.waypoints ?? [],
+    (s) => s.currentRoute?.waypoints ?? EMPTY_WAYPOINTS,
   );
   const reorderWaypoints = useRouteStore((s) => s.reorderWaypoints);
   const addWaypoint = useRouteStore((s) => s.addWaypoint);

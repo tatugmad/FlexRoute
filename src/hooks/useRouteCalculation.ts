@@ -3,6 +3,8 @@ import { useRouteStore } from "@/stores/routeStore";
 import { computeRoutes } from "@/services/routeApi";
 import type { ComputeRoutesRequest, RoutesApiStep, Waypoint } from "@/types";
 
+const EMPTY_WAYPOINTS: Waypoint[] = [];
+
 function toApiWaypoint(wp: Waypoint) {
   if (wp.placeId) return { placeId: wp.placeId };
   return { location: { latLng: wp.position } };
@@ -16,7 +18,7 @@ function parseDuration(duration: unknown): number {
 
 export function useRouteCalculation() {
   const waypoints = useRouteStore(
-    (s) => s.currentRoute?.waypoints ?? [],
+    (s) => s.currentRoute?.waypoints ?? EMPTY_WAYPOINTS,
   );
   const travelMode = useRouteStore((s) => s.travelMode);
   const setRouteData = useRouteStore((s) => s.setRouteData);
