@@ -1,7 +1,6 @@
 import { Reorder } from "framer-motion";
 import { Plus } from "lucide-react";
 import { WaypointItem } from "@/components/route/WaypointItem";
-import { PlaceSearch } from "@/components/places/PlaceSearch";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import type { Waypoint } from "@/types";
@@ -9,7 +8,6 @@ import type { Waypoint } from "@/types";
 const EMPTY_WAYPOINTS: Waypoint[] = [];
 
 export function WaypointList() {
-  const searchModalOpen = useUiStore((s) => s.searchModalOpen);
   const setSearchModalOpen = useUiStore((s) => s.setSearchModalOpen);
   const waypoints = useRouteStore(
     (s) => s.currentRoute?.waypoints ?? EMPTY_WAYPOINTS,
@@ -45,10 +43,6 @@ export function WaypointList() {
         <Plus className="w-4 h-4" />
         経路を追加
       </button>
-
-      {searchModalOpen && (
-        <PlaceSearch onClose={() => setSearchModalOpen(false)} />
-      )}
     </div>
   );
 }

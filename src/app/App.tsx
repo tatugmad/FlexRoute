@@ -3,6 +3,7 @@ import { CurrentLocationMarker } from "@/components/map/CurrentLocationMarker";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
+import { SearchModal } from "@/components/places/SearchModal";
 import { TopView } from "@/components/top/TopView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { DebugPanel } from "@/components/ui/DebugPanel";
@@ -51,6 +52,7 @@ function RouteScreen() {
           </MapView>
         </ErrorBoundary>
       </div>
+      <SearchModal />
     </div>
   );
 }

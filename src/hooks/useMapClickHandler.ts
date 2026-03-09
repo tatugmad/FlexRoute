@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
+import { userActionTracker } from "@/services/userActionTracker";
 import type { MapMouseEvent } from "@vis.gl/react-google-maps";
 
 export function useMapClickHandler() {
@@ -16,9 +17,11 @@ export function useMapClickHandler() {
 
       const position = { lat: latLng.lat, lng: latLng.lng };
       const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
+      const placeId = e.detail.placeId ?? undefined;
       const wpId = crypto.randomUUID();
 
-      addWaypoint({ id: wpId, position, label });
+      userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position, placeId });
+      addWaypoint({ id: wpId, position, label, placeId });
 
       reverseGeocode(position).then((name) => {
         if (!name) return;
