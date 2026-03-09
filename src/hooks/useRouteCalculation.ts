@@ -8,7 +8,11 @@ const EMPTY_WAYPOINTS: Waypoint[] = [];
 
 function toApiWaypoint(wp: Waypoint) {
   if (wp.placeId) return { placeId: wp.placeId };
-  return { location: { latLng: wp.position } };
+  return {
+    location: {
+      latLng: { latitude: wp.position.lat, longitude: wp.position.lng },
+    },
+  };
 }
 
 function parseDuration(duration: unknown): number {

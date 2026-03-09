@@ -23,6 +23,7 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
+    if (!google.maps.places) return;
     serviceRef.current = new google.maps.places.AutocompleteService();
     const div = document.createElement("div");
     placesRef.current = new google.maps.places.PlacesService(div);
