@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { computeRoutes } from "@/services/routeApi";
+import { logService } from "@/services/logService";
 import type { ComputeRoutesRequest, RoutesApiStep, Waypoint } from "@/types";
 
 const EMPTY_WAYPOINTS: Waypoint[] = [];
@@ -79,6 +80,7 @@ export function useRouteCalculation() {
             : typeof err === "string"
               ? err
               : "ルート計算エラー";
+        logService.error("ROUTE", "ルート計算に失敗", { error: message });
         setRouteError(String(message));
       });
 

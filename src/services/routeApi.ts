@@ -1,3 +1,5 @@
+import { logService } from "@/services/logService";
+import { performanceMonitor } from "@/services/performanceMonitor";
 import type { ComputeRoutesRequest, ComputeRoutesResponse } from "@/types";
 
 const ROUTES_API_URL =
@@ -16,23 +18,38 @@ export async function computeRoutes(
 ): Promise<ComputeRoutesResponse> {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 
-  const response = await fetch(ROUTES_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask": FIELD_MASK,
-    },
-    body: JSON.stringify({
-      ...request,
-      routingPreference: "TRAFFIC_AWARE",
-      languageCode: "ja-JP",
-    }),
-  });
+  performanceMonitor.startTimer("computeRoutes");
 
-  if (!response.ok) {
-    throw new Error(`Routes API error: ${response.status}`);
+  try {
+    const response = await fetch(ROUTES_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": FIELD_MASK,
+      },
+      body: JSON.stringify({
+        ...request,
+        routingPreference: "TRAFFIC_AWARE",
+        languageCode: "ja-JP",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Routes API error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as ComputeRoutesResponse;
+    performanceMonitor.endTimer("computeRoutes");
+    logService.info("API", "Routes API success", {
+      routes: data.routes?.length ?? 0,
+    });
+    return data;
+  } catch (err) {
+    performanceMonitor.endTimer("computeRoutes");
+    logService.error("API", "Routes API failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
   }
-
-  return response.json() as Promise<ComputeRoutesResponse>;
 }

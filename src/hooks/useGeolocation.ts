@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { watchCurrentPosition, clearPositionWatch } from "@/services/geolocation";
+import { logService } from "@/services/logService";
 import { useNavigationStore } from "@/stores/navigationStore";
 import type { LatLng } from "@/types";
 
@@ -32,6 +33,10 @@ export function useGeolocation(): GeolocationState {
         setError(null);
       },
       (err) => {
+        logService.error("MAP", "位置情報の取得に失敗", {
+          code: err.code,
+          message: err.message,
+        });
         setError(err.message);
       },
     );

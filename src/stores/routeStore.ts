@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { userActionTracker } from "@/services/userActionTracker";
 import type { Route, RoutesApiStep, TravelMode, Waypoint } from "@/types";
 
 type RouteState = {
@@ -56,6 +57,11 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
       } else {
         wps.push(waypoint);
       }
+      userActionTracker.track("ADD_WAYPOINT", {
+        id: waypoint.id,
+        label: waypoint.label,
+        insertIndex,
+      });
       return {
         currentRoute: {
           ...state.currentRoute,
@@ -68,6 +74,7 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
   removeWaypoint: (waypointId) =>
     set((state) => {
       if (!state.currentRoute) return state;
+      userActionTracker.track("REMOVE_WAYPOINT", { id: waypointId });
       return {
         currentRoute: {
           ...state.currentRoute,
@@ -82,6 +89,9 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
   reorderWaypoints: (waypoints) =>
     set((state) => {
       if (!state.currentRoute) return state;
+      userActionTracker.track("REORDER_WAYPOINTS", {
+        count: waypoints.length,
+      });
       return {
         currentRoute: { ...state.currentRoute, waypoints, updatedAt: Date.now() },
       };
