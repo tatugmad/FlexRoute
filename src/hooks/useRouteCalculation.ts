@@ -33,7 +33,10 @@ export function useRouteCalculation() {
 
   useEffect(() => {
     const validWps = waypoints.filter(
-      (wp) => wp.position.lat !== 0 || wp.position.lng !== 0,
+      (wp) =>
+        Number.isFinite(wp.position.lat) &&
+        Number.isFinite(wp.position.lng) &&
+        !(wp.position.lat === 0 && wp.position.lng === 0),
     );
     if (validWps.length < 2) return;
 

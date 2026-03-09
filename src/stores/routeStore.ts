@@ -33,6 +33,14 @@ type RouteActions = {
   reset: () => void;
 };
 
+function isValidPosition(pos: { lat: number; lng: number }): boolean {
+  return (
+    Number.isFinite(pos.lat) &&
+    Number.isFinite(pos.lng) &&
+    !(pos.lat === 0 && pos.lng === 0)
+  );
+}
+
 const initialState: RouteState = {
   currentRoute: null,
   savedRoutes: [],
@@ -52,6 +60,7 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
   addWaypoint: (waypoint, insertIndex) =>
     set((state) => {
       if (!state.currentRoute) return state;
+      if (!isValidPosition(waypoint.position)) return state;
       const wps = [...state.currentRoute.waypoints];
       if (insertIndex !== undefined) {
         wps.splice(insertIndex, 0, waypoint);
