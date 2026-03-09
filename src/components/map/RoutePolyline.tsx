@@ -18,8 +18,9 @@ export function RoutePolyline() {
     polylinesRef.current = [];
 
     for (const step of steps) {
-      const instruction =
-        step.navigationInstruction?.instructions ?? "";
+      const instruction = String(
+        step.navigationInstruction?.instructions ?? "",
+      );
       const roadType = classifyRoadType(instruction);
       const color = getRoadColor(roadType);
 

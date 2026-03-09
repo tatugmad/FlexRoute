@@ -21,7 +21,7 @@ export function RouteSummary() {
   if (routeError) {
     return (
       <div className="mt-4 bg-indigo-700/50 rounded-xl p-4 backdrop-blur-sm border border-indigo-500/30">
-        <p className="text-red-300 text-sm">{routeError}</p>
+        <p className="text-red-300 text-sm">{String(routeError)}</p>
       </div>
     );
   }
@@ -33,10 +33,10 @@ export function RouteSummary() {
       <p className="text-xs text-indigo-300 font-medium mb-2">ルート概要</p>
       <div className="flex items-center gap-4 mb-3">
         <span className="text-lg font-bold text-white">
-          {formatDistance(route.totalDistanceMeters)}
+          {formatDistance(Number(route.totalDistanceMeters) || 0)}
         </span>
         <span className="text-lg font-bold text-white">
-          {formatDuration(route.totalDurationSeconds)}
+          {formatDuration(Number(route.totalDurationSeconds) || 0)}
         </span>
       </div>
       <button className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 font-medium transition-colors text-sm">

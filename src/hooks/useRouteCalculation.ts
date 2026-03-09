@@ -8,7 +8,8 @@ function toApiWaypoint(wp: Waypoint) {
   return { location: { latLng: wp.position } };
 }
 
-function parseDuration(duration: string): number {
+function parseDuration(duration: unknown): number {
+  if (typeof duration !== "string") return 0;
   const match = duration.match(/^(\d+)s$/);
   return match?.[1] ? parseInt(match[1], 10) : 0;
 }
@@ -62,17 +63,21 @@ export function useRouteCalculation() {
         );
 
         setRouteData({
-          totalDistanceMeters: route.distanceMeters,
+          totalDistanceMeters: Number(route.distanceMeters) || 0,
           totalDurationSeconds: parseDuration(route.duration),
-          encodedPolyline: route.polyline.encodedPolyline,
+          encodedPolyline: String(route.polyline.encodedPolyline),
           steps: allSteps,
         });
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         if (controller.signal.aborted) return;
-        setRouteError(
-          err instanceof Error ? err.message : "ルート計算エラー",
-        );
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === "string"
+              ? err
+              : "ルート計算エラー";
+        setRouteError(String(message));
       });
 
     return () => controller.abort();
