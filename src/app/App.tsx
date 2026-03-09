@@ -42,7 +42,7 @@ function RouteScreen() {
   const handleMapClick = useMapClickHandler();
 
   return (
-    <APIProvider apiKey={apiKey} libraries={["places"]}>
+    <APIProvider apiKey={apiKey} libraries={["places", "geometry"]}>
       <div className="h-screen w-full flex">
         <RouteEditor />
         <div className="flex-1 relative">

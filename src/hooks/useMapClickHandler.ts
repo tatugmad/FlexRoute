@@ -67,6 +67,6 @@ async function reverseGeocode(position: {
       premise ?? locality ?? result.formatted_address.split(",")[0] ?? null
     );
   } catch {
-    return null;
+    return `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
   }
 }
