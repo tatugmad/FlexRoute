@@ -5,6 +5,8 @@ type NavigationStoreState = {
   status: NavigationStatus;
   currentLegIndex: number;
   currentPosition: LatLng | null;
+  heading: number;
+  speed: number;
   remainingDistanceMeters: number;
   remainingDurationSeconds: number;
 };
@@ -15,6 +17,7 @@ type NavigationActions = {
   resumeNavigation: () => void;
   stopNavigation: () => void;
   updatePosition: (position: LatLng) => void;
+  setCurrentPosition: (position: LatLng, heading: number, speed: number) => void;
   setCurrentLeg: (index: number) => void;
   setRemaining: (distance: number, duration: number) => void;
 };
@@ -23,6 +26,8 @@ const initialState: NavigationStoreState = {
   status: "idle",
   currentLegIndex: 0,
   currentPosition: null,
+  heading: 0,
+  speed: 0,
   remainingDistanceMeters: 0,
   remainingDurationSeconds: 0,
 };
@@ -41,6 +46,9 @@ export const useNavigationStore = create<
   stopNavigation: () => set(initialState),
 
   updatePosition: (position) => set({ currentPosition: position }),
+
+  setCurrentPosition: (position, heading, speed) =>
+    set({ currentPosition: position, heading, speed }),
 
   setCurrentLeg: (index) => set({ currentLegIndex: index }),
 
