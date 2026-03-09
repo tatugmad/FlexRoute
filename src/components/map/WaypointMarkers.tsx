@@ -1,5 +1,8 @@
 import { AdvancedMarker, Pin } from "@vis.gl/react-google-maps";
 import { useRouteStore } from "@/stores/routeStore";
+import type { Waypoint } from "@/types";
+
+const EMPTY_WAYPOINTS: Waypoint[] = [];
 
 function getPinColor(index: number, total: number) {
   if (index === 0) return "#10b981";
@@ -9,7 +12,7 @@ function getPinColor(index: number, total: number) {
 
 export function WaypointMarkers() {
   const waypoints = useRouteStore(
-    (s) => s.currentRoute?.waypoints ?? [],
+    (s) => s.currentRoute?.waypoints ?? EMPTY_WAYPOINTS,
   );
 
   return (
