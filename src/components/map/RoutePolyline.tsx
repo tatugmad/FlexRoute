@@ -1,0 +1,46 @@
+import { useEffect, useRef } from "react";
+import { useMap } from "@vis.gl/react-google-maps";
+import { useRouteStore } from "@/stores/routeStore";
+import { useRouteCalculation } from "@/hooks/useRouteCalculation";
+import { classifyRoadType, getRoadColor } from "@/utils/roadType";
+
+export function RoutePolyline() {
+  const map = useMap();
+  const steps = useRouteStore((s) => s.routeSteps);
+  const polylinesRef = useRef<google.maps.Polyline[]>([]);
+
+  useRouteCalculation();
+
+  useEffect(() => {
+    if (!map) return;
+
+    polylinesRef.current.forEach((p) => p.setMap(null));
+    polylinesRef.current = [];
+
+    for (const step of steps) {
+      const instruction =
+        step.navigationInstruction?.instructions ?? "";
+      const roadType = classifyRoadType(instruction);
+      const color = getRoadColor(roadType);
+
+      const polyline = new google.maps.Polyline({
+        path: google.maps.geometry.encoding.decodePath(
+          step.polyline.encodedPolyline,
+        ),
+        strokeColor: color,
+        strokeWeight: 6,
+        strokeOpacity: 0.8,
+        map,
+      });
+
+      polylinesRef.current.push(polyline);
+    }
+
+    return () => {
+      polylinesRef.current.forEach((p) => p.setMap(null));
+      polylinesRef.current = [];
+    };
+  }, [map, steps]);
+
+  return null;
+}
