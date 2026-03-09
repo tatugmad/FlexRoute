@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { userActionTracker } from "@/services/userActionTracker";
-import type { MapViewport, Panel, ViewMode } from "@/types";
+import type { MapViewport, Panel, RouteViewMode, TopTab, ViewMode } from "@/types";
 
 type UiState = {
   viewMode: ViewMode;
@@ -9,6 +9,9 @@ type UiState = {
   viewport: MapViewport;
   isLoading: boolean;
   error: string | null;
+  topTab: TopTab;
+  routeViewMode: RouteViewMode;
+  searchModalOpen: boolean;
 };
 
 type UiActions = {
@@ -19,6 +22,9 @@ type UiActions = {
   setViewport: (viewport: MapViewport) => void;
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+  setTopTab: (tab: TopTab) => void;
+  setRouteViewMode: (mode: RouteViewMode) => void;
+  setSearchModalOpen: (open: boolean) => void;
 };
 
 const initialState: UiState = {
@@ -31,6 +37,9 @@ const initialState: UiState = {
   },
   isLoading: false,
   error: null,
+  topTab: "routes",
+  routeViewMode: "tile",
+  searchModalOpen: false,
 };
 
 export const useUiStore = create<UiState & UiActions>()((set) => ({
@@ -56,4 +65,8 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
 
   setError: (error) => set({ error }),
+
+  setTopTab: (topTab) => set({ topTab }),
+  setRouteViewMode: (routeViewMode) => set({ routeViewMode }),
+  setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
 }));

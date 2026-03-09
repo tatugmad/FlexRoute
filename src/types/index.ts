@@ -65,6 +65,10 @@ export type PlaceResult = {
 
 export type ViewMode = "top" | "route";
 
+export type TopTab = "routes" | "labels" | "places";
+
+export type RouteViewMode = "tile" | "list";
+
 export type Panel = "route" | "search" | "navigation" | "settings";
 
 export type MapViewport = {
