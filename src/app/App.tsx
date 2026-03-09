@@ -3,6 +3,8 @@ import { CurrentLocationMarker } from "@/components/map/CurrentLocationMarker";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { DebugPanel } from "@/components/ui/DebugPanel";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useMapClickHandler } from "@/hooks/useMapClickHandler";
 import { useUiStore } from "@/stores/uiStore";
@@ -15,7 +17,12 @@ export function App() {
     return <ApiKeyError />;
   }
 
-  return <MapScreen />;
+  return (
+    <ErrorBoundary>
+      <MapScreen />
+      <DebugPanel />
+    </ErrorBoundary>
+  );
 }
 
 function MapScreen() {
@@ -35,11 +42,13 @@ function MapScreen() {
       {viewMode === "route" && <RouteEditor />}
 
       <div className="flex-1 relative">
-        <MapView center={position ?? undefined} onClick={handleMapClick}>
-          {position && <CurrentLocationMarker position={position} />}
-          <RoutePolyline />
-          <WaypointMarkers />
-        </MapView>
+        <ErrorBoundary fallbackLabel="MapView">
+          <MapView center={position ?? undefined} onClick={handleMapClick}>
+            {position && <CurrentLocationMarker position={position} />}
+            <RoutePolyline />
+            <WaypointMarkers />
+          </MapView>
+        </ErrorBoundary>
 
         {viewMode === "top" && (
           <button

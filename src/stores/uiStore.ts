@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { userActionTracker } from "@/services/userActionTracker";
 import type { MapViewport, Panel, ViewMode } from "@/types";
 
 type UiState = {
@@ -35,9 +36,15 @@ const initialState: UiState = {
 export const useUiStore = create<UiState & UiActions>()((set) => ({
   ...initialState,
 
-  setViewMode: (viewMode) => set({ viewMode }),
+  setViewMode: (viewMode) => {
+    userActionTracker.track("SET_VIEW_MODE", { viewMode });
+    set({ viewMode });
+  },
 
-  setActivePanel: (activePanel) => set({ activePanel }),
+  setActivePanel: (activePanel) => {
+    userActionTracker.track("SET_ACTIVE_PANEL", { activePanel });
+    set({ activePanel });
+  },
 
   toggleSidebar: () =>
     set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
