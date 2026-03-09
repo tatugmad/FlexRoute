@@ -5,10 +5,15 @@ import { useUiStore } from "@/stores/uiStore";
 export function SearchModal() {
   const searchModalOpen = useUiStore((s) => s.searchModalOpen);
   const setSearchModalOpen = useUiStore((s) => s.setSearchModalOpen);
+  const insertIndex = useUiStore((s) => s.insertIndex);
+  const setInsertIndex = useUiStore((s) => s.setInsertIndex);
 
   if (!searchModalOpen) return null;
 
-  const handleClose = () => setSearchModalOpen(false);
+  const handleClose = () => {
+    setInsertIndex(null);
+    setSearchModalOpen(false);
+  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) handleClose();
@@ -21,7 +26,9 @@ export function SearchModal() {
     >
       <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-          <h2 className="text-base font-bold text-slate-800">経路を追加</h2>
+          <h2 className="text-base font-bold text-slate-800">
+            {insertIndex !== null ? "経由地を挿入" : "経路を追加"}
+          </h2>
           <button
             onClick={handleClose}
             className="p-1 rounded-lg hover:bg-slate-100 transition-colors"

@@ -1,6 +1,7 @@
 import { Reorder } from "framer-motion";
 import { GripVertical, Plus, X } from "lucide-react";
 import { useRouteStore } from "@/stores/routeStore";
+import { useUiStore } from "@/stores/uiStore";
 import type { Waypoint } from "@/types";
 
 type WaypointItemProps = {
@@ -17,15 +18,12 @@ function getDotColor(index: number, total: number): string {
 
 export function WaypointItem({ waypoint, index, total }: WaypointItemProps) {
   const removeWaypoint = useRouteStore((s) => s.removeWaypoint);
-  const addWaypoint = useRouteStore((s) => s.addWaypoint);
+  const setSearchModalOpen = useUiStore((s) => s.setSearchModalOpen);
+  const setInsertIndex = useUiStore((s) => s.setInsertIndex);
 
   const handleInsert = () => {
-    const wp: Waypoint = {
-      id: crypto.randomUUID(),
-      position: { lat: 0, lng: 0 },
-      label: `経由地 ${index + 1}`,
-    };
-    addWaypoint(wp, index + 1);
+    setInsertIndex(index + 1);
+    setSearchModalOpen(true);
   };
 
   return (
