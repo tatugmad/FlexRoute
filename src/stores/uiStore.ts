@@ -1,0 +1,47 @@
+import { create } from "zustand";
+import type { MapViewport, Panel } from "@/types";
+
+type UiState = {
+  activePanel: Panel;
+  isSidebarOpen: boolean;
+  viewport: MapViewport;
+  isLoading: boolean;
+  error: string | null;
+};
+
+type UiActions = {
+  setActivePanel: (panel: Panel) => void;
+  toggleSidebar: () => void;
+  setSidebarOpen: (open: boolean) => void;
+  setViewport: (viewport: MapViewport) => void;
+  setIsLoading: (isLoading: boolean) => void;
+  setError: (error: string | null) => void;
+};
+
+const initialState: UiState = {
+  activePanel: "route",
+  isSidebarOpen: true,
+  viewport: {
+    center: { lat: 35.6812, lng: 139.7671 },
+    zoom: 14,
+  },
+  isLoading: false,
+  error: null,
+};
+
+export const useUiStore = create<UiState & UiActions>()((set) => ({
+  ...initialState,
+
+  setActivePanel: (activePanel) => set({ activePanel }),
+
+  toggleSidebar: () =>
+    set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+
+  setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
+
+  setViewport: (viewport) => set({ viewport }),
+
+  setIsLoading: (isLoading) => set({ isLoading }),
+
+  setError: (error) => set({ error }),
+}));
