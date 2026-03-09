@@ -4,6 +4,7 @@ import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useMapClickHandler } from "@/hooks/useMapClickHandler";
 import { useUiStore } from "@/stores/uiStore";
 import { useNewRoute } from "@/hooks/useNewRoute";
 
@@ -22,6 +23,7 @@ function MapScreen() {
   const viewMode = useUiStore((s) => s.viewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const createNewRoute = useNewRoute();
+  const handleMapClick = useMapClickHandler();
 
   const handleNewRoute = () => {
     createNewRoute();
@@ -33,7 +35,7 @@ function MapScreen() {
       {viewMode === "route" && <RouteEditor />}
 
       <div className="flex-1 relative">
-        <MapView center={position ?? undefined}>
+        <MapView center={position ?? undefined} onClick={handleMapClick}>
           {position && <CurrentLocationMarker position={position} />}
           <RoutePolyline />
           <WaypointMarkers />
