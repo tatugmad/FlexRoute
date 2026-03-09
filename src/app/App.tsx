@@ -3,12 +3,12 @@ import { CurrentLocationMarker } from "@/components/map/CurrentLocationMarker";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
+import { TopView } from "@/components/top/TopView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { DebugPanel } from "@/components/ui/DebugPanel";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useMapClickHandler } from "@/hooks/useMapClickHandler";
 import { useUiStore } from "@/stores/uiStore";
-import { useNewRoute } from "@/hooks/useNewRoute";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 
@@ -19,28 +19,29 @@ export function App() {
 
   return (
     <ErrorBoundary>
-      <MapScreen />
+      <AppRouter />
       <DebugPanel />
     </ErrorBoundary>
   );
 }
 
-function MapScreen() {
-  const { position } = useGeolocation();
+function AppRouter() {
   const viewMode = useUiStore((s) => s.viewMode);
-  const setViewMode = useUiStore((s) => s.setViewMode);
-  const createNewRoute = useNewRoute();
-  const handleMapClick = useMapClickHandler();
 
-  const handleNewRoute = () => {
-    createNewRoute();
-    setViewMode("route");
-  };
+  if (viewMode === "top") {
+    return <TopView />;
+  }
+
+  return <RouteScreen />;
+}
+
+function RouteScreen() {
+  const { position } = useGeolocation();
+  const handleMapClick = useMapClickHandler();
 
   return (
     <div className="h-screen w-full flex">
-      {viewMode === "route" && <RouteEditor />}
-
+      <RouteEditor />
       <div className="flex-1 relative">
         <ErrorBoundary fallbackLabel="MapView">
           <MapView center={position ?? undefined} onClick={handleMapClick}>
@@ -49,15 +50,6 @@ function MapScreen() {
             <WaypointMarkers />
           </MapView>
         </ErrorBoundary>
-
-        {viewMode === "top" && (
-          <button
-            onClick={handleNewRoute}
-            className="absolute top-4 left-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2.5 font-medium text-sm shadow-lg transition-colors"
-          >
-            新規ルート
-          </button>
-        )}
       </div>
     </div>
   );
