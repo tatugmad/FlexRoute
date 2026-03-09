@@ -37,7 +37,7 @@ export function WaypointItem({ waypoint, index, total }: WaypointItemProps) {
         <GripVertical className="w-4 h-4 text-indigo-300 cursor-grab flex-shrink-0" />
         <div className={`w-3 h-3 rounded-full flex-shrink-0 ${getDotColor(index, total)}`} />
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-white truncate">{waypoint.label}</p>
+          <p className="text-sm text-white truncate">{String(waypoint.label ?? "")}</p>
           {waypoint.isCurrentLocation && (
             <p className="text-xs text-indigo-300">現在地</p>
           )}
