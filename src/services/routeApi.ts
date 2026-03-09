@@ -3,6 +3,14 @@ import type { ComputeRoutesRequest, ComputeRoutesResponse } from "@/types";
 const ROUTES_API_URL =
   "https://routes.googleapis.com/directions/v2:computeRoutes";
 
+const FIELD_MASK = [
+  "routes.duration",
+  "routes.distanceMeters",
+  "routes.polyline.encodedPolyline",
+  "routes.legs.steps.polyline.encodedPolyline",
+  "routes.legs.steps.navigationInstruction.instructions",
+].join(",");
+
 export async function computeRoutes(
   request: ComputeRoutesRequest,
 ): Promise<ComputeRoutesResponse> {
@@ -13,10 +21,13 @@ export async function computeRoutes(
     headers: {
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "routes.legs.startLocation,routes.legs.endLocation,routes.legs.distanceMeters,routes.legs.duration,routes.legs.polyline,routes.distanceMeters,routes.duration,routes.polyline",
+      "X-Goog-FieldMask": FIELD_MASK,
     },
-    body: JSON.stringify(request),
+    body: JSON.stringify({
+      ...request,
+      routingPreference: "TRAFFIC_AWARE",
+      languageCode: "ja-JP",
+    }),
   });
 
   if (!response.ok) {

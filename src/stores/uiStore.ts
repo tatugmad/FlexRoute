@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import type { MapViewport, Panel } from "@/types";
+import type { MapViewport, Panel, ViewMode } from "@/types";
 
 type UiState = {
+  viewMode: ViewMode;
   activePanel: Panel;
   isSidebarOpen: boolean;
   viewport: MapViewport;
@@ -10,6 +11,7 @@ type UiState = {
 };
 
 type UiActions = {
+  setViewMode: (mode: ViewMode) => void;
   setActivePanel: (panel: Panel) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
@@ -19,6 +21,7 @@ type UiActions = {
 };
 
 const initialState: UiState = {
+  viewMode: "top",
   activePanel: "route",
   isSidebarOpen: true,
   viewport: {
@@ -31,6 +34,8 @@ const initialState: UiState = {
 
 export const useUiStore = create<UiState & UiActions>()((set) => ({
   ...initialState,
+
+  setViewMode: (viewMode) => set({ viewMode }),
 
   setActivePanel: (activePanel) => set({ activePanel }),
 

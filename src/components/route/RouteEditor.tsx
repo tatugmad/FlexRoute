@@ -1,0 +1,37 @@
+import { ArrowLeft } from "lucide-react";
+import { WaypointList } from "@/components/route/WaypointList";
+import { RouteSummary } from "@/components/route/RouteSummary";
+import { useRouteStore } from "@/stores/routeStore";
+import { useUiStore } from "@/stores/uiStore";
+
+export function RouteEditor() {
+  const routeName = useRouteStore((s) => s.routeName);
+  const setRouteName = useRouteStore((s) => s.setRouteName);
+  const setViewMode = useUiStore((s) => s.setViewMode);
+
+  return (
+    <aside className="w-96 h-full bg-indigo-600 text-white flex flex-col overflow-hidden">
+      <header className="flex items-center gap-3 px-4 pt-5 pb-3">
+        <button
+          onClick={() => setViewMode("top")}
+          className="p-2 rounded-lg hover:bg-indigo-500 transition-colors"
+          aria-label="戻る"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <input
+          type="text"
+          value={routeName}
+          onChange={(e) => setRouteName(e.target.value)}
+          placeholder="ルート名を入力..."
+          className="flex-1 bg-indigo-700/50 text-white placeholder-indigo-300 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+      </header>
+
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <WaypointList />
+        <RouteSummary />
+      </div>
+    </aside>
+  );
+}

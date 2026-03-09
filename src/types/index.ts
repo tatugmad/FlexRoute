@@ -12,6 +12,7 @@ export type Waypoint = {
   position: LatLng;
   label: string;
   placeId?: string;
+  isCurrentLocation?: boolean;
 };
 
 // ── ルート ──
@@ -62,6 +63,8 @@ export type PlaceResult = {
 
 // ── UI 状態 ──
 
+export type ViewMode = "top" | "route";
+
 export type Panel = "route" | "search" | "navigation" | "settings";
 
 export type MapViewport = {
@@ -92,6 +95,11 @@ export type ComputeRoutesRequest = {
   computeAlternativeRoutes?: boolean;
 };
 
+export type RoutesApiStep = {
+  polyline: { encodedPolyline: string };
+  navigationInstruction?: { instructions: string };
+};
+
 export type ComputeRoutesResponse = {
   routes: Array<{
     legs: Array<{
@@ -100,6 +108,7 @@ export type ComputeRoutesResponse = {
       distanceMeters: number;
       duration: string;
       polyline: { encodedPolyline: string };
+      steps: RoutesApiStep[];
     }>;
     distanceMeters: number;
     duration: string;
