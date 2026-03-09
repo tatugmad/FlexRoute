@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { PlaceResultList } from "@/components/places/PlaceResultList";
 import { useRouteStore } from "@/stores/routeStore";
+import { useUiStore } from "@/stores/uiStore";
 import { userActionTracker } from "@/services/userActionTracker";
 import type { PlaceResult } from "@/types";
 
@@ -14,6 +15,8 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const addWaypoint = useRouteStore((s) => s.addWaypoint);
+  const insertIndex = useUiStore((s) => s.insertIndex);
+  const setInsertIndex = useUiStore((s) => s.setInsertIndex);
   const inputRef = useRef<HTMLInputElement>(null);
   const serviceRef = useRef<google.maps.places.AutocompleteService | null>(
     null,
@@ -74,12 +77,16 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
           placeId: place.placeId,
           name: detail?.name ?? place.name,
         });
-        addWaypoint({
-          id: crypto.randomUUID(),
-          position: { lat: loc.lat(), lng: loc.lng() },
-          label: detail?.name ?? place.name,
-          placeId: place.placeId,
-        });
+        addWaypoint(
+          {
+            id: crypto.randomUUID(),
+            position: { lat: loc.lat(), lng: loc.lng() },
+            label: detail?.name ?? place.name,
+            placeId: place.placeId,
+          },
+          insertIndex ?? undefined,
+        );
+        setInsertIndex(null);
         onClose();
       },
     );

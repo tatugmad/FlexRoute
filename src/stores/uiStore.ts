@@ -12,6 +12,7 @@ type UiState = {
   topTab: TopTab;
   routeViewMode: RouteViewMode;
   searchModalOpen: boolean;
+  insertIndex: number | null;
 };
 
 type UiActions = {
@@ -25,6 +26,7 @@ type UiActions = {
   setTopTab: (tab: TopTab) => void;
   setRouteViewMode: (mode: RouteViewMode) => void;
   setSearchModalOpen: (open: boolean) => void;
+  setInsertIndex: (index: number | null) => void;
 };
 
 const initialState: UiState = {
@@ -40,6 +42,7 @@ const initialState: UiState = {
   topTab: "routes",
   routeViewMode: "tile",
   searchModalOpen: false,
+  insertIndex: null,
 };
 
 export const useUiStore = create<UiState & UiActions>()((set) => ({
@@ -69,4 +72,5 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
   setTopTab: (topTab) => set({ topTab }),
   setRouteViewMode: (routeViewMode) => set({ routeViewMode }),
   setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
+  setInsertIndex: (insertIndex) => set({ insertIndex }),
 }));
