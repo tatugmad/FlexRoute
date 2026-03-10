@@ -1,5 +1,6 @@
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { MapView } from "@/components/map/MapView";
+import { MapInitialView } from "@/components/map/MapInitialView";
 import { CurrentLocationMarker } from "@/components/map/CurrentLocationMarker";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
@@ -48,6 +49,7 @@ function RouteScreen() {
         <div className="flex-1 relative">
           <ErrorBoundary fallbackLabel="MapView">
             <MapView center={position ?? undefined} onClick={handleMapClick}>
+              <MapInitialView />
               {position && <CurrentLocationMarker position={position} />}
               <RoutePolyline />
               <WaypointMarkers />
