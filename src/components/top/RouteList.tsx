@@ -1,33 +1,38 @@
+import { useEffect } from "react";
 import { Plus, LayoutGrid, List } from "lucide-react";
 import { RouteCard } from "@/components/top/RouteCard";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useNewRoute } from "@/hooks/useNewRoute";
-import type { Route } from "@/types";
+import type { RouteViewMode } from "@/types";
 
 export function RouteList() {
   const savedRoutes = useRouteStore((s) => s.savedRoutes);
-  const setCurrentRoute = useRouteStore((s) => s.setCurrentRoute);
-  const setRouteName = useRouteStore((s) => s.setRouteName);
-  const setSavedRoutes = useRouteStore((s) => s.setSavedRoutes);
+  const loadRoute = useRouteStore((s) => s.loadRoute);
+  const deleteRoute = useRouteStore((s) => s.deleteRoute);
+  const loadSavedRoutes = useRouteStore((s) => s.loadSavedRoutes);
   const routeViewMode = useUiStore((s) => s.routeViewMode);
   const setRouteViewMode = useUiStore((s) => s.setRouteViewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
+  const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const createNewRoute = useNewRoute();
+
+  useEffect(() => {
+    loadSavedRoutes();
+  }, [loadSavedRoutes]);
 
   const handleNewRoute = () => {
     createNewRoute();
     setViewMode("route");
   };
 
-  const handleSelect = (route: Route) => {
-    setCurrentRoute(route);
-    setRouteName(route.name);
+  const handleSelect = (id: string) => {
+    loadRoute(id);
     setViewMode("route");
   };
 
   const handleDelete = (routeId: string) => {
-    setSavedRoutes(savedRoutes.filter((r) => r.id !== routeId));
+    openConfirmDialog("このルートを削除しますか？", () => deleteRoute(routeId));
   };
 
   return (
@@ -74,8 +79,8 @@ function ViewToggle({
   current,
   onChange,
 }: {
-  current: "tile" | "list";
-  onChange: (mode: "tile" | "list") => void;
+  current: RouteViewMode;
+  onChange: (mode: RouteViewMode) => void;
 }) {
   const active = "bg-white shadow-sm text-indigo-600";
   const inactive = "text-slate-500 hover:text-slate-700";

@@ -1,12 +1,10 @@
 // ── 座標 ──
-
 export type LatLng = {
   lat: number;
   lng: number;
 };
 
 // ── Place データ ──
-
 export type PlaceData = {
   address?: string;
   types?: string[];
@@ -17,7 +15,6 @@ export type PlaceData = {
 };
 
 // ── ウェイポイント ──
-
 export type Waypoint = {
   id: string;
   position: LatLng;
@@ -29,7 +26,6 @@ export type Waypoint = {
 };
 
 // ── ルート ──
-
 export type TravelMode = "DRIVE" | "WALK" | "BICYCLE" | "TRANSIT";
 
 export type RouteLeg = {
@@ -53,7 +49,6 @@ export type Route = {
 };
 
 // ── ナビゲーション ──
-
 export type NavigationStatus = "idle" | "navigating" | "paused" | "arrived";
 
 export type NavigationState = {
@@ -65,7 +60,6 @@ export type NavigationState = {
 };
 
 // ── 場所検索 ──
-
 export type PlaceResult = {
   placeId: string;
   name: string;
@@ -75,7 +69,6 @@ export type PlaceResult = {
 };
 
 // ── UI 状態 ──
-
 export type ViewMode = "top" | "route";
 
 export type TopTab = "routes" | "labels" | "places";
@@ -90,7 +83,6 @@ export type MapViewport = {
 };
 
 // ── ログ ──
-
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export type LogEntry = {
@@ -115,51 +107,44 @@ export type PerformanceMetric = {
   max: number;
 };
 
-// ── ストレージ ──
+// ── 道路種別 ──
+export type RoadType = "highway" | "national" | "prefectural" | "local";
 
-export type SavedRoute = Pick<
-  Route,
-  "id" | "name" | "waypoints" | "travelMode" | "createdAt" | "updatedAt"
->;
+// ── 保存用ルートステップ ──
+export type SavedRouteStep = {
+  encodedPolyline: string;
+  roadType: RoadType;
+  instruction: string;
+  distanceMeters: number;
+  durationSeconds: number;
+};
+
+export type SavedRouteLeg = {
+  startWaypointIndex: number;
+  endWaypointIndex: number;
+  distanceMeters: number;
+  durationSeconds: number;
+  steps: SavedRouteStep[];
+};
+
+// ── ストレージ ──
+export type SavedRoute = {
+  id: string;
+  name: string;
+  waypoints: Waypoint[];
+  travelMode: TravelMode;
+  encodedPolyline: string;
+  legs: SavedRouteLeg[];
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+};
 
 // ── Routes API v2 ──
-
-export type RoutesApiLatLng = {
-  latitude: number;
-  longitude: number;
-};
-
-export type RoutesApiWaypoint = {
-  location?: { latLng: RoutesApiLatLng };
-  placeId?: string;
-};
-
-export type ComputeRoutesRequest = {
-  origin: RoutesApiWaypoint;
-  destination: RoutesApiWaypoint;
-  intermediates?: RoutesApiWaypoint[];
-  travelMode: TravelMode;
-  routingPreference?: "TRAFFIC_AWARE" | "TRAFFIC_AWARE_OPTIMAL";
-  computeAlternativeRoutes?: boolean;
-};
-
-export type RoutesApiStep = {
-  polyline: { encodedPolyline: string };
-  navigationInstruction?: { instructions: string };
-};
-
-export type ComputeRoutesResponse = {
-  routes: Array<{
-    legs: Array<{
-      startLocation: { latLng: LatLng };
-      endLocation: { latLng: LatLng };
-      distanceMeters: number;
-      duration: string;
-      polyline: { encodedPolyline: string };
-      steps: RoutesApiStep[];
-    }>;
-    distanceMeters: number;
-    duration: string;
-    polyline: { encodedPolyline: string };
-  }>;
-};
+export type {
+  RoutesApiLatLng,
+  RoutesApiWaypoint,
+  ComputeRoutesRequest,
+  RoutesApiStep,
+  ComputeRoutesResponse,
+} from "@/types/routesApi";

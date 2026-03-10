@@ -1,37 +1,9 @@
 import { create } from "zustand";
 import { userActionTracker } from "@/services/userActionTracker";
-import type { Route, RoutesApiStep, TravelMode, Waypoint } from "@/types";
-
-type RouteState = {
-  currentRoute: Route | null;
-  savedRoutes: Route[];
-  travelMode: TravelMode;
-  routeName: string;
-  isCalculatingRoute: boolean;
-  routeError: string | null;
-  routeSteps: RoutesApiStep[];
-  encodedPolyline: string | null;
-};
-
-type RouteActions = {
-  setCurrentRoute: (route: Route | null) => void;
-  addWaypoint: (waypoint: Waypoint, insertIndex?: number) => void;
-  removeWaypoint: (waypointId: string) => void;
-  reorderWaypoints: (waypoints: Waypoint[]) => void;
-  setTravelMode: (mode: TravelMode) => void;
-  setSavedRoutes: (routes: Route[]) => void;
-  setRouteName: (name: string) => void;
-  setRouteData: (data: {
-    totalDistanceMeters: number;
-    totalDurationSeconds: number;
-    encodedPolyline: string;
-    steps: RoutesApiStep[];
-  }) => void;
-  setRouteError: (error: string | null) => void;
-  setIsCalculatingRoute: (isCalculating: boolean) => void;
-  clearRouteData: () => void;
-  reset: () => void;
-};
+import { localStorageService } from "@/services/storage";
+import { logService } from "@/services/logService";
+import type { RouteStoreState } from "@/stores/routeStoreTypes";
+import { toSavedRoute, toRoute } from "@/stores/routeConverters";
 
 function isValidPosition(pos: { lat: number; lng: number }): boolean {
   return (
@@ -41,18 +13,20 @@ function isValidPosition(pos: { lat: number; lng: number }): boolean {
   );
 }
 
-const initialState: RouteState = {
+const initialState = {
   currentRoute: null,
   savedRoutes: [],
-  travelMode: "DRIVE",
+  travelMode: "DRIVE" as const,
   routeName: "",
   isCalculatingRoute: false,
   routeError: null,
   routeSteps: [],
   encodedPolyline: null,
+  currentLegs: [],
+  isDirty: false,
 };
 
-export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
+export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   ...initialState,
 
   setCurrentRoute: (route) => set({ currentRoute: route }),
@@ -61,28 +35,19 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
     set((state) => {
       if (!state.currentRoute) return state;
       if (!isValidPosition(waypoint.position)) return state;
-      // placeId の正規化: undefined や空文字列は null に統一
-      const normalizedWaypoint = {
-        ...waypoint,
-        placeId: waypoint.placeId || null,
-      };
+      const normalized = { ...waypoint, placeId: waypoint.placeId || null };
       const wps = [...state.currentRoute.waypoints];
       if (insertIndex !== undefined) {
-        wps.splice(insertIndex, 0, normalizedWaypoint);
+        wps.splice(insertIndex, 0, normalized);
       } else {
-        wps.push(normalizedWaypoint);
+        wps.push(normalized);
       }
       userActionTracker.track("ADD_WAYPOINT", {
-        id: normalizedWaypoint.id,
-        label: normalizedWaypoint.label,
-        insertIndex,
+        id: normalized.id, label: normalized.label, insertIndex,
       });
       return {
-        currentRoute: {
-          ...state.currentRoute,
-          waypoints: wps,
-          updatedAt: Date.now(),
-        },
+        isDirty: true,
+        currentRoute: { ...state.currentRoute, waypoints: wps, updatedAt: Date.now() },
       };
     }),
 
@@ -91,11 +56,10 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
       if (!state.currentRoute) return state;
       userActionTracker.track("REMOVE_WAYPOINT", { id: waypointId });
       return {
+        isDirty: true,
         currentRoute: {
           ...state.currentRoute,
-          waypoints: state.currentRoute.waypoints.filter(
-            (w) => w.id !== waypointId,
-          ),
+          waypoints: state.currentRoute.waypoints.filter((w) => w.id !== waypointId),
           updatedAt: Date.now(),
         },
       };
@@ -104,17 +68,16 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
   reorderWaypoints: (waypoints) =>
     set((state) => {
       if (!state.currentRoute) return state;
-      userActionTracker.track("REORDER_WAYPOINTS", {
-        count: waypoints.length,
-      });
+      userActionTracker.track("REORDER_WAYPOINTS", { count: waypoints.length });
       return {
+        isDirty: true,
         currentRoute: { ...state.currentRoute, waypoints, updatedAt: Date.now() },
       };
     }),
 
   setTravelMode: (travelMode) => set({ travelMode }),
-  setSavedRoutes: (savedRoutes) => set({ savedRoutes }),
-  setRouteName: (routeName) => set({ routeName }),
+  setRouteName: (routeName) => set({ routeName, isDirty: true }),
+  setIsDirty: (isDirty) => set({ isDirty }),
 
   setRouteData: (data) =>
     set((state) => ({
@@ -128,18 +91,56 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
         : null,
       encodedPolyline: data.encodedPolyline,
       routeSteps: data.steps,
+      currentLegs: data.legs,
       isCalculatingRoute: false,
       routeError: null,
+      isDirty: true,
     })),
 
-  setRouteError: (routeError) =>
-    set({ routeError, isCalculatingRoute: false }),
-
-  setIsCalculatingRoute: (isCalculatingRoute) =>
-    set({ isCalculatingRoute }),
+  setRouteError: (routeError) => set({ routeError, isCalculatingRoute: false }),
+  setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
 
   clearRouteData: () =>
-    set({ routeSteps: [], encodedPolyline: null, routeError: null }),
+    set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
+
+  saveCurrentRoute: () => {
+    const { currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes } = get();
+    if (!currentRoute) return;
+    const saved = toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes);
+    localStorageService.saveRoute(saved);
+    const updated = savedRoutes.some((r) => r.id === saved.id)
+      ? savedRoutes.map((r) => (r.id === saved.id ? saved : r))
+      : [...savedRoutes, saved];
+    set({ savedRoutes: updated, isDirty: false });
+    logService.info("ROUTE", "ルート保存完了", { id: saved.id, version: saved.version });
+  },
+
+  loadRoute: (id) => {
+    const saved = get().savedRoutes.find((r) => r.id === id);
+    if (!saved) return;
+    const route = toRoute(saved);
+    set({
+      currentRoute: route,
+      routeName: saved.name,
+      encodedPolyline: saved.encodedPolyline || null,
+      currentLegs: saved.legs ?? [],
+      isDirty: false,
+    });
+    logService.info("ROUTE", "ルート読み込み", { id, name: saved.name });
+  },
+
+  deleteRoute: (id) => {
+    localStorageService.deleteRoute(id);
+    set((state) => ({
+      savedRoutes: state.savedRoutes.filter((r) => r.id !== id),
+    }));
+    logService.info("ROUTE", "ルート削除", { id });
+  },
+
+  loadSavedRoutes: () => {
+    const routes = localStorageService.getRoutes();
+    set({ savedRoutes: routes });
+  },
 
   reset: () => set(initialState),
 }));

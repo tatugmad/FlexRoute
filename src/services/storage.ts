@@ -1,3 +1,4 @@
+import { logService } from "@/services/logService";
 import type { SavedRoute } from "@/types";
 
 // ── StorageService インターフェース ──
@@ -28,7 +29,11 @@ function writeAll(routes: SavedRoute[]): void {
 }
 
 export const localStorageService: StorageService = {
-  getRoutes: () => readAll(),
+  getRoutes: () => {
+    const routes = readAll();
+    logService.info("STORAGE", "ルート一覧読み込み", { count: routes.length });
+    return routes;
+  },
 
   saveRoute: (route) => {
     const routes = readAll();
@@ -39,11 +44,13 @@ export const localStorageService: StorageService = {
       routes.push(route);
     }
     writeAll(routes);
+    logService.info("STORAGE", "ルート保存", { id: route.id, name: route.name });
   },
 
   deleteRoute: (routeId) => {
     const routes = readAll().filter((r) => r.id !== routeId);
     writeAll(routes);
+    logService.info("STORAGE", "ルート削除", { id: routeId });
   },
 
   getRoute: (routeId) => {

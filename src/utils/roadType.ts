@@ -1,4 +1,6 @@
-export type RoadType = "highway" | "national" | "prefectural" | "local";
+import type { RoadType } from "@/types";
+
+export type { RoadType };
 
 const HIGHWAY_KEYWORDS = ["高速", "有料", "自動車道", "IC", "JCT"];
 const NATIONAL_KEYWORDS = ["国道"];

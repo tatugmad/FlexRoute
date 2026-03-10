@@ -6,6 +6,7 @@ export function useNewRoute() {
   const setCurrentRoute = useRouteStore((s) => s.setCurrentRoute);
   const setRouteName = useRouteStore((s) => s.setRouteName);
   const clearRouteData = useRouteStore((s) => s.clearRouteData);
+  const setIsDirty = useRouteStore((s) => s.setIsDirty);
 
   return useCallback(() => {
     const now = Date.now();
@@ -23,5 +24,6 @@ export function useNewRoute() {
     clearRouteData();
     setCurrentRoute(route);
     setRouteName("");
-  }, [setCurrentRoute, setRouteName, clearRouteData]);
+    setIsDirty(true);
+  }, [setCurrentRoute, setRouteName, clearRouteData, setIsDirty]);
 }
