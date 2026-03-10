@@ -159,22 +159,31 @@ npm run lint      # ESLint 実行
 全てに使われる唯一のデータソースである。
 目的別の別配列（名前だけの配列、座標だけの配列）を作ってはならない。
 
-### ウェイポイント追加の2つの経路（明確に分離すること）
+### ウェイポイント追加の2つの経路（完全分離・混同禁止）
 
 経路A: Placeアイコンタップ → Place情報カード → 「経路に追加」
 - e.detail.placeId が存在する場合のみ
-- placeId と placeData（住所、評価、電話番号等）を保持
+- placeId と placeData を保持
 - name にはPlace名を使用
+- Places API で情報を取得する
 
 経路B: 地図タップ（Placeアイコン以外）
 - e.detail.placeId が存在しない場合
-- placeId = null, placeData = null
-- name は座標表示（「lat, lng」形式）
-- どんなに近くにPlaceがあっても座標ベースとする
-- reverseGeocode は行わない
+- placeId = null（必ず明示的にnull）
+- placeData = null
+- name は座標表示のみ（「lat, lng」形式、小数点3桁）
+- reverseGeocode は絶対に呼ばない
+- Places API も絶対に呼ばない
+- いかなる施設名もウェイポイント名に入れてはならない
 
 この2つの経路は混同してはならない。
 地図タップ時にreverseGeocodeやPlace検索を呼んではならない。
+
+### 禁止事項
+- 地図タップ（経路B）でreverseGeocodeを呼ぶこと
+- 地図タップ（経路B）でPlaces APIを呼ぶこと
+- 地図タップ（経路B）でplaceIdを設定すること
+- placeId を undefined のまま放置すること（null に統一）
 
 ### PlaceData の扱い
 - ウェイポイントはGoogleのPlace情報をベースに、
