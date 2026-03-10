@@ -12,6 +12,7 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: true,
     rollupOptions: {
       output: {
         entryFileNames: "assets/[name]-[hash].js",
