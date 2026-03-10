@@ -16,11 +16,12 @@ export function useMapClickHandler() {
       if (!latLng) return;
 
       const position = { lat: latLng.lat, lng: latLng.lng };
-      const placeId = e.detail.placeId ?? undefined;
+      const placeId = e.detail.placeId ?? null;
       const wpId = crypto.randomUUID();
 
       if (placeId) {
         // 経路A: Placeアイコンタップ
+        // Places API で名前を取得する
         // TODO: PlaceActionModal 実装時に、ここでモーダルを表示し
         //       「経路に追加」選択後に addWaypoint する流れに変更する
         userActionTracker.track("MAP_CLICK_PLACE_ADD_WAYPOINT", {
@@ -31,14 +32,28 @@ export function useMapClickHandler() {
         fetchPlaceName(placeId).then((name) => {
           const label =
             name ?? `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
-          addWaypoint({ id: wpId, position, label, placeId });
+          addWaypoint({
+            id: wpId,
+            position,
+            label,
+            placeId,
+            placeData: null,
+            // TODO: 将来 Places API で placeData（住所、評価等）も取得する
+          });
         });
       } else {
         // 経路B: 地図タップ（Placeアイコン以外）
-        // 座標ベースのウェイポイント。reverseGeocode は行わない
+        // reverseGeocode は呼ばない。Places API も呼ばない。
+        // 座標のみをウェイポイント名にする。
         const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
         userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position });
-        addWaypoint({ id: wpId, position, label });
+        addWaypoint({
+          id: wpId,
+          position,
+          label,
+          placeId: null,
+          placeData: null,
+        });
       }
     },
     [viewMode, addWaypoint],

@@ -22,8 +22,8 @@ export type Waypoint = {
   id: string;
   position: LatLng;
   label: string;
-  placeId?: string;
-  placeData?: PlaceData;
+  placeId: string | null;
+  placeData?: PlaceData | null;
   userNote?: string;
   isCurrentLocation?: boolean;
 };

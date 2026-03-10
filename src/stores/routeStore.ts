@@ -61,15 +61,20 @@ export const useRouteStore = create<RouteState & RouteActions>()((set) => ({
     set((state) => {
       if (!state.currentRoute) return state;
       if (!isValidPosition(waypoint.position)) return state;
+      // placeId の正規化: undefined や空文字列は null に統一
+      const normalizedWaypoint = {
+        ...waypoint,
+        placeId: waypoint.placeId || null,
+      };
       const wps = [...state.currentRoute.waypoints];
       if (insertIndex !== undefined) {
-        wps.splice(insertIndex, 0, waypoint);
+        wps.splice(insertIndex, 0, normalizedWaypoint);
       } else {
-        wps.push(waypoint);
+        wps.push(normalizedWaypoint);
       }
       userActionTracker.track("ADD_WAYPOINT", {
-        id: waypoint.id,
-        label: waypoint.label,
+        id: normalizedWaypoint.id,
+        label: normalizedWaypoint.label,
         insertIndex,
       });
       return {
