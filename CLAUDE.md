@@ -151,3 +151,33 @@ npm run lint      # ESLint 実行
 
 ### クイック検索カテゴリ
 ガソリンスタンド、コンビニ、トイレ、レストラン
+
+## ウェイポイント設計方針
+
+### データ構造
+ウェイポイントは1つのオブジェクトとして、経路リスト表示・地図ピン表示・ルート計算の
+全てに使われる唯一のデータソースである。
+目的別の別配列（名前だけの配列、座標だけの配列）を作ってはならない。
+
+### ウェイポイント追加の2つの経路（明確に分離すること）
+
+経路A: Placeアイコンタップ → Place情報カード → 「経路に追加」
+- e.detail.placeId が存在する場合のみ
+- placeId と placeData（住所、評価、電話番号等）を保持
+- name にはPlace名を使用
+
+経路B: 地図タップ（Placeアイコン以外）
+- e.detail.placeId が存在しない場合
+- placeId = null, placeData = null
+- name は座標表示（「lat, lng」形式）
+- どんなに近くにPlaceがあっても座標ベースとする
+- reverseGeocode は行わない
+
+この2つの経路は混同してはならない。
+地図タップ時にreverseGeocodeやPlace検索を呼んではならない。
+
+### PlaceData の扱い
+- ウェイポイントはGoogleのPlace情報をベースに、
+  FlexRoute固有の情報（ユーザーメモ、順番等）を追加で保持する
+- placeData はオプショナル。Placeアイコン経由の場合のみ存在する
+- フェーズ2でDB保存する際は placeData も JSONB に含める
