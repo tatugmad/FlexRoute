@@ -161,14 +161,20 @@ npm run lint      # ESLint 実行
 
 ### ウェイポイント追加の2つの経路（完全分離・混同禁止）
 
-経路A: Placeアイコンタップ → Place情報カード → 「経路に追加」
-- e.detail.placeId が存在する場合のみ
+経路A: Placeアイコンをタップした場合
+- Google Maps API の click イベント仕様として、
+  Placeアイコンがタップされた場合 e.detail.placeId が返される
+- この placeId の存在をもって経路Aと判定する
 - placeId と placeData を保持
 - name にはPlace名を使用
 - Places API で情報を取得する
 
-経路B: 地図タップ（Placeアイコン以外）
-- e.detail.placeId が存在しない場合
+経路B: Placeアイコン以外の地図面をタップした場合
+- Google Maps API の click イベント仕様として、
+  Placeアイコン以外がタップされた場合 e.detail.placeId は返されない
+- placeId が存在しないことをもって経路Bと判定する
+- これは「Place情報の取得に失敗した場合」ではなく、
+  「そもそもPlaceではない場所をタップした」という意味である
 - placeId = null（必ず明示的にnull）
 - placeData = null
 - name は座標表示のみ（「lat, lng」形式、小数点3桁）
