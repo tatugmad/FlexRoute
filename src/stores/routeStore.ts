@@ -3,14 +3,10 @@ import { userActionTracker } from "@/services/userActionTracker";
 import { localStorageService } from "@/services/storage";
 import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
-import { toSavedRoute, toRoute } from "@/stores/routeConverters";
+import { toSavedRoute, toRoute, createNewRoute } from "@/stores/routeConverters";
 
 function isValidPosition(pos: { lat: number; lng: number }): boolean {
-  return (
-    Number.isFinite(pos.lat) &&
-    Number.isFinite(pos.lng) &&
-    !(pos.lat === 0 && pos.lng === 0)
-  );
+  return Number.isFinite(pos.lat) && Number.isFinite(pos.lng) && !(pos.lat === 0 && pos.lng === 0);
 }
 
 const initialState = {
@@ -100,8 +96,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   setRouteError: (routeError) => set({ routeError, isCalculatingRoute: false }),
   setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
 
-  clearRouteData: () =>
-    set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
+  clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
 
   saveCurrentRoute: () => {
     const { currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes } = get();
@@ -141,6 +136,12 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     const routes = localStorageService.getRoutes();
     set({ savedRoutes: routes });
   },
+
+  newRoute: () => set({
+    currentRoute: createNewRoute(get().travelMode),
+    routeName: "", encodedPolyline: null, routeSteps: [],
+    currentLegs: [], isDirty: false, routeError: null,
+  }),
 
   reset: () => set(initialState),
 }));

@@ -10,7 +10,7 @@ type RouteCardProps = {
 
 export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProps) {
   const waypointCount = route.waypoints.length;
-  const displayName = route.name || "名称未設定";
+  const displayName = route.name.trim() || "名称未設定";
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();

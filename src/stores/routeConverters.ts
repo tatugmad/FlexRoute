@@ -1,4 +1,4 @@
-import type { Route, SavedRoute, SavedRouteLeg } from "@/types";
+import type { Route, SavedRoute, SavedRouteLeg, TravelMode } from "@/types";
 
 export function toSavedRoute(
   currentRoute: Route,
@@ -19,6 +19,21 @@ export function toSavedRoute(
     legs: currentLegs,
     version: existing ? existing.version + 1 : 1,
     createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+}
+
+export function createNewRoute(travelMode: TravelMode): Route {
+  const now = Date.now();
+  return {
+    id: crypto.randomUUID(),
+    name: "",
+    waypoints: [],
+    legs: [],
+    travelMode,
+    totalDistanceMeters: 0,
+    totalDurationSeconds: 0,
+    createdAt: now,
     updatedAt: now,
   };
 }
