@@ -8,6 +8,7 @@ type UiState = {
   isSidebarOpen: boolean;
   viewport: MapViewport;
   isLoading: boolean;
+  isMapReady: boolean;
   error: string | null;
   topTab: TopTab;
   routeViewMode: RouteViewMode;
@@ -22,6 +23,7 @@ type UiActions = {
   setSidebarOpen: (open: boolean) => void;
   setViewport: (viewport: MapViewport) => void;
   setIsLoading: (isLoading: boolean) => void;
+  setMapReady: (ready: boolean) => void;
   setError: (error: string | null) => void;
   setTopTab: (tab: TopTab) => void;
   setRouteViewMode: (mode: RouteViewMode) => void;
@@ -38,6 +40,7 @@ const initialState: UiState = {
     zoom: 14,
   },
   isLoading: false,
+  isMapReady: false,
   error: null,
   topTab: "routes",
   routeViewMode: "tile",
@@ -66,6 +69,8 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
   setViewport: (viewport) => set({ viewport }),
 
   setIsLoading: (isLoading) => set({ isLoading }),
+
+  setMapReady: (isMapReady) => set({ isMapReady }),
 
   setError: (error) => set({ error }),
 
