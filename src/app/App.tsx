@@ -8,6 +8,7 @@ import { RouteEditor } from "@/components/route/RouteEditor";
 import { SearchModal } from "@/components/places/SearchModal";
 import { TopView } from "@/components/top/TopView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DebugPanel } from "@/components/ui/DebugPanel";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useMapClickHandler } from "@/hooks/useMapClickHandler";
@@ -23,6 +24,7 @@ export function App() {
   return (
     <ErrorBoundary>
       <AppRouter />
+      <ConfirmDialog />
       <DebugPanel />
     </ErrorBoundary>
   );

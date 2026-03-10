@@ -2,6 +2,12 @@ import { create } from "zustand";
 import { userActionTracker } from "@/services/userActionTracker";
 import type { MapViewport, Panel, RouteViewMode, TopTab, ViewMode } from "@/types";
 
+type ConfirmDialog = {
+  isOpen: boolean;
+  message: string;
+  onConfirm: (() => void) | null;
+};
+
 type UiState = {
   viewMode: ViewMode;
   activePanel: Panel;
@@ -14,6 +20,7 @@ type UiState = {
   routeViewMode: RouteViewMode;
   searchModalOpen: boolean;
   insertIndex: number | null;
+  confirmDialog: ConfirmDialog;
 };
 
 type UiActions = {
@@ -29,6 +36,8 @@ type UiActions = {
   setRouteViewMode: (mode: RouteViewMode) => void;
   setSearchModalOpen: (open: boolean) => void;
   setInsertIndex: (index: number | null) => void;
+  openConfirmDialog: (message: string, onConfirm: () => void) => void;
+  closeConfirmDialog: () => void;
 };
 
 const initialState: UiState = {
@@ -46,6 +55,7 @@ const initialState: UiState = {
   routeViewMode: "tile",
   searchModalOpen: false,
   insertIndex: null,
+  confirmDialog: { isOpen: false, message: "", onConfirm: null },
 };
 
 export const useUiStore = create<UiState & UiActions>()((set) => ({
@@ -78,4 +88,8 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
   setRouteViewMode: (routeViewMode) => set({ routeViewMode }),
   setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
   setInsertIndex: (insertIndex) => set({ insertIndex }),
+  openConfirmDialog: (message, onConfirm) =>
+    set({ confirmDialog: { isOpen: true, message, onConfirm } }),
+  closeConfirmDialog: () =>
+    set({ confirmDialog: { isOpen: false, message: "", onConfirm: null } }),
 }));

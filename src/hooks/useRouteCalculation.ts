@@ -2,7 +2,13 @@ import { useEffect, useRef } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { computeRoutes } from "@/services/routeApi";
 import { logService } from "@/services/logService";
-import type { ComputeRoutesRequest, RoutesApiStep, Waypoint } from "@/types";
+import { classifyRoadType } from "@/utils/roadType";
+import type {
+  ComputeRoutesRequest,
+  RoutesApiStep,
+  SavedRouteLeg,
+  Waypoint,
+} from "@/types";
 
 const EMPTY_WAYPOINTS: Waypoint[] = [];
 
@@ -72,11 +78,29 @@ export function useRouteCalculation() {
           (leg) => leg.steps ?? [],
         );
 
+        const savedLegs: SavedRouteLeg[] = route.legs.map((leg, i) => ({
+          startWaypointIndex: i,
+          endWaypointIndex: i + 1,
+          distanceMeters: Number(leg.distanceMeters) || 0,
+          durationSeconds: parseDuration(leg.duration),
+          steps: (leg.steps ?? []).map((step) => {
+            const instruction = step.navigationInstruction?.instructions ?? "";
+            return {
+              encodedPolyline: step.polyline.encodedPolyline,
+              roadType: classifyRoadType(instruction),
+              instruction,
+              distanceMeters: 0,
+              durationSeconds: 0,
+            };
+          }),
+        }));
+
         setRouteData({
           totalDistanceMeters: Number(route.distanceMeters) || 0,
           totalDurationSeconds: parseDuration(route.duration),
           encodedPolyline: String(route.polyline.encodedPolyline),
           steps: allSteps,
+          legs: savedLegs,
         });
       })
       .catch((err: unknown) => {

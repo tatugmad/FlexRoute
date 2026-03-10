@@ -4,17 +4,25 @@ import { WaypointList } from "@/components/route/WaypointList";
 import { RouteSummary } from "@/components/route/RouteSummary";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
+import { useAutoSave } from "@/hooks/useAutoSave";
 
 export function RouteEditor() {
   const routeName = useRouteStore((s) => s.routeName);
   const setRouteName = useRouteStore((s) => s.setRouteName);
+  const isDirty = useRouteStore((s) => s.isDirty);
+  const saveCurrentRoute = useRouteStore((s) => s.saveCurrentRoute);
   const clearRouteData = useRouteStore((s) => s.clearRouteData);
   const setViewMode = useUiStore((s) => s.setViewMode);
 
+  useAutoSave();
+
   const handleBack = useCallback(() => {
+    if (isDirty) {
+      saveCurrentRoute();
+    }
     clearRouteData();
     setViewMode("top");
-  }, [clearRouteData, setViewMode]);
+  }, [isDirty, saveCurrentRoute, clearRouteData, setViewMode]);
 
   return (
     <aside className="w-96 h-full bg-indigo-600 text-white flex flex-col overflow-hidden">
