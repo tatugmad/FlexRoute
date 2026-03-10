@@ -10,15 +10,14 @@ const DEFAULT_CENTER = { lat: 35.6895, lng: 139.6917 };
 const DEFAULT_ZOOM = 13;
 
 type MapViewProps = {
-  center?: { lat: number; lng: number };
   onClick?: (e: MapMouseEvent) => void;
   children?: ReactNode;
 };
 
-export function MapView({ center, onClick, children }: MapViewProps) {
+export function MapView({ onClick, children }: MapViewProps) {
   return (
     <Map
-      defaultCenter={center ?? DEFAULT_CENTER}
+      defaultCenter={DEFAULT_CENTER}
       defaultZoom={DEFAULT_ZOOM}
       mapId={mapId}
       disableDefaultUI={true}

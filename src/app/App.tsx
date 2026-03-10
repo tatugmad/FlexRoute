@@ -41,6 +41,7 @@ function AppRouter() {
 function RouteScreen() {
   const { position } = useGeolocation();
   const handleMapClick = useMapClickHandler();
+  const isMapReady = useUiStore((s) => s.isMapReady);
 
   return (
     <APIProvider apiKey={apiKey} libraries={["places", "geometry"]}>
@@ -48,17 +49,26 @@ function RouteScreen() {
         <RouteEditor />
         <div className="flex-1 relative">
           <ErrorBoundary fallbackLabel="MapView">
-            <MapView center={position ?? undefined} onClick={handleMapClick}>
+            <MapView onClick={handleMapClick}>
               <MapInitialView />
               {position && <CurrentLocationMarker position={position} />}
               <RoutePolyline />
               <WaypointMarkers />
             </MapView>
           </ErrorBoundary>
+          {!isMapReady && <MapLoadingOverlay />}
         </div>
         <SearchModal />
       </div>
     </APIProvider>
+  );
+}
+
+function MapLoadingOverlay() {
+  return (
+    <div className="absolute inset-0 bg-slate-100 flex items-center justify-center z-50">
+      <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+    </div>
   );
 }
 
