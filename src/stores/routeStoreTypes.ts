@@ -39,5 +39,6 @@ export type RouteStoreState = {
   loadRoute: (id: string) => void;
   deleteRoute: (id: string) => void;
   loadSavedRoutes: () => void;
+  newRoute: () => void;
   reset: () => void;
 };

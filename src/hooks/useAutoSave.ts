@@ -1,25 +1,24 @@
 import { useEffect, useRef } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 
-const DEBOUNCE_MS = 2000;
+export function canSaveRoute(waypointCount: number, routeName: string): boolean {
+  return waypointCount > 0 || routeName.trim().length > 0;
+}
 
 export function useAutoSave() {
-  const isDirty = useRouteStore((s) => s.isDirty);
-  const currentRoute = useRouteStore((s) => s.currentRoute);
-  const saveCurrentRoute = useRouteStore((s) => s.saveCurrentRoute);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waypoints = useRouteStore((s) => s.currentRoute?.waypoints);
+  const encodedPolyline = useRouteStore((s) => s.encodedPolyline);
+  const currentLegs = useRouteStore((s) => s.currentLegs);
+  const isInitialRef = useRef(true);
 
   useEffect(() => {
-    if (!isDirty || !currentRoute) return;
-
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    timerRef.current = setTimeout(() => {
-      saveCurrentRoute();
-    }, DEBOUNCE_MS);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [isDirty, currentRoute, saveCurrentRoute]);
+    if (isInitialRef.current) {
+      isInitialRef.current = false;
+      return;
+    }
+    const state = useRouteStore.getState();
+    if (!state.isDirty || !state.currentRoute) return;
+    if (!canSaveRoute(state.currentRoute.waypoints.length, state.routeName)) return;
+    state.saveCurrentRoute();
+  }, [waypoints, encodedPolyline, currentLegs]);
 }
