@@ -16,57 +16,44 @@ export function useMapClickHandler() {
       if (!latLng) return;
 
       const position = { lat: latLng.lat, lng: latLng.lng };
-      const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
       const placeId = e.detail.placeId ?? undefined;
       const wpId = crypto.randomUUID();
 
-      userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position, placeId });
-      addWaypoint({ id: wpId, position, label, placeId });
-
-      reverseGeocode(position).then((name) => {
-        if (!name) return;
-        const route = useRouteStore.getState().currentRoute;
-        if (!route) return;
-        useRouteStore.getState().setCurrentRoute({
-          ...route,
-          waypoints: route.waypoints.map((w) =>
-            w.id === wpId ? { ...w, label: name } : w,
-          ),
+      if (placeId) {
+        // 経路A: Placeアイコンタップ
+        // TODO: PlaceActionModal 実装時に、ここでモーダルを表示し
+        //       「経路に追加」選択後に addWaypoint する流れに変更する
+        userActionTracker.track("MAP_CLICK_PLACE_ADD_WAYPOINT", {
+          position,
+          placeId,
         });
-      });
+
+        fetchPlaceName(placeId).then((name) => {
+          const label =
+            name ?? `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
+          addWaypoint({ id: wpId, position, label, placeId });
+        });
+      } else {
+        // 経路B: 地図タップ（Placeアイコン以外）
+        // 座標ベースのウェイポイント。reverseGeocode は行わない
+        const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
+        userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position });
+        addWaypoint({ id: wpId, position, label });
+      }
     },
     [viewMode, addWaypoint],
   );
 }
 
-async function reverseGeocode(position: {
-  lat: number;
-  lng: number;
-}): Promise<string | null> {
+async function fetchPlaceName(placeId: string): Promise<string | null> {
   try {
-    const geocoder = new google.maps.Geocoder();
-    const res = await geocoder.geocode({ location: position });
-    const result = res.results[0];
-    if (!result) return null;
-
-    const locality =
-      result.address_components.find((c) =>
-        c.types.includes("sublocality_level_1"),
-      )?.long_name ??
-      result.address_components.find((c) => c.types.includes("locality"))
-        ?.long_name;
-
-    const premise = result.address_components.find(
-      (c) =>
-        c.types.includes("premise") ||
-        c.types.includes("point_of_interest") ||
-        c.types.includes("establishment"),
-    )?.long_name;
-
-    return (
-      premise ?? locality ?? result.formatted_address.split(",")[0] ?? null
-    );
+    const { Place } = (await google.maps.importLibrary(
+      "places",
+    )) as google.maps.PlacesLibrary;
+    const place = new Place({ id: placeId });
+    await place.fetchFields({ fields: ["displayName"] });
+    return place.displayName ?? null;
   } catch {
-    return `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
+    return null;
   }
 }

@@ -5,6 +5,17 @@ export type LatLng = {
   lng: number;
 };
 
+// ── Place データ ──
+
+export type PlaceData = {
+  address?: string;
+  types?: string[];
+  rating?: number;
+  phoneNumber?: string;
+  websiteUrl?: string;
+  openingHours?: string[];
+};
+
 // ── ウェイポイント ──
 
 export type Waypoint = {
@@ -12,6 +23,8 @@ export type Waypoint = {
   position: LatLng;
   label: string;
   placeId?: string;
+  placeData?: PlaceData;
+  userNote?: string;
   isCurrentLocation?: boolean;
 };
 
