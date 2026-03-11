@@ -59,6 +59,16 @@ export type NavigationState = {
   remainingDurationSeconds: number;
 };
 
+// ── PlaceActionModal 用 ──
+export type PlaceModalData = {
+  placeId: string;
+  name: string;
+  address: string;
+  rating: number | null;
+  photoUrl: string | null;
+  position: LatLng;
+};
+
 // ── 場所検索 ──
 export type PlaceResult = {
   placeId: string;

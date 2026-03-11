@@ -6,6 +6,7 @@ import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
 import { SearchModal } from "@/components/places/SearchModal";
+import { PlaceActionModal } from "@/components/places/PlaceActionModal";
 import { TopView } from "@/components/top/TopView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -61,6 +62,7 @@ function RouteScreen() {
           {!isMapReady && <MapLoadingOverlay />}
         </div>
         <SearchModal />
+        <PlaceActionModal />
       </div>
     </APIProvider>
   );
