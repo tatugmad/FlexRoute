@@ -103,6 +103,31 @@
    CLAUDE.md と docs/ 以下のドキュメント体系に全仕様が記載されている。」
 - 簡単なタスク（バグ修正、小規模機能追加）はチャット不要。Claude Code Web に直接指示
 
+#### チャット開始プロンプト（テンプレート）
+
+新しいチャットを開始する際は、以下をコピーして貼り付ける:
+
+---
+
+FlexRouteプロジェクトの開発を続ける。
+GitHub リポジトリ: tatugmad/FlexRoute（Public）
+デプロイ先: https://tatugmad.github.io/FlexRoute/
+CLAUDE.md と docs/ 以下のドキュメント体系に全仕様が記載されている。
+docs/ には以下のドキュメントがある:
+- DESIGN_REFERENCE.md（UIデザイン資産）
+- SPEC_SCREENS.md（画面仕様・遷移図）
+- SPEC_DATA.md（データモデル・API連携・Hooks/Services責務一覧）
+- SPEC_NAVIGATION.md（ナビ・GPS・走行記録）
+- SPEC_FEATURES.md（全機能の動作定義 + 既知の問題TODO）
+- DECISIONS.md（設計判断の記録）
+まず CLAUDE.md を読み、次に SPEC_FEATURES.md の「既知の問題（TODO）」セクションと機能一覧の実装状態を確認し、現在の進捗を把握せよ。
+OSはWindows。ローカル開発環境あり（CLAUDE.md「ローカル開発セットアップ」参照）。
+
+---
+
+このプロンプトは引き継ぎ準備なしに新規チャットを開始した場合でも、
+AIが CLAUDE.md → SPEC_FEATURES.md の順に読むことで、プロジェクトの全容と現在地を把握できるよう設計されている。
+
 ### ドキュメント更新ルール
 - チャットで設計判断が確定するたびに、該当する MD に反映する
 - チャット終了前に未反映の決定がないか確認する
