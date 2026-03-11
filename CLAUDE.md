@@ -207,6 +207,9 @@ npm run lint      # ESLint 実行
 - 地図タップ（経路B）でPlaces APIを呼ぶこと
 - 地図タップ（経路B）でplaceIdを設定すること
 - placeId を undefined のまま放置すること（null に統一）
+- placeId は string | null のいずれかとする。undefined を許さない
+- placeId が空文字列の場合は null に正規化する
+- addWaypoint で座標バリデーション（NaN, Infinity, (0,0) を拒否）を必ず実行する
 
 ### PlaceData の扱い
 - ウェイポイントはGoogleのPlace情報をベースに、

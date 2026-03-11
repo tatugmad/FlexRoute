@@ -65,6 +65,12 @@
 - **理由**: 300万点以上を60fpsで描画する要件。Google Maps Polylineは数万点で限界。deck.gl はUberが数百万台のタクシー軌跡用に開発したライブラリで同等の要件を実績で証明済み。Google EarthがGPU描画（OpenGL）で軽快だったのと同じ仕組み（WebGL）をブラウザで実現
 - **却下**: Canvas 2D → 300万点は限界域。通常Polyline → 不可能
 
+## D-016: リポジトリをPublicに変更
+
+- **決定**: FlexRoute リポジトリを Private から Public に変更
+- **理由**: GitHub Pages は無料プランでは Public リポジトリのみ利用可能。API Key は GitHub Secrets に保管しているためコードが公開されても漏洩しない
+- **リスク**: ソースコードが公開される。ただし商用秘密に該当するロジックはなく、問題なし
+
 ## D-011: 非ナビ中GPS記録を常時ON
 
 - **決定**: 非ナビ中のGPS記録のON/OFF選択肢をUIに設けず、常に記録する

@@ -545,6 +545,38 @@ X-Goog-FieldMask: routes.duration,routes.distanceMeters,routes.polyline.encodedP
 - Places API (New)
 - Geocoding API
 
+## デプロイ構成
+
+### GitHub Pages + GitHub Actions
+- デプロイ先: https://tatugmad.github.io/FlexRoute/
+- トリガー: main ブランチへの push
+- ワークフロー: .github/workflows/deploy.yml
+- ビルド: Node.js 20, npm ci, npm run build
+- 環境変数: GitHub Secrets から VITE_GOOGLE_MAPS_API_KEY を注入
+- デプロイ: actions/deploy-pages
+- vite.config.ts の base: '/FlexRoute/'（GitHub Pages のサブパス対応）
+- リポジトリは Public（GitHub Pages の無料利用のため。API Key は Secrets に保管で安全）
+
+### ビルド設定
+- Source Map: build.sourcemap: true（本番でもブラウザDevToolsでデバッグ可能）
+- ファイル名ハッシュ: entryFileNames, chunkFileNames, assetFileNames に [hash] パターン（キャッシュ対策）
+- index.html にキャッシュ防止 meta タグ設定済み
+
+## ウェイポイントバリデーション
+
+routeStore の addWaypoint で以下のバリデーションを実行:
+- isValidPosition() ヘルパーで検証
+- NaN の座標を拒否
+- Infinity の座標を拒否
+- (0, 0) の座標を拒否（ギニア湾の海上であり有効な目的地ではない）
+- placeId が空文字列の場合は null に変換
+- placeId が undefined の場合は null に変換
+- placeId は必ず string | null のいずれか（undefined を許さない）
+
+useRouteCalculation でもルート計算前にフィルタ:
+- Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)
+- 無効なウェイポイントが1つでもあればルート計算を実行しない
+
 ## フォーマットユーティリティ
 
 ### formatDuration(seconds)
