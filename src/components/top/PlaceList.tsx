@@ -1,3 +1,6 @@
+import { ViewToggle } from "@/components/ui/ViewToggle";
+import { useUiStore } from "@/stores/uiStore";
+
 const DUMMY_PLACES = [
   {
     id: "1",
@@ -32,15 +35,23 @@ type DummyLabel = { name: string; color: string };
 
 export function PlaceList() {
   const places = DUMMY_PLACES;
+  const viewMode = useUiStore((s) => s.routeViewMode);
+  const setViewMode = useUiStore((s) => s.setRouteViewMode);
 
   return (
     <div className="p-4">
-      <p className="text-sm font-bold text-slate-700 mb-4">
-        {places.length}件の場所
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <ViewToggle current={viewMode} onChange={setViewMode} />
+      </div>
 
       {places.length === 0 ? (
         <EmptyState />
+      ) : viewMode === "tile" ? (
+        <div className="grid grid-cols-2 gap-3">
+          {places.map((place) => (
+            <PlaceCard key={place.id} place={place} />
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col gap-2">
           {places.map((place) => (
@@ -52,16 +63,30 @@ export function PlaceList() {
   );
 }
 
-function PlaceRow({
-  place,
-}: {
-  place: {
-    id: string;
-    name: string;
-    address: string;
-    labels: DummyLabel[];
-  };
-}) {
+type PlaceItem = {
+  id: string;
+  name: string;
+  address: string;
+  labels: DummyLabel[];
+};
+
+function PlaceCard({ place }: { place: PlaceItem }) {
+  return (
+    <button className="w-full bg-white rounded-2xl border border-slate-200 hover:shadow-xl transition-shadow p-3 text-left flex flex-col">
+      <p className="text-sm font-bold text-slate-800 truncate">{place.name}</p>
+      <p className="text-xs text-slate-500 mt-0.5 truncate">{place.address}</p>
+      {place.labels.length > 0 && (
+        <div className="flex gap-1 mt-2 flex-wrap">
+          {place.labels.map((label) => (
+            <LabelChip key={label.name} label={label} />
+          ))}
+        </div>
+      )}
+    </button>
+  );
+}
+
+function PlaceRow({ place }: { place: PlaceItem }) {
   return (
     <button className="w-full bg-white rounded-xl border border-slate-200 hover:shadow-md transition-shadow px-4 py-3 text-left">
       <p className="text-sm font-bold text-slate-800">{place.name}</p>
