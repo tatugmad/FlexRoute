@@ -223,6 +223,34 @@ npm run lint      # ESLint 実行
 - 命名規則: コンポーネントは PascalCase、関数・変数は camelCase、型は PascalCase
 - エクスポート: コンポーネントは named export を使用
 
+## テスト方針
+
+### ツール
+- **Vitest**: ユニットテスト・インテグレーションテスト
+- **React Testing Library**: コンポーネントテスト
+- **Playwright**: E2Eテスト（Phase2）
+
+### テストコマンド
+```bash
+npm run test          # テスト実行
+npm run test:watch    # ウォッチモード（ファイル変更で自動再実行）
+```
+
+### テストファイル配置
+- テストファイルは対象ファイルと同じディレクトリに配置
+- 命名規則: `対象ファイル名.test.ts` または `対象ファイル名.test.tsx`
+- 例: `src/utils/generateId.ts` → `src/utils/generateId.test.ts`
+
+### テストを書くタイミング
+- 探索セッション: 書かない
+- 整理セッション: コードが安定した機能からテストを追加
+- 認証・課金（Phase2）: TDD（テストを先に書いてから実装）
+
+### リグレッション防止
+- GitHub Actions でPR作成時に全テスト自動実行
+- テスト失敗時はマージをブロック
+- テストが増えるほど安全網が強化される
+
 ## UIデザイン方針
 
 ### カラースキーム
