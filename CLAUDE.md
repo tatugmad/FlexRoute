@@ -17,6 +17,41 @@
 | docs/SPEC_FEATURES.md | 機能一覧と各機能の動作定義 |
 | docs/DECISIONS.md | 設計判断の記録（なぜこうしたか） |
 
+## 開発フロー
+
+### 開発環境
+- Claude Code Web（https://claude.ai/code）でリモート開発
+- GitHub リポジトリ: tatugmad/FlexRoute（Public）
+- デプロイ先: https://tatugmad.github.io/FlexRoute/
+- ローカル開発: Node.js 20 + npm run dev（localhost で即時確認可能）
+
+### 開発サイクル
+1. Claude Code Web の左上入力欄で新しいセッション（新ブランチ）を開始
+2. タスクを指示 → Claude Code がコード生成
+3. 同じセッション内（右下入力欄）で追加修正・調整が可能
+4. 完了したら Create PR → GitHub で Merge → Delete branch
+5. GitHub Actions が自動ビルド・デプロイ（約1〜2分）
+6. https://tatugmad.github.io/FlexRoute/ で動作確認
+
+### タスク指示の原則
+- 1タスク = 1セッション（複数機能を同時に指示しない）
+- マイルストーン単位で進める
+- バグ修正は「このエラーが出ている。直せ」だけで十分。原因推測は不要
+- CLAUDE.md と docs/ のドキュメントを必ず参照するよう指示に含める
+
+### チャット引き継ぎ
+- 設計相談・方針決定は claude.ai のチャットで行う
+- チャットで確定した設計判断は必ず docs/DECISIONS.md に記録する
+- 新しいチャットを開始する際は以下を伝える:
+  「FlexRouteプロジェクトの開発を続ける。
+   CLAUDE.md と docs/ 以下のドキュメント体系に全仕様が記載されている。」
+- 簡単なタスク（バグ修正、小規模機能追加）はチャット不要。Claude Code Web に直接指示
+
+### ドキュメント更新ルール
+- チャットで設計判断が確定するたびに、該当する MD に反映する
+- チャット終了前に未反映の決定がないか確認する
+- 合言葉:「明日別のAIに引き継いで、スクラッチで同じものが制作できるMD」
+
 ## プロジェクト概要
 
 Google Maps API を使ったルート制作 & ナビ Web アプリ。

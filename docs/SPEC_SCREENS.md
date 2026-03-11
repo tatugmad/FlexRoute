@@ -28,7 +28,7 @@ S-EDIT → 「ナビ開始」ボタン → S-NAV（1-6で実装）
 S-EDIT → 「経路を追加」ボタン → M-SEARCH（insertIndex = null → 末尾追加）
 S-EDIT → ウェイポイント間「+」ボタン → M-SEARCH（insertIndex = index + 1）
 S-EDIT → 地図タップ（Place以外） → ウェイポイント即追加（座標ベース、名前は「lat, lng」形式）
-S-EDIT → 地図タップ（Placeアイコン） → 暫定: ウェイポイント即追加（Place名取得）。1-5でM-PLACEに変更予定
+S-EDIT → 地図タップ（Placeアイコン） → 下記「Placeアイコンタップの暫定/将来動作」参照
 
 S-NAV → 「終了」ボタン → S-EDIT（1-6で実装）
 
@@ -124,6 +124,21 @@ M-CONFIRM → 「キャンセル」 → M-CONFIRM閉じる
 - TOP画面に戻る時（RouteEditor の戻るボタン）、clearRouteData() でポリラインデータを初期化する
 - 新規ルート作成時も clearRouteData() でポリラインを初期化する
 - RoutePolyline コンポーネントのアンマウント時にもポリラインをクリアする（useEffect クリーンアップ）
+
+### Placeアイコンタップの暫定/将来動作
+
+**現在の暫定動作（1-4時点）:**
+- Placeアイコンタップ → Places API でPlace名取得 → 即座にウェイポイント追加
+- PlaceActionModal は表示しない
+
+**将来の動作（1-5で変更予定）:**
+- Placeアイコンタップ → PlaceActionModal（M-PLACE）を表示
+- 施設写真・名前・住所・評価を表示
+- ユーザーが選択: 「経路に追加」「ラベルを付ける」「ナビ開始」
+- 「経路に追加」選択時のみウェイポイント追加
+
+**変更方法:** 1-5の実装時に useMapClickHandler の placeId 分岐を修正する。
+現在の「Place名取得 → 即addWaypoint」を「Place情報取得 → M-PLACE表示 → ユーザー選択 → addWaypoint」に変更。
 
 ### 地図上の要素
 
