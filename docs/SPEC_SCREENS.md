@@ -86,6 +86,37 @@ M-CONFIRM → 「キャンセル」 → M-CONFIRM閉じる
 - 地図フルスクリーン
 - ボトムシート（3段階: full=5%, half=50%, min=85%）
 
+#### ボトムシートのドラッグ操作仕様
+
+3段階のシート位置（画面上部からの%位置）:
+- **full**: y = 5%（ほぼ全画面。ウェイポイントリスト全体が見える）
+- **half**: y = 50%（半分。ルート概要が見える）
+- **min**: y = 85%（最小化。ヘッダーのみ見える）
+
+初期位置: half
+
+ドラッグ制御: framer-motion の `drag="y"` + `useDragControls`
+
+遷移判定:
+- 下方向スワイプ（offset > 50px or velocity > 500px/s）:
+  - full → half
+  - half → min
+- 上方向スワイプ（offset < -50px or velocity < -500px/s）:
+  - min → half
+  - half → full
+- 閾値未満のドラッグ → 元の位置に戻る（スプリングアニメーション）
+
+ドラッグハンドル:
+- シート上部に配置
+- `bg-indigo-600 rounded-t-3xl cursor-grab active:cursor-grabbing`
+- 中央に白いバー: `w-12 h-1.5 bg-white/40 rounded-full`
+
+アニメーション:
+- `type: "spring", bounce: 0, duration: 0.4`
+
+TOP画面（viewMode === 'top'）のとき:
+- ボトムシートは使用しない。フルスクリーンのリスト画面
+
 ### サイドバー構成（上から順に）
 
 1. ヘッダー（bg-indigo-600 text-white）
