@@ -49,7 +49,7 @@ export function RouteList() {
       </div>
 
       {savedRoutes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
           <p className="text-sm">保存されたルートはありません</p>
         </div>
       ) : (

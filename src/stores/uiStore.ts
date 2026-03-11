@@ -18,6 +18,8 @@ type UiState = {
   error: string | null;
   topTab: TopTab;
   routeViewMode: RouteViewMode;
+  labelViewMode: RouteViewMode;
+  placesViewMode: RouteViewMode;
   searchModalOpen: boolean;
   insertIndex: number | null;
   confirmDialog: ConfirmDialog;
@@ -34,6 +36,8 @@ type UiActions = {
   setError: (error: string | null) => void;
   setTopTab: (tab: TopTab) => void;
   setRouteViewMode: (mode: RouteViewMode) => void;
+  setLabelViewMode: (mode: RouteViewMode) => void;
+  setPlacesViewMode: (mode: RouteViewMode) => void;
   setSearchModalOpen: (open: boolean) => void;
   setInsertIndex: (index: number | null) => void;
   openConfirmDialog: (message: string, onConfirm: () => void) => void;
@@ -53,6 +57,8 @@ const initialState: UiState = {
   error: null,
   topTab: "routes",
   routeViewMode: "tile",
+  labelViewMode: "tile",
+  placesViewMode: "tile",
   searchModalOpen: false,
   insertIndex: null,
   confirmDialog: { isOpen: false, message: "", onConfirm: null },
@@ -86,6 +92,8 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
 
   setTopTab: (topTab) => set({ topTab }),
   setRouteViewMode: (routeViewMode) => set({ routeViewMode }),
+  setLabelViewMode: (labelViewMode) => set({ labelViewMode }),
+  setPlacesViewMode: (placesViewMode) => set({ placesViewMode }),
   setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
   setInsertIndex: (insertIndex) => set({ insertIndex }),
   openConfirmDialog: (message, onConfirm) =>
