@@ -1,6 +1,7 @@
 import { X, Star, MapPin, Bookmark, Navigation } from "lucide-react";
 import { usePlaceStore } from "@/stores/placeStore";
 import { useRouteStore } from "@/stores/routeStore";
+import { generateId } from "@/utils/generateId";
 
 export function PlaceActionModal() {
   const isOpen = usePlaceStore((s) => s.placeModalOpen);
@@ -12,7 +13,7 @@ export function PlaceActionModal() {
 
   const handleAddToRoute = () => {
     addWaypoint({
-      id: crypto.randomUUID(),
+      id: generateId(),
       position: data.position,
       label: data.name,
       placeId: data.placeId,

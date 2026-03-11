@@ -3,6 +3,7 @@ import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
 import { userActionTracker } from "@/services/userActionTracker";
+import { generateId } from "@/utils/generateId";
 import type { MapMouseEvent } from "@vis.gl/react-google-maps";
 
 export function useMapClickHandler() {
@@ -42,7 +43,7 @@ export function useMapClickHandler() {
         // reverseGeocode は呼ばない。Places API も呼ばない。
         // 座標のみをウェイポイント名にする。
         const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
-        const wpId = crypto.randomUUID();
+        const wpId = generateId();
         userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position });
         addWaypoint({
           id: wpId,
