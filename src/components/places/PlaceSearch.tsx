@@ -4,6 +4,7 @@ import { PlaceResultList } from "@/components/places/PlaceResultList";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { userActionTracker } from "@/services/userActionTracker";
+import { generateId } from "@/utils/generateId";
 import type { PlaceResult } from "@/types";
 
 type PlaceSearchProps = {
@@ -79,7 +80,7 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
         });
         addWaypoint(
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             position: { lat: loc.lat(), lng: loc.lng() },
             label: detail?.name ?? place.name,
             placeId: place.placeId,

@@ -1,6 +1,7 @@
 import { RouteList } from "@/components/top/RouteList";
 import { LabelList } from "@/components/top/LabelList";
 import { PlaceList } from "@/components/top/PlaceList";
+import { QrCodePopover } from "@/components/ui/QrCodePopover";
 import { useUiStore } from "@/stores/uiStore";
 import type { TopTab } from "@/types";
 
@@ -20,6 +21,7 @@ export function TopView() {
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-bold tracking-tight">FlexRoute</h1>
           <span className="text-xs text-indigo-300 font-mono">{__DEV_VERSION__}</span>
+          <QrCodePopover />
         </div>
       </header>
 
