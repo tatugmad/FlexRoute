@@ -1,4 +1,6 @@
 import { RouteList } from "@/components/top/RouteList";
+import { LabelList } from "@/components/top/LabelList";
+import { PlaceList } from "@/components/top/PlaceList";
 import { useUiStore } from "@/stores/uiStore";
 import type { TopTab } from "@/types";
 
@@ -21,8 +23,8 @@ export function TopView() {
 
       <div className="flex-1 overflow-y-auto bg-slate-50">
         {topTab === "routes" && <RouteList />}
-        {topTab === "labels" && <PlaceholderTab label="ラベル" />}
-        {topTab === "places" && <PlaceholderTab label="場所" />}
+        {topTab === "labels" && <LabelList />}
+        {topTab === "places" && <PlaceList />}
       </div>
     </div>
   );
@@ -51,14 +53,6 @@ function TabBar({
           {tab.label}
         </button>
       ))}
-    </div>
-  );
-}
-
-function PlaceholderTab({ label }: { label: string }) {
-  return (
-    <div className="flex items-center justify-center py-20 text-slate-400">
-      <p className="text-sm">{label}機能は準備中です</p>
     </div>
   );
 }
