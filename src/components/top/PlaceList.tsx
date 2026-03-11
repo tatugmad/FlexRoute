@@ -35,8 +35,8 @@ type DummyLabel = { name: string; color: string };
 
 export function PlaceList() {
   const places = DUMMY_PLACES;
-  const viewMode = useUiStore((s) => s.routeViewMode);
-  const setViewMode = useUiStore((s) => s.setRouteViewMode);
+  const viewMode = useUiStore((s) => s.placesViewMode);
+  const setViewMode = useUiStore((s) => s.setPlacesViewMode);
 
   return (
     <div className="p-4">
@@ -72,9 +72,9 @@ type PlaceItem = {
 
 function PlaceCard({ place }: { place: PlaceItem }) {
   return (
-    <button className="w-full bg-white rounded-2xl border border-slate-200 hover:shadow-xl transition-shadow p-3 text-left flex flex-col">
-      <p className="text-sm font-bold text-slate-800 truncate">{place.name}</p>
-      <p className="text-xs text-slate-500 mt-0.5 truncate">{place.address}</p>
+    <button className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-3 text-left flex flex-col">
+      <p className="text-base font-bold text-slate-800 truncate">{place.name}</p>
+      <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
       {place.labels.length > 0 && (
         <div className="flex gap-1 mt-2 flex-wrap">
           {place.labels.map((label) => (
@@ -88,9 +88,9 @@ function PlaceCard({ place }: { place: PlaceItem }) {
 
 function PlaceRow({ place }: { place: PlaceItem }) {
   return (
-    <button className="w-full bg-white rounded-xl border border-slate-200 hover:shadow-md transition-shadow px-4 py-3 text-left">
-      <p className="text-sm font-bold text-slate-800">{place.name}</p>
-      <p className="text-xs text-slate-500 mt-0.5">{place.address}</p>
+    <button className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 text-left">
+      <p className="text-base font-bold text-slate-800">{place.name}</p>
+      <p className="text-sm text-slate-600 mt-0.5">{place.address}</p>
       {place.labels.length > 0 && (
         <div className="flex gap-1.5 mt-2 flex-wrap">
           {place.labels.map((label) => (
@@ -118,7 +118,7 @@ function EmptyState() {
   return (
     <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-xl border border-slate-100">
       <p className="text-sm">保存された場所はありません</p>
-      <p className="text-xs mt-1 text-slate-400">
+      <p className="text-xs mt-1 text-slate-500">
         地図上のPlaceアイコンから場所を保存できます
       </p>
     </div>

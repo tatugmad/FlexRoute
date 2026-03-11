@@ -11,8 +11,8 @@ const DUMMY_LABELS = [
 
 export function LabelList() {
   const labels = DUMMY_LABELS;
-  const viewMode = useUiStore((s) => s.routeViewMode);
-  const setViewMode = useUiStore((s) => s.setRouteViewMode);
+  const viewMode = useUiStore((s) => s.labelViewMode);
+  const setViewMode = useUiStore((s) => s.setLabelViewMode);
 
   return (
     <div className="p-4">
@@ -46,30 +46,30 @@ type LabelItem = { id: string; name: string; color: string; placeCount: number }
 
 function LabelCard({ label }: { label: LabelItem }) {
   return (
-    <button className="w-full bg-white rounded-2xl border border-slate-200 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2">
+    <button className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2">
       <span
         className="w-8 h-8 rounded-full shrink-0"
         style={{ backgroundColor: label.color }}
       />
-      <span className="text-sm font-bold text-slate-800 text-center truncate w-full">
+      <span className="text-base font-bold text-slate-800 text-center truncate w-full">
         {label.name}
       </span>
-      <span className="text-xs text-slate-500">{label.placeCount}件</span>
+      <span className="text-sm text-slate-600">{label.placeCount}件</span>
     </button>
   );
 }
 
 function LabelRow({ label }: { label: LabelItem }) {
   return (
-    <button className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-200 hover:shadow-md transition-shadow px-4 py-3 text-left">
+    <button className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 text-left">
       <span
         className="w-4 h-4 rounded-full shrink-0"
         style={{ backgroundColor: label.color }}
       />
-      <span className="flex-1 text-sm font-bold text-slate-800">
+      <span className="flex-1 text-base font-bold text-slate-800">
         {label.name}
       </span>
-      <span className="text-xs text-slate-500">{label.placeCount}件</span>
+      <span className="text-sm text-slate-600">{label.placeCount}件</span>
     </button>
   );
 }
@@ -78,7 +78,7 @@ function EmptyState() {
   return (
     <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-xl border border-slate-100">
       <p className="text-sm">ラベルはまだありません</p>
-      <p className="text-xs mt-1 text-slate-400">
+      <p className="text-xs mt-1 text-slate-500">
         「+」ボタンからラベルを作成しましょう
       </p>
     </div>

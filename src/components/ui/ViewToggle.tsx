@@ -14,15 +14,15 @@ export function ViewToggle({ current, onChange }: ViewToggleProps) {
     <div className="flex bg-slate-200/70 rounded-xl p-1 shadow-inner">
       <button
         onClick={() => onChange("tile")}
-        className={`p-2 rounded-lg transition-all ${current === "tile" ? active : inactive}`}
+        className={`p-2.5 rounded-lg transition-all ${current === "tile" ? active : inactive}`}
       >
-        <LayoutGrid className="w-4 h-4" />
+        <LayoutGrid className="w-5 h-5" />
       </button>
       <button
         onClick={() => onChange("list")}
-        className={`p-2 rounded-lg transition-all ${current === "list" ? active : inactive}`}
+        className={`p-2.5 rounded-lg transition-all ${current === "list" ? active : inactive}`}
       >
-        <List className="w-4 h-4" />
+        <List className="w-5 h-5" />
       </button>
     </div>
   );

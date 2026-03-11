@@ -16,8 +16,8 @@ export function TopView() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-slate-50">
-      <header className="bg-indigo-600 text-white px-4 pt-5 pb-3">
-        <h1 className="text-xl font-bold tracking-tight mb-3">FlexRoute</h1>
+      <header className="bg-indigo-600 text-white px-4 pt-3 pb-2">
+        <h1 className="text-lg font-bold tracking-tight mb-1">FlexRoute</h1>
       </header>
 
       <TabBar current={topTab} onChange={setTopTab} />
@@ -39,20 +39,20 @@ function TabBar({
   onChange: (tab: TopTab) => void;
 }) {
   return (
-    <div className="flex bg-white border-b border-slate-200">
+    <div className="flex bg-white border-b border-slate-300">
       {TABS.map((tab) => (
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}
-          className={`flex-1 py-3 text-sm font-bold transition-colors relative ${
+          className={`flex-1 py-3 text-base font-bold transition-colors relative ${
             current === tab.key
               ? "text-indigo-600"
-              : "text-slate-400 hover:text-slate-600"
+              : "text-slate-500 hover:text-slate-600"
           }`}
         >
           {tab.label}
           {current === tab.key && (
-            <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-indigo-600 rounded-t-full" />
+            <span className="absolute bottom-0 left-0 right-0 h-[4px] bg-indigo-600 rounded-t-full" />
           )}
         </button>
       ))}
