@@ -42,6 +42,7 @@
 | F-SPIDER | クモの巣走破地図（deck.gl） | 未実装 | Phase2 |
 | F-AUTH | 認証・アカウント管理 | 未実装 | Phase2 |
 | F-SUBSCRIBE | サブスクリプション課金（Stripe） | 未実装 | Phase2 |
+| F-GEMINI | Gemini API 自然言語検索 | 未実装 | Phase2（検討） |
 
 ## 各機能の動作定義
 
@@ -510,9 +511,13 @@
 
 概要: ルート一覧のカードにルートのサムネイル画像を表示する。
 
-仕様:
-- Static Maps API でサムネイル URL を1回生成しキャッシュ
-- version 変更時のみ再生成（アンチパターン禁止1に準拠）
+動作フロー:
+- Static Maps API でサムネイルURLを生成
+- 生成したURLを SavedRoute.thumbnailUrl にキャッシュする
+- ルート変更時（version変更時）のみ再生成する
+- RouteCard マウント時に毎回再生成してはならない（アンチパターン禁止1）
+- ポリラインが長い場合は Douglas-Peucker で簡略化してURL長を削減してよい
+  （この用途でのポリライン簡略化は許可。禁止されているのは「毎回のマウント時の再生成」）
 - RouteCard のヘッダー部分に表示
 
 関連: F-ROUTE-LIST
@@ -693,3 +698,17 @@
 - 無料/有料機能の分離
 
 関連: F-AUTH
+
+---
+
+### F-GEMINI: Gemini API 自然言語検索（Phase2で検討）
+
+概要: Gemini API を使った自然言語での場所検索とエビデンス提示。
+
+実装状態: 未実装
+マイルストーン: フェーズ2（検討）
+
+備考:
+- 旧コード（SmartNavi）の仕様書に含まれていたが、Google Places API の検索で十分な場面が多いため、必要性を見極めた上でフェーズ2で実装を検討する
+
+関連: F-WP-SEARCH
