@@ -387,9 +387,17 @@
 
 動作フロー:
 - App.tsx で ErrorBoundary がアプリ全体をラップ
-- 開発モード: スタックトレース付きの詳細エラー表示
-- 本番モード: ユーザーフレンドリーなエラーメッセージ
-- エラー発生時: logService にエラーログ出力
+- 開発モード（import.meta.env.DEV）:
+  - エラーが発生したコンポーネント名を表示
+  - エラーメッセージを表示
+  - スタックトレースを折りたたみ表示（デフォルト閉）
+  - コンポーネントスタックを表示
+- 本番モード（import.meta.env.PROD）:
+  - ユーザーフレンドリーなメッセージのみ:「エラーが発生しました。再読み込みしてください。」
+  - 「アプリを再読み込み」ボタン（location.reload()）
+- 両モード共通:
+  - キャッチしたエラーを LogService に送る
+  - MapView 等の主要コンポーネントにも個別に ErrorBoundary を配置（地図のエラーでサイドバーまで死なないようにする）
 
 入力: React レンダリングエラー
 出力: エラー画面表示
@@ -407,6 +415,17 @@
 - userActionTracker: ユーザー操作の追跡（ADD_WAYPOINT, REMOVE_WAYPOINT, SET_VIEW_MODE 等）
 - performanceMonitor: API 応答時間、レンダリング時間の計測
 - 全ログは LogEntry 型で統一。開発時はコンソール出力
+
+### LogService のレベル制御
+- 開発モード: 全レベル（debug, info, warn, error）を console に出力 + メモリに保持
+- 本番モード: warn と error のみメモリに保持。debug と info は破棄
+- メモリ上のリングバッファ: 最大500件
+- PerformanceMonitor: 閾値超え（例: API呼び出し5秒以上）は warn レベルで記録
+
+### Source Map
+- vite.config.ts で build.sourcemap: true を設定済み
+- 本番ビルドでもブラウザの Sources タブで元の TypeScript ソースが表示される
+- ブレークポイント設置、Watch パネルでの変数監視が可能
 
 入力: 各サービス・コンポーネントからの呼び出し
 出力: コンソールログ出力
