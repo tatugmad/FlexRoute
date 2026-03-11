@@ -25,13 +25,30 @@
 - デプロイ先: https://tatugmad.github.io/FlexRoute/
 - ローカル開発: Node.js 20 + npm run dev（localhost で即時確認可能）
 
+#### ローカル開発セットアップ（Windows）
+1. `git clone https://github.com/tatugmad/FlexRoute.git && cd FlexRoute`
+2. `scripts\setup.bat` を実行（npm install + .env テンプレート作成）
+3. `.env` に Google Maps API キーと Map ID を記入
+4. `scripts\dev.bat` で開発サーバー起動 → http://localhost:5173/FlexRoute/
+5. スマホ確認: `scripts\dev-mobile.bat` → Network URL にアクセス
+
+#### scripts/ フォルダ
+| ファイル | 用途 |
+|---|---|
+| setup.bat | 初期セットアップ（npm install + .env作成） |
+| dev.bat | 開発サーバー起動 |
+| dev-mobile.bat | LAN公開で起動（スマホ確認用） |
+| sync-main.bat | mainブランチに切替 + 最新取得 |
+| switch-branch.bat | リモートブランチ一覧 → 選んで切替 |
+| build-check.bat | ビルドが通るか確認 |
+
 ### 開発サイクル
 1. Claude Code Web の左上入力欄で新しいセッション（新ブランチ）を開始
-2. タスクを指示 → Claude Code がコード生成
-3. 同じセッション内（右下入力欄）で追加修正・調整が可能
-4. 完了したら Create PR → GitHub で Merge → Delete branch
-5. GitHub Actions が自動ビルド・デプロイ（約1〜2分）
-6. https://tatugmad.github.io/FlexRoute/ で動作確認
+2. タスクを指示 → Claude Code がコード生成・ブランチにコミット
+3. ローカルで `scripts\switch-branch.bat` → ブランチに切替 → localhost で即時確認
+4. 修正が必要なら同じセッション内（右下入力欄）で追加指示 → 3に戻る
+5. 完成度が十分になったら Create PR → GitHub で Merge → Delete branch
+6. `scripts\sync-main.bat` で main に戻る
 
 ### タスク指示の原則
 - 1タスク = 1セッション（複数機能を同時に指示しない）
@@ -51,6 +68,25 @@
 - チャットで設計判断が確定するたびに、該当する MD に反映する
 - チャット終了前に未反映の決定がないか確認する
 - 合言葉:「明日別のAIに引き継いで、スクラッチで同じものが制作できるMD」
+
+#### ドキュメント責務分離（何をどこに書くか）
+| ドキュメント | 書くもの | 書かないもの |
+|---|---|---|
+| CLAUDE.md | 開発ルール・設計原則・アンチパターン | 個別機能の詳細仕様 |
+| docs/SPEC_FEATURES.md | 各機能の動作フロー・入出力・エラー | UIの見た目・データ構造 |
+| docs/SPEC_SCREENS.md | 画面構成・操作仕様・遷移図 | ビジネスロジック |
+| docs/SPEC_DATA.md | 型定義・Store・Service・API連携 | 画面レイアウト |
+| docs/SPEC_NAVIGATION.md | ナビ・GPS・リルート・走行記録 | ナビ以外の機能 |
+| docs/DESIGN_REFERENCE.md | SVGアイコン・コンポーネントスタイル | 動作ロジック |
+| docs/DECISIONS.md | 設計判断の理由と却下案 | 実装詳細 |
+
+#### ドキュメント更新時の整合性チェック
+機能の実装・仕様変更時に、以下を必ず確認する:
+1. 新規追加した型・Store・Serviceが SPEC_DATA.md に記載されているか
+2. 関連する SPEC_FEATURES.md の機能IDから参照されているか
+3. 画面に変更があれば SPEC_SCREENS.md が更新されているか
+4. 「未実装」「準備中」「X-Xで実装予定」「TODO」の記述が実装完了後に残っていないか
+5. 実装タイミング一覧（CLAUDE.md末尾）が最新か
 
 ## プロジェクト概要
 
