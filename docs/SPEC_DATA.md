@@ -577,6 +577,157 @@ useRouteCalculation でもルート計算前にフィルタ:
 - Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0)
 - 無効なウェイポイントが1つでもあればルート計算を実行しない
 
+## Hooks 責務一覧
+
+### useGeolocation（src/hooks/useGeolocation.ts）
+
+- **責務**: GPS位置を watchPosition で継続監視し、現在地・方向・速度をstoreに反映する
+- **依存store**: navigationStore（setCurrentPosition）
+- **依存service**: geolocation（watchCurrentPosition, clearPositionWatch）、logService
+- **呼び出し元**: App.tsx
+
+### useRouteCalculation（src/hooks/useRouteCalculation.ts）
+
+- **責務**: ウェイポイント変更を検知し、Routes API v2 でルートを自動計算する。レスポンスからlegs/stepsを解析し道路種別を判定してstoreに反映
+- **依存store**: routeStore（currentRoute.waypoints, travelMode, setRouteData, setRouteError, setIsCalculatingRoute）
+- **依存service**: routeApi（computeRoutes）、logService
+- **依存utils**: roadType（classifyRoadType）
+- **呼び出し元**: RoutePolyline.tsx
+
+### useMapClickHandler（src/hooks/useMapClickHandler.ts）
+
+- **責務**: 地図タップ時にウェイポイントを追加する。Placeアイコンタップ（経路A）と地図面タップ（経路B）を分離し、経路AではPlaces APIでPlace名を取得、経路Bでは座標のみでウェイポイントを作成する
+- **依存store**: routeStore（addWaypoint）、uiStore（viewMode）
+- **依存service**: userActionTracker
+- **呼び出し元**: App.tsx
+
+### useMapInitialView（src/hooks/useMapInitialView.ts）
+
+- **責務**: 地図の初期表示を制御する。ウェイポイントなし時は2段階測位（低精度→高精度）で現在地に、ウェイポイント1件時はそのポイントに、2件以上時はfitBoundsで全WPが収まる範囲に表示
+- **依存store**: routeStore（currentRoute）、uiStore（setMapReady）、navigationStore（currentPosition）
+- **依存service**: なし（navigator.geolocation を直接使用）
+- **呼び出し元**: MapInitialView.tsx
+
+### useAutoSave（src/hooks/useAutoSave.ts）
+
+- **責務**: ウェイポイント・ポリライン・legsの変更を検知し、保存条件（WP1件以上 or ルート名非空）を満たす場合に自動保存する。初回マウント時は保存をスキップ
+- **依存store**: routeStore（currentRoute.waypoints, encodedPolyline, currentLegs, isDirty, saveCurrentRoute）
+- **依存service**: なし（routeStore経由で間接的にlocalStorageServiceを使用）
+- **公開関数**: canSaveRoute(waypointCount, routeName) — 保存条件の判定ヘルパー
+- **呼び出し元**: RouteEditor.tsx
+
+### useNewRoute（src/hooks/useNewRoute.ts）
+
+- **責務**: 新規ルート作成のコールバックを返す。routeStore.newRoute() をuseCallbackでメモ化
+- **依存store**: routeStore（newRoute）
+- **依存service**: なし
+- **呼び出し元**: RouteList.tsx
+
+## Services 責務一覧
+
+### storage.ts（src/services/storage.ts）
+
+- **責務**: ルートデータの永続化インターフェース定義と localStorage 実装。フェーズ2でPostgreSQL実装に差し替え可能な設計
+- **公開関数/型**:
+  - `StorageService`（型）— getRoutes, saveRoute, deleteRoute, getRoute の4メソッドインターフェース
+  - `localStorageService`（インスタンス）— StorageService の localStorage 実装
+    - `getRoutes()` — localStorage から全ルートを読み込み（JSON.parse）
+    - `saveRoute(route)` — ルートを保存（既存IDは上書き、新規は追加）
+    - `deleteRoute(routeId)` — ルートを削除
+    - `getRoute(routeId)` — IDでルートを1件取得
+
+### routeApi.ts（src/services/routeApi.ts）
+
+- **責務**: Google Routes API v2 の呼び出しをラップ。リクエスト構築・ヘッダー設定・レスポンス取得を行う
+- **公開関数**:
+  - `computeRoutes(request)` — Routes API v2 にPOSTリクエストを送信し ComputeRoutesResponse を返す。パフォーマンス計測・ログ出力を含む
+
+### geolocation.ts（src/services/geolocation.ts）
+
+- **責務**: navigator.geolocation.watchPosition のラッパー。位置情報の継続監視と型安全なコールバックを提供
+- **公開関数/型**:
+  - `GeolocationResult`（型）— lat, lng, heading, speed, accuracy を持つ位置情報
+  - `GeolocationErrorInfo`（型）— code, message を持つエラー情報
+  - `watchCurrentPosition(onSuccess, onError)` — watchPosition を開始し watchId を返す
+  - `clearPositionWatch(watchId)` — watchPosition を停止
+
+### logService.ts（src/services/logService.ts）
+
+- **責務**: アプリケーション統合ログ基盤。カテゴリ別・レベル別のログ記録とリングバッファによるメモリ保持。開発時はコンソール出力、本番はwarn/errorのみ保持
+- **公開関数**:
+  - `logService.debug(category, message, data?)` — デバッグログ（本番では破棄）
+  - `logService.info(category, message, data?)` — 情報ログ（本番では破棄）
+  - `logService.warn(category, message, data?)` — 警告ログ（常に保持）
+  - `logService.error(category, message, data?)` — エラーログ（常に保持）
+  - `logService.getRecentLogs(count)` — 直近のログを取得（デフォルト50件）
+  - `logService.exportLogs()` — 全ログをJSON文字列で出力
+  - `logService.clear()` — ログをクリア
+  - `logService.send(entries)` — 外部ログサービスへの送信スタブ（フェーズ2用）
+- **内部クラス**: RingBuffer — 最大500件のリングバッファ
+
+### userActionTracker.ts（src/services/userActionTracker.ts）
+
+- **責務**: ユーザー操作（地図タップ、ウェイポイント追加/削除等）の追跡記録。最大200件をリングバッファで保持し、logServiceにも転送
+- **公開関数**:
+  - `userActionTracker.track(action, detail?)` — 操作を記録（例: "ADD_WAYPOINT", "MAP_CLICK_PLACE_ADD_WAYPOINT"）
+  - `userActionTracker.getRecentActions(count)` — 直近の操作を取得（デフォルト50件）
+  - `userActionTracker.exportActions()` — 全操作をJSON文字列で出力
+
+### performanceMonitor.ts（src/services/performanceMonitor.ts）
+
+- **責務**: API呼び出し等のパフォーマンス計測。タイマー制御と統計情報（平均/最小/最大/回数）を管理。5秒超の操作をwarnレベルで記録
+- **公開関数**:
+  - `performanceMonitor.startTimer(label)` — 計測開始
+  - `performanceMonitor.endTimer(label)` — 計測終了し経過時間を返す。閾値超えはwarn出力
+  - `performanceMonitor.getMetrics()` — 全計測ラベルの統計情報（count, avg, min, max）を返す
+
+## Utils 責務一覧
+
+### formatters.ts（src/utils/formatters.ts）
+
+- **責務**: 距離・時間の表示用フォーマット
+- **公開関数**:
+  - `formatDuration(seconds)` — 秒数を「X時間XX分」or「XX分」に変換
+  - `formatDistance(meters)` — メートルを「X.Xkm」or「XXXm」に変換
+
+### roadType.ts（src/utils/roadType.ts）
+
+- **責務**: ナビゲーション案内文から道路種別を判定し、対応するポリライン色を返す
+- **公開関数**:
+  - `classifyRoadType(instruction)` — 案内文のキーワードから RoadType を判定（highway/national/prefectural/local）
+  - `getRoadColor(roadType)` — RoadType に対応するポリライン色（hex）を返す
+- **定数**:
+  - `HIGHWAY_KEYWORDS` — ["高速", "有料", "自動車道", "IC", "JCT"]
+  - `NATIONAL_KEYWORDS` — ["国道"]
+  - `PREFECTURAL_KEYWORDS` — ["県道", "都道", "府道", "道道"]
+  - `ROAD_COLORS` — { highway: "#ec4899", national: "#eab308", prefectural: "#22c55e", local: "#4f46e5" }
+
+## Constants
+
+### src/constants/
+
+現時点では `.gitkeep` のみ存在し、定数ファイルは未作成。
+各定数はそれぞれのファイル内にローカル定義されている:
+
+| 定数 | 定義場所 | 値 |
+|------|---------|-----|
+| `STORAGE_KEY` | services/storage.ts | `"flexroute:routes"` |
+| `MAX_ENTRIES` | services/logService.ts | `500` |
+| `MAX_ACTIONS` | services/userActionTracker.ts | `200` |
+| `SLOW_THRESHOLD_MS` | services/performanceMonitor.ts | `5000` |
+| `ROUTES_API_URL` | services/routeApi.ts | `"https://routes.googleapis.com/directions/v2:computeRoutes"` |
+| `FIELD_MASK` | services/routeApi.ts | routes.duration, distanceMeters, polyline 等のフィールドマスク |
+| `WATCH_OPTIONS` | services/geolocation.ts | `{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }` |
+| `DEFAULT_ZOOM` | hooks/useMapInitialView.ts | `15` |
+| `DEFAULT_CENTER` | hooks/useMapInitialView.ts | `{ lat: 35.6895, lng: 139.6917 }`（東京） |
+| `FIT_BOUNDS_PADDING` | hooks/useMapInitialView.ts | `80` |
+| `COARSE_TIMEOUT` | hooks/useMapInitialView.ts | `2000` |
+| `HIGHWAY_KEYWORDS` | utils/roadType.ts | `["高速", "有料", "自動車道", "IC", "JCT"]` |
+| `NATIONAL_KEYWORDS` | utils/roadType.ts | `["国道"]` |
+| `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |
+| `ROAD_COLORS` | utils/roadType.ts | highway=#ec4899, national=#eab308, prefectural=#22c55e, local=#4f46e5 |
+| `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
+
 ## フォーマットユーティリティ
 
 ### formatDuration(seconds)
