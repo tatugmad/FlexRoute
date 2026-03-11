@@ -1,5 +1,7 @@
 # FlexRoute データ仕様書
 
+> 最終更新: 2026-03-11
+
 ## 型定義一覧
 
 全型は `src/types/index.ts` および `src/types/routesApi.ts` に集約。

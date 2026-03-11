@@ -1,5 +1,7 @@
 # FlexRoute ナビゲーション仕様書
 
+> 最終更新: 2026-03-11
+
 ## 保存ルートによるナビゲーション
 
 SavedRoute に legs/steps を保存しているため、ナビ時に Routes API を再呼出しない。
