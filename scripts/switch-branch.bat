@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 cd /d "%~dp0.."
 echo === Claude Code Web ブランチに切替 ===
 echo.
