@@ -1,0 +1,152 @@
+# FlexRoute 画面仕様書
+
+> 最終更新: 2026-03-11
+
+## 画面一覧
+
+| 画面ID | 画面名 | 説明 | 実装状態 |
+|--------|--------|------|---------|
+| S-TOP | TOP画面 | ルート/ラベル/場所の一覧。地図なし | ✅ |
+| S-EDIT | ルート編集画面 | サイドバー + 地図。ウェイポイント管理 | ✅ |
+| S-NAV | ナビゲーション画面 | 地図フルスクリーン。GPS追従 | 未実装（1-6） |
+| M-SEARCH | 検索モーダル | 場所検索してウェイポイント追加 | ✅ |
+| M-CONFIRM | 確認ダイアログ | 削除等の確認 | ✅ |
+| M-PLACE | 場所アクションモーダル | Placeタップ時の操作選択 | 未実装（1-5） |
+
+## 画面遷移図
+
+```
+S-TOP → 「新規作成」ボタン → S-EDIT（空ルート、ルート名空）
+S-TOP → ルートカードタップ → S-EDIT（選択ルートをロード）
+
+S-EDIT → 「←」戻るボタン → S-TOP
+  保存条件成立（WP1件以上 or 名前非空） → 保存してから遷移
+  新規 + 条件不成立 → 破棄して遷移
+  既存 + 条件不成立 → そのまま遷移（上書きしていないので安全）
+
+S-EDIT → 「ナビ開始」ボタン → S-NAV（1-6で実装）
+S-EDIT → 「経路を追加」ボタン → M-SEARCH（insertIndex = null → 末尾追加）
+S-EDIT → ウェイポイント間「+」ボタン → M-SEARCH（insertIndex = index + 1）
+S-EDIT → 地図タップ（Place以外） → ウェイポイント即追加（座標ベース、名前は「lat, lng」形式）
+S-EDIT → 地図タップ（Placeアイコン） → 暫定: ウェイポイント即追加（Place名取得）。1-5でM-PLACEに変更予定
+
+S-NAV → 「終了」ボタン → S-EDIT（1-6で実装）
+
+M-SEARCH → 場所選択 → M-SEARCH閉じる + ウェイポイント追加（insertIndex位置 or 末尾）
+M-SEARCH → 「×」ボタン → M-SEARCH閉じる（insertIndex クリア）
+
+M-CONFIRM → 「削除する」 → 実行 + M-CONFIRM閉じる
+M-CONFIRM → 「キャンセル」 → M-CONFIRM閉じる
+```
+
+## S-TOP: TOP画面
+
+### レイアウト
+
+- 地図は表示しない。フルスクリーンのリスト画面
+- ヘッダー: bg-indigo-600、テキスト白、アプリ名「FlexRoute」
+- ヘッダー下: タブバー（ルート / ラベル / 場所）
+  - デザイン: DESIGN_REFERENCE セクション6 準拠
+  - アクティブ: bg-white text-indigo-600 shadow-sm
+  - 非アクティブ: text-slate-500 hover:text-slate-700
+- タブ下: コンテンツエリア（bg-slate-50、flex-1、overflow-y-auto、max-w-5xl中央寄せ）
+
+### タブ: ルート
+
+- ルート一覧（routeStore.savedRoutes）
+- 右上: タイル/リスト切替トグル（DESIGN_REFERENCE セクション7）+ 新規作成ボタン（DESIGN_REFERENCE セクション8）
+- ルートカード（DESIGN_REFERENCE セクション17）
+  - タップ → loadRoute → S-EDITへ遷移
+  - 削除ボタン → M-CONFIRM
+  - 名前がtrim()で空 → 「名称未設定」表示
+- 0件時: 空状態メッセージ（DESIGN_REFERENCE セクション18）
+
+### タブ: ラベル
+
+- 1-5で実装予定。「準備中」表示
+
+### タブ: 場所
+
+- 1-5で実装予定。「準備中」表示
+
+## S-EDIT: ルート編集画面
+
+### レイアウト（PC 768px以上）
+
+- 左: サイドバー（w-96）
+- 右: 地図（残り全幅）
+
+### レイアウト（モバイル 768px未満、1-7で実装）
+
+- 地図フルスクリーン
+- ボトムシート（3段階: full=5%, half=50%, min=85%）
+
+### サイドバー構成（上から順に）
+
+1. ヘッダー（bg-indigo-600 text-white）
+   - 「←」戻るボタン: 戻る際に入力欄のblurを先に発火させてから遷移
+   - ルート名入力欄: DESIGN_REFERENCE セクション11 のスタイル
+     - routeStore.currentRoute.name を表示・編集
+     - onChange → routeStore.setRouteName()（メモリ上のみ更新）
+     - onBlur → 保存条件成立なら saveCurrentRoute()
+     - プレースホルダー「ルート名を入力...」
+
+2. ウェイポイントリスト
+   - 各ウェイポイント（WaypointItem）:
+     - 左: GripVerticalドラッグハンドル（cursor-grab）
+     - 色分けドット: 最初=緑(#10b981)、最後=赤(#f43f5e)、中間=黄(#f59e0b)
+     - 名前表示（truncate）
+     - isCurrentLocation → 「現在地」サブテキスト（text-emerald-600）
+     - 右: 削除ボタン（Xアイコン、hover:text-rose-500）
+   - ウェイポイント間: 縦線コネクタ（w-0.5 h-4 bg-slate-200）+ 「+」挿入ボタン
+   - ドラッグ＆ドロップ並び替え（framer-motion Reorder）
+
+3. 「経路を追加」ボタン
+   - border-2 border-dashed border-slate-200 rounded-xl
+   - Plus アイコン + テキスト
+   - タップ → M-SEARCH（insertIndex = null）
+
+4. RouteSummary（ウェイポイント2つ以上のとき表示）
+   - DESIGN_REFERENCE セクション12 のスタイル
+   - 距離: formatDistance() → 「X.Xkm」or「XXXm」
+   - 時間: formatDuration() → 「X時間XX分」or「XX分」
+   - 「ナビ開始」ボタン（ルート計算済み時のみ有効）
+   - 計算中: animate-pulse「ルート計算中...」
+   - エラー: text-red-300 でメッセージ
+
+### 地図上の要素
+
+- ウェイポイントマーカー（WaypointMarkers）: AdvancedMarker + Pin、色分け
+- ルートポリライン（RoutePolyline）: 道路種別色分け、ステップ単位で描画
+- 現在地マーカー（CurrentLocationMarker）: DESIGN_REFERENCE セクション1、常時表示、ZIndex=100
+
+### 地図の初期表示
+
+- ウェイポイントなし: 2段階測位（SPEC_NAVIGATION.md 参照）
+- ウェイポイントあり: fitBounds（全WPが収まるズーム、padding: 80）
+- ウェイポイント1つ: そのポイント中心、ズーム15
+
+## M-SEARCH: 検索モーダル
+
+- 表示条件: uiStore.searchModalOpen === true
+- DESIGN_REFERENCE セクション14, 15, 16 のスタイル
+- タイトル: insertIndex あり → 「経由地を挿入」、なし → 「経路を追加」
+- Google Places Autocomplete API で検索
+- 候補選択 → addWaypoint(wp, insertIndex) → モーダル閉じる
+- 「×」→ モーダル閉じる + insertIndex クリア
+
+## M-CONFIRM: 確認ダイアログ
+
+- 表示条件: uiStore.confirmDialog.isOpen === true
+- DESIGN_REFERENCE セクション13 のスタイル
+- メッセージ + 2ボタン（キャンセル / 削除する）
+
+## S-NAV: ナビゲーション画面（1-6で実装）
+
+- 仕様は SPEC_NAVIGATION.md に記載
+
+## M-PLACE: 場所アクションモーダル（1-5で実装）
+
+- Placeアイコンタップ時に表示
+- 施設写真・名前・住所・評価
+- 「経路に追加」「ラベルを付ける」「ナビ開始」ボタン
