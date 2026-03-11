@@ -210,3 +210,74 @@ JSX:
 
 配置: 画面右側に `flex flex-col gap-3 items-end` で縦並び。
 順序（上から）: ヘッディング → ズーム → 追従モード
+
+## 10. ルート編集サイドバー全体
+
+- サイドバー: `w-96 bg-white shadow-2xl flex flex-col h-full`
+- ヘッダー: `bg-indigo-600 text-white p-6`（モバイル時 `p-4 pt-2`）
+
+## 11. ルート名入力欄
+
+- `bg-indigo-700/50 text-white placeholder-indigo-300 border border-indigo-500/50 rounded-xl p-3 font-bold`
+- `focus:outline-none focus:ring-2 focus:ring-white/50`
+
+## 12. RouteSummary
+
+- コンテナ: `bg-indigo-700/50 rounded-xl p-4 backdrop-blur-sm border border-indigo-500/30`
+- ラベル「ルート概要」: `text-indigo-100 text-sm font-medium uppercase tracking-wider`
+- 距離・時間: `text-2xl font-bold`（白）
+- 副テキスト: `text-indigo-200 text-sm`
+- ナビ開始ボタン: `bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/30`
+- 無効時: `bg-slate-500/50 text-slate-300 cursor-not-allowed`
+- 計算中: `text-indigo-200 text-sm animate-pulse`
+- エラー: `text-red-300 text-xs`
+
+## 13. 確認ダイアログ
+
+- オーバーレイ: `fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm`
+- カード: `bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl`
+- メッセージ: `text-lg font-bold text-slate-800`
+- キャンセルボタン: `px-4 py-2 rounded-xl font-bold text-slate-500 hover:bg-slate-100`
+- 削除ボタン: `px-4 py-2 rounded-xl font-bold bg-rose-500 text-white hover:bg-rose-600 shadow-lg shadow-rose-500/30`
+
+## 14. 検索モーダル
+
+- オーバーレイ: `fixed inset-0 z-50 backdrop-blur-sm bg-slate-900/40`
+- カード: `bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] border border-slate-200`
+- ヘッダー: `p-4 border-b border-slate-100 bg-slate-50`
+- タイトル: `font-bold text-slate-800` + Search アイコン（`text-indigo-500`）
+- 閉じるボタン: `p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full`
+
+## 15. 検索入力欄
+
+- `bg-white border border-slate-200 rounded-xl p-3`
+- `focus:ring-2 focus:ring-indigo-500 focus:outline-none`
+- プレースホルダー: `text-slate-400`
+
+## 16. 検索結果リスト
+
+- 各候補: `p-3 hover:bg-slate-50 cursor-pointer border-b border-slate-100`
+- 場所名: `font-medium text-slate-800`
+- 住所: `text-sm text-slate-500`
+
+## 17. RouteCard
+
+- タイル表示: `bg-white border border-slate-200 rounded-2xl hover:shadow-xl cursor-pointer flex flex-col overflow-hidden`
+- リスト表示: `bg-white border border-slate-200 rounded-xl hover:shadow-md cursor-pointer flex overflow-hidden min-h-[5rem]`
+- ルート名: `font-bold text-lg text-slate-800`（タイル）/ `text-base`（リスト）
+- 名称未設定時: `text-slate-400 italic` で「名称未設定」表示
+- 削除ボタン: `p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl`
+
+## 18. 空状態メッセージ
+
+- コンテナ: `text-center text-slate-500 py-8 bg-slate-50 rounded-xl border border-slate-100`
+- テキスト: 「保存されたルートはありません。」等
+
+## 19. TOP画面ヘッダー
+
+- `bg-indigo-600 text-white p-6`
+- アプリ名: `text-2xl font-bold tracking-tight`
+
+## 20. ローディングスピナー
+
+- `w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin`
