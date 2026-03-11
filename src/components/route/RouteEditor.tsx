@@ -1,8 +1,7 @@
-import { useCallback, useState } from "react";
-import { ArrowLeft, Eye } from "lucide-react";
+import { useCallback } from "react";
+import { ArrowLeft } from "lucide-react";
 import { WaypointList } from "@/components/route/WaypointList";
 import { RouteSummary } from "@/components/route/RouteSummary";
-import { PlaceActionModal } from "@/components/places/PlaceActionModal";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useAutoSave, canSaveRoute } from "@/hooks/useAutoSave";
@@ -34,8 +33,6 @@ export function RouteEditor() {
     setViewMode("top");
   }, [clearRouteData, setViewMode]);
 
-  const [showPlaceModal, setShowPlaceModal] = useState(false);
-
   return (
     <aside className="w-96 h-full bg-indigo-600 text-white flex flex-col overflow-hidden">
       <header className="flex items-center gap-3 px-4 pt-5 pb-3">
@@ -59,16 +56,7 @@ export function RouteEditor() {
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         <WaypointList />
         <RouteSummary />
-        {/* TODO: テスト用ボタン - PlaceActionModal 統合後に削除 */}
-        <button
-          onClick={() => setShowPlaceModal(true)}
-          className="w-full mt-4 flex items-center justify-center gap-2 bg-indigo-500/50 text-indigo-200 py-2 rounded-xl text-xs hover:bg-indigo-500/70 transition-colors border border-indigo-400/30"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          PlaceActionModal テスト
-        </button>
       </div>
-      <PlaceActionModal isOpen={showPlaceModal} onClose={() => setShowPlaceModal(false)} />
     </aside>
   );
 }

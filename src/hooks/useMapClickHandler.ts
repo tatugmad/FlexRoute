@@ -1,12 +1,14 @@
 import { useCallback } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
+import { usePlaceStore } from "@/stores/placeStore";
 import { userActionTracker } from "@/services/userActionTracker";
 import type { MapMouseEvent } from "@vis.gl/react-google-maps";
 
 export function useMapClickHandler() {
   const addWaypoint = useRouteStore((s) => s.addWaypoint);
   const viewMode = useUiStore((s) => s.viewMode);
+  const openPlaceModal = usePlaceStore((s) => s.openPlaceModal);
 
   return useCallback(
     (e: MapMouseEvent) => {
@@ -17,28 +19,22 @@ export function useMapClickHandler() {
 
       const position = { lat: latLng.lat, lng: latLng.lng };
       const placeId = e.detail.placeId ?? null;
-      const wpId = crypto.randomUUID();
 
       if (placeId) {
         // 経路A: Placeアイコンタップ
-        // Places API で名前を取得する
-        // TODO: PlaceActionModal 実装時に、ここでモーダルを表示し
-        //       「経路に追加」選択後に addWaypoint する流れに変更する
-        userActionTracker.track("MAP_CLICK_PLACE_ADD_WAYPOINT", {
-          position,
-          placeId,
-        });
+        // Places API で詳細情報を取得 → PlaceActionModal を表示
+        userActionTracker.track("MAP_CLICK_PLACE", { position, placeId });
 
-        fetchPlaceName(placeId).then((name) => {
-          const label =
-            name ?? `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
-          addWaypoint({
-            id: wpId,
-            position,
-            label,
+        fetchPlaceDetails(placeId).then((placeData) => {
+          openPlaceModal({
             placeId,
-            placeData: null,
-            // TODO: 将来 Places API で placeData（住所、評価等）も取得する
+            name:
+              placeData.name ??
+              `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`,
+            address: placeData.address ?? "",
+            rating: placeData.rating ?? null,
+            photoUrl: placeData.photoUrl ?? null,
+            position,
           });
         });
       } else {
@@ -46,6 +42,7 @@ export function useMapClickHandler() {
         // reverseGeocode は呼ばない。Places API も呼ばない。
         // 座標のみをウェイポイント名にする。
         const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
+        const wpId = crypto.randomUUID();
         userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position });
         addWaypoint({
           id: wpId,
@@ -56,19 +53,38 @@ export function useMapClickHandler() {
         });
       }
     },
-    [viewMode, addWaypoint],
+    [viewMode, addWaypoint, openPlaceModal],
   );
 }
 
-async function fetchPlaceName(placeId: string): Promise<string | null> {
+async function fetchPlaceDetails(placeId: string): Promise<{
+  name: string | null;
+  address: string | null;
+  rating: number | null;
+  photoUrl: string | null;
+}> {
   try {
     const { Place } = (await google.maps.importLibrary(
       "places",
     )) as google.maps.PlacesLibrary;
     const place = new Place({ id: placeId });
-    await place.fetchFields({ fields: ["displayName"] });
-    return place.displayName ?? null;
+    await place.fetchFields({
+      fields: ["displayName", "formattedAddress", "rating", "photos"],
+    });
+
+    let photoUrl: string | null = null;
+    const firstPhoto = place.photos?.[0];
+    if (firstPhoto) {
+      photoUrl = firstPhoto.getURI({ maxWidth: 400 });
+    }
+
+    return {
+      name: place.displayName ?? null,
+      address: place.formattedAddress ?? null,
+      rating: place.rating ?? null,
+      photoUrl,
+    };
   } catch {
-    return null;
+    return { name: null, address: null, rating: null, photoUrl: null };
   }
 }

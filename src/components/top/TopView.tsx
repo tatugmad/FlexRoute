@@ -17,7 +17,10 @@ export function TopView() {
   return (
     <div className="h-screen w-full flex flex-col bg-slate-50">
       <header className="bg-indigo-600 text-white px-4 pt-3 pb-2">
-        <h1 className="text-lg font-bold tracking-tight mb-1">FlexRoute</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold tracking-tight">FlexRoute</h1>
+          <span className="text-xs text-indigo-300 font-mono">{__DEV_VERSION__}</span>
+        </div>
       </header>
 
       <TabBar current={topTab} onChange={setTopTab} />
