@@ -20,35 +20,42 @@
 ## 開発フロー
 
 ### 開発環境
-- Claude Code Web（https://claude.ai/code）でリモート開発
+- Claude Desktop App（Code タブ）でローカル開発
 - GitHub リポジトリ: tatugmad/FlexRoute（Public）
 - デプロイ先: https://tatugmad.github.io/FlexRoute/
 - ローカル開発: Node.js 20 + npm run dev（localhost で即時確認可能）
 
+#### Claude Desktop Code（メイン開発ツール）
+- ローカルのFlexRouteフォルダを直接編集する
+- git操作（pull, push, branch作成）、npm操作（install, test, build）も全てDesktop Codeが実行
+- CC Web（ブラウザ版 Claude Code）は原則使用しない
+
 #### ローカル開発セットアップ（Windows）
-1. `git clone https://github.com/tatugmad/FlexRoute.git && cd FlexRoute`
-2. `scripts\setup.bat` を実行（npm install + .env テンプレート作成）
-3. `.env` に Google Maps API キーと Map ID を記入
-4. `scripts\dev.bat` で開発サーバー起動 → http://localhost:5173/FlexRoute/
-5. スマホ確認: `scripts\dev-mobile.bat` → Network URL にアクセス
+1. Claude Desktop App をインストール（https://claude.com/download）
+2. `git clone https://github.com/tatugmad/FlexRoute.git && cd FlexRoute`
+3. `scripts\setup.bat` を実行（npm install + .env テンプレート作成）
+4. `.env` に Google Maps API キーと Map ID を記入
+5. `scripts\dev.bat` で開発サーバー起動 → localhost + LAN公開（--host）
+6. Desktop App の Code タブで FlexRoute フォルダを選択
 
 #### scripts/ フォルダ
 | ファイル | 用途 |
 |---|---|
 | setup.bat | 初期セットアップ（npm install + .env作成） |
-| dev.bat | 開発サーバー起動 |
-| dev-mobile.bat | LAN公開で起動（スマホ確認用） |
-| sync-main.bat | mainブランチに切替 + 最新取得 |
-| switch-branch.bat | リモートブランチ一覧 → 選んで切替 |
+| dev.bat | 開発サーバー起動（LAN公開込み） |
+| dev-mobile.bat | 廃止（dev.bat に統合済み） |
+| sync-main.bat | mainブランチに切替 + 最新取得（Desktop Code使用時は不要） |
+| switch-branch.bat | リモートブランチ切替（Desktop Code使用時は不要） |
 | build-check.bat | ビルドが通るか確認 |
 
 ### 開発サイクル
-1. Claude Code Web の左上入力欄で新しいセッション（新ブランチ）を開始
-2. タスクを指示 → Claude Code がコード生成・ブランチにコミット
-3. ローカルで `scripts\switch-branch.bat` → ブランチに切替 → localhost で即時確認
-4. 修正が必要なら同じセッション内（右下入力欄）で追加指示 → 3に戻る
-5. 完成度が十分になったら Create PR → GitHub で Merge → Delete branch
-6. `scripts\sync-main.bat` で main に戻る
+1. Desktop Code でFlexRouteフォルダを開く
+2. 作業を指示 → Desktop Code がコード編集・git操作を実行
+3. localhost で即時確認（dev.bat で開発サーバー起動済みの前提）
+4. 修正が必要なら追加指示 → 3に戻る
+5. 完成したら Desktop Code に「コミットしてpushしろ」と指示
+6. GitHub で PR作成 → Merge
+7. Desktop Code に「main に戻って pull しろ」と指示
 
 ### タスク指示の原則
 - 1タスク = 1セッション（複数機能を同時に指示しない）
