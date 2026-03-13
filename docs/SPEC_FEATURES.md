@@ -26,7 +26,7 @@
 | F-LOG | LogService/UserActionTracker/PerformanceMonitor | ✅ | - |
 | F-SOURCEMAP | Source Map（本番ビルドでもデバッグ可能） | ✅ | - |
 | F-CACHE | キャッシュ対策（F5リロード） | ✅ | - |
-| F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | 未実装 | 1-5 |
+| F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | ✅ | 1-5 |
 | F-LABEL | ラベル管理（CRUD） | 未実装 | 1-5 |
 | F-PLACE-SAVE | 場所保存・一覧 | 未実装 | 1-5 |
 | F-THUMB | ルートサムネイル（Static Maps API） | 未実装 | 1-5 |
