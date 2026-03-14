@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
-import { startDualWatch, stopDualWatch } from "@/services/geolocation";
+import { watchHighAccuracy, clearPositionWatch } from "@/services/geolocation";
 import { logService } from "@/services/logService";
 import { useNavigationStore } from "@/stores/navigationStore";
 import type { LatLng, PositionQuality } from "@/types";
 
-const PRIMARY_SILENCE_THRESHOLD = 5000;
 const LOST_THRESHOLD = 15000;
 const CHECK_INTERVAL = 1000;
 
@@ -14,6 +13,7 @@ type GeolocationState = {
   heading: number;
   speed: number;
   quality: PositionQuality;
+  accuracy: number | null;
   error: string | null;
 };
 
@@ -24,59 +24,43 @@ export function useGeolocation(): GeolocationState {
     heading: 0,
     speed: 0,
     quality: "lost",
+    accuracy: null,
     error: null,
   });
 
-  const lastPrimaryAt = useRef(0);
-  const lastAdoptedAt = useRef(0);
-  const secondaryBuffer = useRef<{ pos: LatLng; heading: number; speed: number } | null>(null);
+  const lastResultAt = useRef(0);
 
   useEffect(() => {
-    const adopt = (pos: LatLng, heading: number, speed: number, quality: PositionQuality) => {
-      lastAdoptedAt.current = Date.now();
-      setCurrentPosition(pos, heading, speed, quality);
-      setState({ position: pos, heading, speed, quality, error: null });
-    };
-
-    const ids = startDualWatch({
-      onPrimary: (result) => {
-        lastPrimaryAt.current = Date.now();
-        const pos: LatLng = { lat: result.lat, lng: result.lng };
-        adopt(pos, result.heading ?? 0, result.speed ?? 0, "gps");
-      },
-      onSecondary: (result) => {
+    const watchId = watchHighAccuracy(
+      (result) => {
+        lastResultAt.current = Date.now();
         const pos: LatLng = { lat: result.lat, lng: result.lng };
         const heading = result.heading ?? 0;
         const speed = result.speed ?? 0;
-        secondaryBuffer.current = { pos, heading, speed };
+        const accuracy = result.accuracy;
 
-        const silenceMs = Date.now() - (lastPrimaryAt.current || 0);
-        if (lastPrimaryAt.current === 0 || silenceMs >= PRIMARY_SILENCE_THRESHOLD) {
-          adopt(pos, heading, speed, "wifi");
-        }
+        setCurrentPosition(pos, heading, speed, "active", accuracy);
+        setState({ position: pos, heading, speed, quality: "active", accuracy, error: null });
       },
-      onPrimaryError: (err) => {
-        logService.error("GEO", "主系エラー", err);
+      (err) => {
+        logService.error("GEO", "位置取得エラー", err);
         setState((prev) => ({ ...prev, error: err.message }));
       },
-      onSecondaryError: (err) => {
-        logService.error("GEO", "副系エラー", err);
-      },
-    });
+    );
 
     const timer = setInterval(() => {
       const now = Date.now();
-      if (lastAdoptedAt.current > 0 && now - lastAdoptedAt.current >= LOST_THRESHOLD) {
-        setCurrentPosition(
-          useNavigationStore.getState().currentPosition!,
-          0, 0, "lost",
-        );
-        setState((prev) => ({ ...prev, quality: "lost" }));
+      if (lastResultAt.current > 0 && now - lastResultAt.current >= LOST_THRESHOLD) {
+        const currentPos = useNavigationStore.getState().currentPosition;
+        if (currentPos) {
+          setCurrentPosition(currentPos, 0, 0, "lost", null);
+        }
+        setState((prev) => ({ ...prev, quality: "lost", accuracy: null }));
       }
     }, CHECK_INTERVAL);
 
     return () => {
-      stopDualWatch(ids);
+      clearPositionWatch(watchId);
       clearInterval(timer);
     };
   }, [setCurrentPosition]);

@@ -127,7 +127,7 @@ export type PerformanceMetric = {
 };
 
 // ── 測位品質 ──
-export type PositionQuality = 'gps' | 'wifi' | 'lost';
+export type PositionQuality = 'active' | 'lost';
 
 // ── 道路種別 ──
 export type RoadType = "highway" | "national" | "prefectural" | "local";

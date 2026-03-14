@@ -2,13 +2,14 @@ import { useEffect, useRef } from "react";
 
 import { useMap } from "@vis.gl/react-google-maps";
 
+import { getCurrentPositionFast } from "@/services/geolocation";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 
 const DEFAULT_ZOOM = 15;
 const DEFAULT_CENTER = { lat: 35.6895, lng: 139.6917 };
-const FIT_BOUNDS_PADDING = 80;
+const FIT_BOUNDS_PADDING = { top: 80, right: 80, bottom: 80, left: 420 };
 
 export function useMapInitialView() {
   const map = useMap();
@@ -35,15 +36,21 @@ export function useMapInitialView() {
     const waypoints = currentRoute?.waypoints ?? [];
 
     if (waypoints.length === 0) {
-      if (currentPosition) {
-        map.setCenter(currentPosition);
-        map.setZoom(DEFAULT_ZOOM);
-        hasPannedToPosition.current = true;
-      } else {
-        map.setCenter(DEFAULT_CENTER);
-        map.setZoom(DEFAULT_ZOOM);
-      }
+      // DEFAULT_CENTERで即描画
+      map.setCenter(DEFAULT_CENTER);
+      map.setZoom(DEFAULT_ZOOM);
       setMapReady(true);
+
+      // getCurrentPositionFast で非同期にセンタリング
+      getCurrentPositionFast()
+        .then((result) => {
+          map.setCenter({ lat: result.lat, lng: result.lng });
+          map.setZoom(DEFAULT_ZOOM);
+          hasPannedToPosition.current = true;
+        })
+        .catch(() => {
+          // 失敗時はDEFAULT_CENTERのまま
+        });
     } else if (waypoints.length === 1) {
       map.setCenter(waypoints[0]!.position);
       map.setZoom(DEFAULT_ZOOM);
@@ -52,9 +59,9 @@ export function useMapInitialView() {
       fitBoundsToWaypoints(map, waypoints);
       setMapReady(true);
     }
-  }, [map, currentRoute, setMapReady, currentPosition]);
+  }, [map, currentRoute, setMapReady]);
 
-  // currentPosition が初めてセットされたら panTo
+  // watchHighAccuracy から位置が来たら panTo（暫定: 常に panTo）
   useEffect(() => {
     if (!map || hasPannedToPosition.current || !currentPosition) return;
     const waypoints = currentRoute?.waypoints ?? [];

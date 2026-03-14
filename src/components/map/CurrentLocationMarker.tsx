@@ -9,6 +9,7 @@ type CurrentLocationMarkerProps = {
 
 export function CurrentLocationMarker({ position }: CurrentLocationMarkerProps) {
   const heading = useNavigationStore((s) => s.heading);
+  useNavigationStore((s) => s.accuracy); // subscribe for future use
 
   return (
     <AdvancedMarker position={position} zIndex={100}>
