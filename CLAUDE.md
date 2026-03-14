@@ -20,58 +20,40 @@
 ## 開発フロー
 
 ### 開発環境
-- Claude Desktop App（Code タブ）でローカル開発
+- CC Web（ブラウザ版 Claude Code）で開発
 - GitHub リポジトリ: tatugmad/FlexRoute（Public）
 - デプロイ先: https://tatugmad.github.io/FlexRoute/
-- ローカル開発: Node.js 20 + npm run dev（localhost で即時確認可能）
+- 動作確認は GitHub Pages で行う（ローカル開発環境は使用しない）
 
-#### Claude Desktop Code（メイン開発ツール）
-- ローカルのFlexRouteフォルダを直接編集する
-- git操作（pull, push, branch作成）、npm操作（install, test, build）も全てDesktop Codeが実行
-- CC Web（ブラウザ版 Claude Code）は原則使用しない
+#### Geolocation テスト戦略
 
-#### ローカル開発セットアップ（Windows）
-1. Claude Desktop App をインストール（https://claude.com/download）
-2. `git clone https://github.com/tatugmad/FlexRoute.git && cd FlexRoute`
-3. `scripts\setup.bat` を実行（npm install + .env テンプレート作成）
-4. `.env` に Google Maps API キーと Map ID を記入
-5. `scripts\dev.bat` で開発サーバー起動 → localhost + LAN公開（--host）
-6. Desktop App の Code タブで FlexRoute フォルダを選択
+ブラウザの Geolocation API はセキュアコンテキスト（HTTPS）でのみ動作する。
+GitHub Pages は HTTPS のため、Geolocation を含む全機能をテスト可能。
+
+#### ローカル開発セットアップ（Windows）※オプション
+
+ローカルで開発する場合のみ使用。通常は不要。
+
+1. `git clone https://github.com/tatugmad/FlexRoute.git && cd FlexRoute`
+2. `scripts\setup.bat` を実行（npm install + .env テンプレート作成）
+3. `.env` に Google Maps API キーと Map ID を記入
+4. `scripts\dev.bat` で開発サーバー起動
+
+注意: `localhost` では Geolocation が動作するが、LAN IP（HTTP）では動作しない。
 
 #### scripts/ フォルダ
 | ファイル | 用途 |
 |---|---|
 | setup.bat | 初期セットアップ（npm install + .env作成） |
 | dev.bat | 開発サーバー起動（LAN公開込み） |
-| dev-mobile.bat | 廃止（dev.bat に統合済み） |
-| sync-main.bat | mainブランチに切替 + 最新取得（Desktop Code使用時は不要） |
-| switch-branch.bat | リモートブランチ切替（Desktop Code使用時は不要） |
 | build-check.bat | ビルドが通るか確認 |
 
-#### Geolocation テスト戦略
-
-ブラウザの Geolocation API はセキュアコンテキスト（HTTPS または localhost）でのみ動作する。
-HTTP + LAN IP（例: `172.16.0.13:5174`）ではプロンプトすら出ずに無言で失敗する（GPS/Wifi/IP 全て）。
-
-| 環境 | URL | Geolocation | 用途 |
-|------|-----|-------------|------|
-| localhost | `localhost:5174` | ✅ 動作 | **日常の開発・動作確認（メイン）** |
-| LAN IP | `172.16.0.13:5174` | ❌ 動作しない | スマホ実機のUI確認（Geolocation以外） |
-| GitHub Pages | `https://tatugmad.github.io/FlexRoute/` | ✅ 動作 | **本番相当の総合確認（PR merge後）** |
-
-- 開発中は `localhost` で動作確認（許可プロンプトが出る、GPS取得可能）
-- スマホでの位置情報テストは GitHub Pages にデプロイしてから確認（HTTPS）
-- LAN IP 経由では Geolocation は動かないことを前提とする
-- dev.bat の `--host` は引き続き有効（スマホのレイアウト・タッチ操作確認用）
-
 ### 開発サイクル
-1. Desktop Code でFlexRouteフォルダを開く
-2. 作業を指示 → Desktop Code がコード編集・git操作を実行
-3. localhost で即時確認（dev.bat で開発サーバー起動済みの前提）
-4. 修正が必要なら追加指示 → 3に戻る
-5. 完成したら Desktop Code に「コミットしてpushしろ」と指示
-6. GitHub で PR作成 → Merge
-7. Desktop Code に「main に戻って pull しろ」と指示
+1. チャット（claude.ai）で設計を固める
+2. CC Web に指示 → CC Web がコード編集・ブランチ作成・コミット・PR作成を実行
+3. GitHub で PR を Merge
+4. GitHub Pages（https://tatugmad.github.io/FlexRoute/）で動作確認
+5. 問題があればチャットで修正方針を決め → 2に戻る
 
 ### タスク指示の原則
 - 1タスク = 1セッション（複数機能を同時に指示しない）
@@ -151,7 +133,7 @@ docs/ には以下のドキュメントがある:
 - SPEC_FEATURES.md（全機能の動作定義 + 既知の問題TODO）
 - DECISIONS.md（設計判断の記録）
 まず CLAUDE.md を読み、次に SPEC_FEATURES.md の「既知の問題（TODO）」セクションと機能一覧の実装状態を確認し、現在の進捗を把握せよ。
-OSはWindows。ローカル開発環境あり（CLAUDE.md「ローカル開発セットアップ」参照）。
+動作確認は GitHub Pages（https://tatugmad.github.io/FlexRoute/）で行う。
 
 ---
 
