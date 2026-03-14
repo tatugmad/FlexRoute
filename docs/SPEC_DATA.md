@@ -1,6 +1,6 @@
 # FlexRoute データ仕様書
 
-> 最終更新: 2026-03-11
+> 最終更新: 2026-03-14
 
 ## 型定義一覧
 
@@ -603,7 +603,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### useMapInitialView（src/hooks/useMapInitialView.ts）
 
-- **責務**: 地図の初期表示を制御する。ウェイポイントなし時は2段階測位（低精度→高精度）で現在地に、ウェイポイント1件時はそのポイントに、2件以上時はfitBoundsで全WPが収まる範囲に表示
+- **責務**: 地図の初期表示を制御する。ウェイポイントなし時は2系統並走測位（F-LOC参照）で現在地に、ウェイポイント1件時はそのポイントに、2件以上時はfitBoundsで全WPが収まる範囲に表示
 - **依存store**: routeStore（currentRoute）、uiStore（setMapReady）、navigationStore（currentPosition）
 - **依存service**: なし（navigator.geolocation を直接使用）
 - **呼び出し元**: MapInitialView.tsx

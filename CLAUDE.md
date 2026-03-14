@@ -1,6 +1,6 @@
 # FlexRoute
 
-> 最終更新: 2026-03-11
+> 最終更新: 2026-03-14
 
 ## ドキュメント体系
 
@@ -47,6 +47,22 @@
 | sync-main.bat | mainブランチに切替 + 最新取得（Desktop Code使用時は不要） |
 | switch-branch.bat | リモートブランチ切替（Desktop Code使用時は不要） |
 | build-check.bat | ビルドが通るか確認 |
+
+#### Geolocation テスト戦略
+
+ブラウザの Geolocation API はセキュアコンテキスト（HTTPS または localhost）でのみ動作する。
+HTTP + LAN IP（例: `172.16.0.13:5174`）ではプロンプトすら出ずに無言で失敗する（GPS/Wifi/IP 全て）。
+
+| 環境 | URL | Geolocation | 用途 |
+|------|-----|-------------|------|
+| localhost | `localhost:5174` | ✅ 動作 | **日常の開発・動作確認（メイン）** |
+| LAN IP | `172.16.0.13:5174` | ❌ 動作しない | スマホ実機のUI確認（Geolocation以外） |
+| GitHub Pages | `https://tatugmad.github.io/FlexRoute/` | ✅ 動作 | **本番相当の総合確認（PR merge後）** |
+
+- 開発中は `localhost` で動作確認（許可プロンプトが出る、GPS取得可能）
+- スマホでの位置情報テストは GitHub Pages にデプロイしてから確認（HTTPS）
+- LAN IP 経由では Geolocation は動かないことを前提とする
+- dev.bat の `--host` は引き続き有効（スマホのレイアウト・タッチ操作確認用）
 
 ### 開発サイクル
 1. Desktop Code でFlexRouteフォルダを開く
