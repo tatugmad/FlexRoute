@@ -865,8 +865,8 @@ Google Maps API 依存部分の方針:
 | 問題 | 発見時期 | 関連機能 | 状態 |
 |---|---|---|---|
 | 現在地マーカーが表示されない + 初期表示で現在位置に移動しない（useGeolocation が高精度のみで watchPosition しており、デスクトップで失敗する。2系統並走設計で解決予定） | 1-5 | F-LOC | 未対処（1-5で修正） |
-| ルートロード時にポリラインの一部が画面からはみ出す（fitBoundsのpadding不足） | 1-5 | F-ROUTE-LOAD, MapInitialView | 未対処 |
-| ルート削除後のカード再表示にスライドアニメーションがない（ぱっと消えると削除できたか分かりにくい） | 1-5 | F-ROUTE-DELETE, RouteCard | 未対処（改善要望） |
+| ~~ルートロード時にポリラインの一部が画面からはみ出す（fitBoundsのpadding不足）~~ | 1-5 | F-ROUTE-LOAD, MapInitialView | ✅ サイドバー幅を考慮した左右非対称padding（1-5）で解決済み |
+| ~~ルート削除後のカード再表示にスライドアニメーションがない（ぱっと消えると削除できたか分かりにくい）~~ | 1-5 | F-ROUTE-DELETE, RouteCard | ✅ AnimatePresence + motion.div（1-5）で解決済み |
 | ~~ウェイポイント追加時にGoogleデフォルトのポップアップが表示される~~ | 1-5 | F-WP-ADD | ✅ PlaceActionModal（1-5）で解決済み |
 
 ## MD反映待ちドラフト
