@@ -2,14 +2,12 @@ import { useNavigationStore } from "@/stores/navigationStore";
 import type { PositionQuality } from "@/types";
 
 const BADGE_STYLES: Record<PositionQuality, string> = {
-  gps: "bg-emerald-500 text-white",
-  wifi: "bg-amber-400 text-slate-800",
+  active: "bg-emerald-500 text-white",
   lost: "bg-rose-500 text-white",
 };
 
 const BADGE_LABELS: Record<PositionQuality, string> = {
-  gps: "GPS",
-  wifi: "WiFi",
+  active: "Active",
   lost: "LOST",
 };
 

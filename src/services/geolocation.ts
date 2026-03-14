@@ -11,13 +11,46 @@ export type GeolocationErrorInfo = {
   message: string;
 };
 
-const WATCH_OPTIONS: PositionOptions = {
+const FAST_OPTIONS: PositionOptions = {
+  enableHighAccuracy: false,
+  timeout: 5000,
+  maximumAge: 30000,
+};
+
+const HIGH_ACCURACY_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
   timeout: 10000,
   maximumAge: 0,
 };
 
-export function watchCurrentPosition(
+/** 地図の初期センタリング専用。マーカーは出さない。 */
+export function getCurrentPositionFast(): Promise<GeolocationResult> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject({ code: 0, message: "Geolocation is not supported" });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          heading: position.coords.heading,
+          speed: position.coords.speed,
+          accuracy: position.coords.accuracy,
+        });
+      },
+      (error) => {
+        reject({ code: error.code, message: getErrorMessage(error.code) });
+      },
+      FAST_OPTIONS,
+    );
+  });
+}
+
+/** 高精度位置監視。現在地マーカー・ナビ用。 */
+export function watchHighAccuracy(
   onSuccess: (result: GeolocationResult) => void,
   onError: (error: GeolocationErrorInfo) => void,
 ): number {
@@ -39,7 +72,7 @@ export function watchCurrentPosition(
     (error) => {
       onError({ code: error.code, message: getErrorMessage(error.code) });
     },
-    WATCH_OPTIONS,
+    HIGH_ACCURACY_OPTIONS,
   );
 }
 
@@ -47,70 +80,6 @@ export function clearPositionWatch(watchId: number): void {
   if (watchId >= 0) {
     navigator.geolocation.clearWatch(watchId);
   }
-}
-
-// ── 2系統並走 ──
-
-export type DualWatchCallbacks = {
-  onPrimary: (result: GeolocationResult) => void;
-  onSecondary: (result: GeolocationResult) => void;
-  onPrimaryError: (error: GeolocationErrorInfo) => void;
-  onSecondaryError: (error: GeolocationErrorInfo) => void;
-};
-
-const PRIMARY_OPTIONS: PositionOptions = {
-  enableHighAccuracy: true,
-  timeout: 10000,
-  maximumAge: 0,
-};
-
-const SECONDARY_OPTIONS: PositionOptions = {
-  enableHighAccuracy: false,
-  timeout: 5000,
-  maximumAge: 30000,
-};
-
-export function startDualWatch(
-  callbacks: DualWatchCallbacks,
-): { primaryId: number; secondaryId: number } {
-  if (!navigator.geolocation) {
-    const err = { code: 0, message: "Geolocation is not supported" };
-    callbacks.onPrimaryError(err);
-    callbacks.onSecondaryError(err);
-    return { primaryId: -1, secondaryId: -1 };
-  }
-
-  const toResult = (p: GeolocationPosition): GeolocationResult => ({
-    lat: p.coords.latitude,
-    lng: p.coords.longitude,
-    heading: p.coords.heading,
-    speed: p.coords.speed,
-    accuracy: p.coords.accuracy,
-  });
-
-  const toError = (e: GeolocationPositionError): GeolocationErrorInfo => ({
-    code: e.code,
-    message: getErrorMessage(e.code),
-  });
-
-  const primaryId = navigator.geolocation.watchPosition(
-    (pos) => callbacks.onPrimary(toResult(pos)),
-    (err) => callbacks.onPrimaryError(toError(err)),
-    PRIMARY_OPTIONS,
-  );
-
-  const secondaryId = navigator.geolocation.watchPosition(
-    (pos) => callbacks.onSecondary(toResult(pos)),
-    (err) => callbacks.onSecondaryError(toError(err)),
-    SECONDARY_OPTIONS,
-  );
-
-  return { primaryId, secondaryId };
-}
-
-export function stopDualWatch(ids: { primaryId: number; secondaryId: number }): void {
-  clearPositionWatch(ids.primaryId);
-  clearPositionWatch(ids.secondaryId);
 }
 
 function getErrorMessage(code: number): string {

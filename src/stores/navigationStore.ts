@@ -7,6 +7,7 @@ type NavigationStoreState = {
   currentPosition: LatLng | null;
   heading: number;
   speed: number;
+  accuracy: number | null;
   positionQuality: PositionQuality;
   remainingDistanceMeters: number;
   remainingDurationSeconds: number;
@@ -18,7 +19,13 @@ type NavigationActions = {
   resumeNavigation: () => void;
   stopNavigation: () => void;
   updatePosition: (position: LatLng) => void;
-  setCurrentPosition: (position: LatLng, heading: number, speed: number, quality: PositionQuality) => void;
+  setCurrentPosition: (
+    position: LatLng,
+    heading: number,
+    speed: number,
+    quality: PositionQuality,
+    accuracy: number | null,
+  ) => void;
   setCurrentLeg: (index: number) => void;
   setRemaining: (distance: number, duration: number) => void;
 };
@@ -29,7 +36,8 @@ const initialState: NavigationStoreState = {
   currentPosition: null,
   heading: 0,
   speed: 0,
-  positionQuality: 'lost',
+  accuracy: null,
+  positionQuality: "lost",
   remainingDistanceMeters: 0,
   remainingDurationSeconds: 0,
 };
@@ -49,8 +57,8 @@ export const useNavigationStore = create<
 
   updatePosition: (position) => set({ currentPosition: position }),
 
-  setCurrentPosition: (position, heading, speed, quality) =>
-    set({ currentPosition: position, heading, speed, positionQuality: quality }),
+  setCurrentPosition: (position, heading, speed, quality, accuracy) =>
+    set({ currentPosition: position, heading, speed, positionQuality: quality, accuracy }),
 
   setCurrentLeg: (index) => set({ currentLegIndex: index }),
 
