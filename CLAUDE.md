@@ -59,9 +59,10 @@ GitHub Pages は HTTPS のため、Geolocation を含む全機能をテスト可
 
 #### ブランチ運用
 - 新しいタスクは必ず main の最新から新ブランチを作成する
-  - `git checkout main && git pull origin main && git checkout -b feature/タスク名`
+- CC Web はブランチ名に `claude/` プレフィックスとセッションIDサフィックスが必須（push権限の制約）
+  - CC Web が自動生成する命名をそのまま使用すること
+  - `feature/xxx` や `docs/xxx` のような任意の命名は push できない
 - マージ済みのブランチに追加コミットしてはならない（PRが「作成」ではなく「表示」になり、マージできなくなる）
-- ブランチ命名例: `feature/f-label`, `fix/fitbounds-padding`, `docs/update-spec`
 
 #### PR作成
 - PR は CC Web の UI に表示される「PR作成」ボタンで作成する
