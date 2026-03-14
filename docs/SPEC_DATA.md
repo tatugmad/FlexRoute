@@ -4,7 +4,19 @@
 
 ## 型定義一覧
 
-全型は `src/types/index.ts` および `src/types/routesApi.ts` に集約。
+全型は `src/types/index.ts`、`src/types/route.ts`、`src/types/routesApi.ts` に集約。
+
+### PlaceLabel
+
+```ts
+type PlaceLabel = {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+};
+```
 
 ### LatLng
 
@@ -140,6 +152,12 @@ type NavigationState = {
 };
 ```
 
+### PositionQuality
+
+```ts
+type PositionQuality = 'active' | 'lost';
+```
+
 ### PlaceResult
 
 ```ts
@@ -149,6 +167,19 @@ type PlaceResult = {
   address: string;
   position: LatLng;
   types: string[];
+};
+```
+
+### PlaceModalData
+
+```ts
+type PlaceModalData = {
+  placeId: string;
+  name: string;
+  address: string;
+  rating: number | null;
+  photoUrl: string | null;
+  position: LatLng;
 };
 ```
 
@@ -245,7 +276,6 @@ type ComputeRoutesResponse = {
 - `GpsLog` — GPS走行記録
 - `TravelPoint` — GPS座標点
 - `StepPassage` — ステップ通過記録
-- `PlaceLabel` — 場所ラベル
 - `SavedPlace` — 保存済み場所
 - `SheetPosition` — ボトムシート位置
 - `ModalType` — モーダル種別
@@ -304,6 +334,8 @@ type ComputeRoutesResponse = {
 | currentPosition | `LatLng \| null` | `null` | 現在地 |
 | heading | `number` | `0` | 進行方向（度） |
 | speed | `number` | `0` | 速度 |
+| accuracy | `number \| null` | `null` | 位置精度（メートル） |
+| positionQuality | `PositionQuality` | `"lost"` | 測位品質 |
 | remainingDistanceMeters | `number` | `0` | 残り距離 |
 | remainingDurationSeconds | `number` | `0` | 残り時間 |
 
@@ -316,9 +348,30 @@ type ComputeRoutesResponse = {
 | resumeNavigation | `()` | ナビ再開 |
 | stopNavigation | `()` | ナビ終了（全状態初期化） |
 | updatePosition | `(position: LatLng)` | 現在地更新 |
-| setCurrentPosition | `(position: LatLng, heading: number, speed: number)` | 現在地・方向・速度を一括更新 |
+| setCurrentPosition | `(position: LatLng, heading: number, speed: number, quality: PositionQuality, accuracy: number \| null)` | 現在地・方向・速度・品質・精度を一括更新 |
 | setCurrentLeg | `(index: number)` | 現在leg番号を設定 |
 | setRemaining | `(distance: number, duration: number)` | 残り距離・時間を設定 |
+
+### labelStore（src/stores/labelStore.ts）
+
+#### 状態
+
+| プロパティ | 型 | 初期値 | 説明 |
+|---|---|---|---|
+| labels | `PlaceLabel[]` | `[]` | ラベル一覧 |
+| editingLabel | `PlaceLabel \| null` | `null` | 編集中のラベル |
+| isLabelModalOpen | `boolean` | `false` | ラベルモーダル開閉 |
+
+#### アクション
+
+| アクション | 引数 | 説明 |
+|---|---|---|
+| loadLabels | `()` | localStorage から全ラベルを読み込み |
+| addLabel | `(name: string, color: string)` | ラベルを追加 |
+| updateLabel | `(id: string, updates: { name?: string; color?: string })` | ラベルを更新 |
+| deleteLabel | `(id: string)` | ラベルを削除 |
+| openLabelModal | `(label?: PlaceLabel)` | ラベルモーダルを開く（label指定で編集、省略で新規） |
+| closeLabelModal | `()` | ラベルモーダルを閉じる |
 
 ### placeStore（src/stores/placeStore.ts）
 
@@ -330,6 +383,8 @@ type ComputeRoutesResponse = {
 | results | `PlaceResult[]` | `[]` | 検索結果 |
 | selectedPlace | `PlaceResult \| null` | `null` | 選択中の場所 |
 | isSearching | `boolean` | `false` | 検索中フラグ |
+| placeModalData | `PlaceModalData \| null` | `null` | PlaceActionModal の表示データ |
+| placeModalOpen | `boolean` | `false` | PlaceActionModal の開閉 |
 
 #### アクション
 
@@ -339,6 +394,8 @@ type ComputeRoutesResponse = {
 | setResults | `(results: PlaceResult[])` | 検索結果を設定 |
 | setSelectedPlace | `(place: PlaceResult \| null)` | 選択場所を設定 |
 | setIsSearching | `(isSearching: boolean)` | 検索中フラグを設定 |
+| openPlaceModal | `(data: PlaceModalData)` | PlaceActionModal を開く |
+| closePlaceModal | `()` | PlaceActionModal を閉じる |
 | reset | `()` | 全状態を初期値に戻す |
 
 ### uiStore（src/stores/uiStore.ts）
@@ -356,6 +413,8 @@ type ComputeRoutesResponse = {
 | error | `string \| null` | `null` | エラーメッセージ |
 | topTab | `TopTab` | `"routes"` | TOP画面タブ |
 | routeViewMode | `RouteViewMode` | `"tile"` | ルート一覧の表示形式 |
+| labelViewMode | `RouteViewMode` | `"tile"` | ラベル一覧の表示形式 |
+| placesViewMode | `RouteViewMode` | `"tile"` | 場所一覧の表示形式 |
 | searchModalOpen | `boolean` | `false` | 検索モーダル開閉 |
 | insertIndex | `number \| null` | `null` | 挿入位置（検索モーダル用） |
 | confirmDialog | `ConfirmDialog` | `{ isOpen: false, message: "", onConfirm: null }` | 確認ダイアログ |
@@ -383,6 +442,8 @@ type ConfirmDialog = {
 | setError | `(error: string \| null)` | エラーを設定 |
 | setTopTab | `(tab: TopTab)` | TOP画面タブを設定 |
 | setRouteViewMode | `(mode: RouteViewMode)` | ルート一覧表示形式を設定 |
+| setLabelViewMode | `(mode: RouteViewMode)` | ラベル一覧表示形式を設定 |
+| setPlacesViewMode | `(mode: RouteViewMode)` | 場所一覧表示形式を設定 |
 | setSearchModalOpen | `(open: boolean)` | 検索モーダル開閉を設定 |
 | setInsertIndex | `(index: number \| null)` | 挿入位置を設定 |
 | openConfirmDialog | `(message: string, onConfirm: () => void)` | 確認ダイアログを開く |
@@ -408,6 +469,8 @@ type StorageService = {
 | キー | 値 | 説明 |
 |---|---|---|
 | `flexroute:routes` | `SavedRoute[]` のJSON文字列 | 全ルートを1キーに集約 |
+| `flexroute:labels` | `PlaceLabel[]` のJSON文字列 | 全ラベルを1キーに集約 |
+| `flexroute:lastKnownPosition` | `{ lat, lng, updatedAt }` のJSON文字列 | ナビ終了時の最終位置 |
 
 実装: `localStorageService`（src/services/storage.ts）
 - `readAll()`: localStorage から読み取り、JSON.parse。エラー時は空配列
@@ -583,8 +646,8 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 - **責務**: GPS位置を watchPosition で継続監視し、現在地・方向・速度をstoreに反映する
 - **依存store**: navigationStore（setCurrentPosition）
-- **依存service**: geolocation（watchCurrentPosition, clearPositionWatch）、logService
-- **呼び出し元**: App.tsx
+- **依存service**: geolocation（watchHighAccuracy, clearPositionWatch）、logService
+- **呼び出し元**: ナビ画面（1-6 で実装予定。現在はどこからも呼ばれていない）
 
 ### useRouteCalculation（src/hooks/useRouteCalculation.ts）
 
@@ -603,9 +666,9 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### useMapInitialView（src/hooks/useMapInitialView.ts）
 
-- **責務**: 地図の初期表示を制御する。ウェイポイントなし時は2系統並走測位（F-LOC参照）で現在地に、ウェイポイント1件時はそのポイントに、2件以上時はfitBoundsで全WPが収まる範囲に表示
-- **依存store**: routeStore（currentRoute）、uiStore（setMapReady）、navigationStore（currentPosition）
-- **依存service**: なし（navigator.geolocation を直接使用）
+- **責務**: 地図の初期表示を制御する。ウェイポイントなし時は lastKnownPosition（localStorage）で初期位置を決定、ウェイポイント1件時はそのポイントに、2件以上時はfitBoundsで全WPが収まる範囲に表示
+- **依存store**: routeStore（currentRoute）、uiStore（setMapReady）
+- **依存service**: geolocation（getLastKnownPosition）
 - **呼び出し元**: MapInitialView.tsx
 
 ### useAutoSave（src/hooks/useAutoSave.ts）
@@ -644,12 +707,23 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### geolocation.ts（src/services/geolocation.ts）
 
-- **責務**: navigator.geolocation.watchPosition のラッパー。位置情報の継続監視と型安全なコールバックを提供
+- **責務**: Geolocation API のラッパーと lastKnownPosition の永続化。ナビ画面で使用
 - **公開関数/型**:
   - `GeolocationResult`（型）— lat, lng, heading, speed, accuracy を持つ位置情報
   - `GeolocationErrorInfo`（型）— code, message を持つエラー情報
-  - `watchCurrentPosition(onSuccess, onError)` — watchPosition を開始し watchId を返す
+  - `watchHighAccuracy(onSuccess, onError)` — enableHighAccuracy: true で watchPosition を開始し watchId を返す
   - `clearPositionWatch(watchId)` — watchPosition を停止
+  - `saveLastKnownPosition(lat, lng)` — 現在位置を localStorage に保存（ナビ終了時に呼ぶ）
+  - `getLastKnownPosition()` — localStorage から最後の位置を読み込み。null の場合あり
+
+### labelStorage.ts（src/services/labelStorage.ts）
+
+- **責務**: ラベルデータの localStorage 永続化
+- **公開関数**:
+  - `labelStorageService.getLabels()` — 全ラベルを読み込み
+  - `labelStorageService.saveLabel(label)` — ラベルを保存（既存IDは上書き、新規は追加）
+  - `labelStorageService.deleteLabel(labelId)` — ラベルを削除
+  - `labelStorageService.getLabel(labelId)` — IDでラベルを1件取得
 
 ### logService.ts（src/services/logService.ts）
 
@@ -717,11 +791,14 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `SLOW_THRESHOLD_MS` | services/performanceMonitor.ts | `5000` |
 | `ROUTES_API_URL` | services/routeApi.ts | `"https://routes.googleapis.com/directions/v2:computeRoutes"` |
 | `FIELD_MASK` | services/routeApi.ts | routes.duration, distanceMeters, polyline 等のフィールドマスク |
-| `WATCH_OPTIONS` | services/geolocation.ts | `{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }` |
+| `HIGH_ACCURACY_OPTIONS` | services/geolocation.ts | `{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }` |
+| `LAST_KNOWN_POSITION_KEY` | services/geolocation.ts | `"flexroute:lastKnownPosition"` |
+| `LOST_THRESHOLD` | hooks/useGeolocation.ts | `15000` |
+| `CHECK_INTERVAL` | hooks/useGeolocation.ts | `1000` |
+| `STORAGE_KEY`（ラベル） | services/labelStorage.ts | `"flexroute:labels"` |
 | `DEFAULT_ZOOM` | hooks/useMapInitialView.ts | `15` |
 | `DEFAULT_CENTER` | hooks/useMapInitialView.ts | `{ lat: 35.6895, lng: 139.6917 }`（東京） |
-| `FIT_BOUNDS_PADDING` | hooks/useMapInitialView.ts | `80` |
-| `COARSE_TIMEOUT` | hooks/useMapInitialView.ts | `2000` |
+| `FIT_BOUNDS_PADDING` | hooks/useMapInitialView.ts | `{ top: 80, right: 80, bottom: 80, left: 420 }` |
 | `HIGHWAY_KEYWORDS` | utils/roadType.ts | `["高速", "有料", "自動車道", "IC", "JCT"]` |
 | `NATIONAL_KEYWORDS` | utils/roadType.ts | `["国道"]` |
 | `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |
