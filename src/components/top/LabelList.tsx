@@ -1,24 +1,33 @@
-import { Plus } from "lucide-react";
+import { useEffect } from "react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useUiStore } from "@/stores/uiStore";
-
-const DUMMY_LABELS = [
-  { id: "1", name: "お気に入り", color: "#ef4444", placeCount: 3 },
-  { id: "2", name: "キャンプ場", color: "#22c55e", placeCount: 5 },
-  { id: "3", name: "温泉", color: "#3b82f6", placeCount: 2 },
-  { id: "4", name: "道の駅", color: "#f59e0b", placeCount: 8 },
-];
+import { useLabelStore } from "@/stores/labelStore";
+import type { PlaceLabel } from "@/types";
 
 export function LabelList() {
-  const labels = DUMMY_LABELS;
+  const labels = useLabelStore((s) => s.labels);
+  const loadLabels = useLabelStore((s) => s.loadLabels);
+  const openLabelModal = useLabelStore((s) => s.openLabelModal);
+  const deleteLabel = useLabelStore((s) => s.deleteLabel);
+  const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const viewMode = useUiStore((s) => s.labelViewMode);
   const setViewMode = useUiStore((s) => s.setLabelViewMode);
+
+  useEffect(() => { loadLabels(); }, [loadLabels]);
+
+  const handleDelete = (label: PlaceLabel) => {
+    openConfirmDialog(`「${label.name}」を削除しますか？`, () => deleteLabel(label.id));
+  };
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-4">
         <ViewToggle current={viewMode} onChange={setViewMode} />
-        <button className="bg-indigo-600 text-white p-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-500 transition-colors flex items-center text-sm">
+        <button
+          onClick={() => openLabelModal()}
+          className="bg-indigo-600 text-white p-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-500 transition-colors flex items-center text-sm"
+        >
           <Plus className="w-5 h-5" />
         </button>
       </div>
@@ -28,13 +37,13 @@ export function LabelList() {
       ) : viewMode === "tile" ? (
         <div className="grid grid-cols-2 gap-3">
           {labels.map((label) => (
-            <LabelCard key={label.id} label={label} />
+            <LabelCard key={label.id} label={label} onEdit={openLabelModal} onDelete={handleDelete} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {labels.map((label) => (
-            <LabelRow key={label.id} label={label} />
+            <LabelRow key={label.id} label={label} onEdit={openLabelModal} onDelete={handleDelete} />
           ))}
         </div>
       )}
@@ -42,35 +51,43 @@ export function LabelList() {
   );
 }
 
-type LabelItem = { id: string; name: string; color: string; placeCount: number };
+type LabelItemProps = {
+  label: PlaceLabel;
+  onEdit: (label: PlaceLabel) => void;
+  onDelete: (label: PlaceLabel) => void;
+};
 
-function LabelCard({ label }: { label: LabelItem }) {
+function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <button className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2">
-      <span
-        className="w-8 h-8 rounded-full shrink-0"
-        style={{ backgroundColor: label.color }}
-      />
-      <span className="text-base font-bold text-slate-800 text-center truncate w-full">
-        {label.name}
-      </span>
-      <span className="text-sm text-slate-600">{label.placeCount}件</span>
-    </button>
+    <div className="bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2 relative">
+      <div className="absolute top-2 right-2 flex gap-1">
+        <button onClick={() => onEdit(label)} className="p-1 text-slate-400 hover:text-indigo-600">
+          <Pencil className="w-4 h-4" />
+        </button>
+        <button onClick={() => onDelete(label)} className="p-1 text-slate-400 hover:text-rose-500">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+      <span className="w-8 h-8 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+      <span className="text-base font-bold text-slate-800 text-center truncate w-full">{label.name}</span>
+      <span className="text-sm text-slate-600">0件</span>
+    </div>
   );
 }
 
-function LabelRow({ label }: { label: LabelItem }) {
+function LabelRow({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <button className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 text-left">
-      <span
-        className="w-4 h-4 rounded-full shrink-0"
-        style={{ backgroundColor: label.color }}
-      />
-      <span className="flex-1 text-base font-bold text-slate-800">
-        {label.name}
-      </span>
-      <span className="text-sm text-slate-600">{label.placeCount}件</span>
-    </button>
+    <div className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3">
+      <span className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+      <span className="flex-1 text-base font-bold text-slate-800">{label.name}</span>
+      <span className="text-sm text-slate-600 mr-2">0件</span>
+      <button onClick={() => onEdit(label)} className="p-1 text-slate-400 hover:text-indigo-600">
+        <Pencil className="w-4 h-4" />
+      </button>
+      <button onClick={() => onDelete(label)} className="p-1 text-slate-400 hover:text-rose-500">
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
   );
 }
 
@@ -78,9 +95,7 @@ function EmptyState() {
   return (
     <div className="text-center text-slate-500 py-8 bg-slate-50 rounded-xl border border-slate-100">
       <p className="text-sm">ラベルはまだありません</p>
-      <p className="text-xs mt-1 text-slate-500">
-        「+」ボタンからラベルを作成しましょう
-      </p>
+      <p className="text-xs mt-1 text-slate-500">「+」ボタンからラベルを作成しましょう</p>
     </div>
   );
 }
