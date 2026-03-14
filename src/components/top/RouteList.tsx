@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { RouteCard } from "@/components/top/RouteCard";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useRouteStore } from "@/stores/routeStore";
@@ -60,15 +61,22 @@ export function RouteList() {
               : "flex flex-col gap-3"
           }
         >
-          {savedRoutes.map((route) => (
-            <RouteCard
-              key={route.id}
-              route={route}
-              viewMode={routeViewMode}
-              onSelect={handleSelect}
-              onDelete={handleDelete}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {savedRoutes.map((route) => (
+              <motion.div
+                key={route.id}
+                layout
+                exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
+              >
+                <RouteCard
+                  route={route}
+                  viewMode={routeViewMode}
+                  onSelect={handleSelect}
+                  onDelete={handleDelete}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
