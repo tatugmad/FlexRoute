@@ -27,7 +27,7 @@
 | F-SOURCEMAP | Source Map（本番ビルドでもデバッグ可能） | ✅ | - |
 | F-CACHE | キャッシュ対策（F5リロード） | ✅ | - |
 | F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | ✅ | 1-5 |
-| F-LABEL | ラベル管理（CRUD） | 未実装 | 1-5 |
+| F-LABEL | ラベル管理（CRUD） | ✅ | 1-5 |
 | F-PLACE | 場所保存・一覧 | 未実装 | 1-5 |
 | F-THUMB | ルートサムネイル（Static Maps API） | 未実装 | 1-5 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 未実装 | 1-6 |
@@ -394,7 +394,7 @@ navigationStore が管理する:
 - ヘッダー: bg-indigo-600、アプリ名「FlexRoute」
 - タブバー: uiStore.topTab で切替（"routes" / "labels" / "places"）
 - 「ルート」タブ: F-ROUTE-LIST
-- 「ラベル」タブ: 「準備中」表示（1-5で実装）
+- 「ラベル」タブ: F-LABEL（ラベル一覧・CRUD）
 - 「場所」タブ: 「準備中」表示（1-5で実装）
 - 「新規作成」ボタン → routeStore.newRoute() → viewMode → "route"
 
