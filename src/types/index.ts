@@ -1,3 +1,12 @@
+// ── ラベル ──
+export type PlaceLabel = {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 // ── 座標 ──
 export type LatLng = {
   lat: number;
