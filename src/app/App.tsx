@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DebugPanel } from "@/components/ui/DebugPanel";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useMapClickHandler } from "@/hooks/useMapClickHandler";
+import { useNavigationStore } from "@/stores/navigationStore";
 import { useUiStore } from "@/stores/uiStore";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
@@ -42,7 +43,8 @@ function AppRouter() {
 }
 
 function RouteScreen() {
-  const { position } = useGeolocation();
+  useGeolocation();
+  const position = useNavigationStore((s) => s.currentPosition);
   const handleMapClick = useMapClickHandler();
   const isMapReady = useUiStore((s) => s.isMapReady);
 

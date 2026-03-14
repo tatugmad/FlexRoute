@@ -49,6 +49,70 @@ export function clearPositionWatch(watchId: number): void {
   }
 }
 
+// ── 2系統並走 ──
+
+export type DualWatchCallbacks = {
+  onPrimary: (result: GeolocationResult) => void;
+  onSecondary: (result: GeolocationResult) => void;
+  onPrimaryError: (error: GeolocationErrorInfo) => void;
+  onSecondaryError: (error: GeolocationErrorInfo) => void;
+};
+
+const PRIMARY_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 10000,
+  maximumAge: 0,
+};
+
+const SECONDARY_OPTIONS: PositionOptions = {
+  enableHighAccuracy: false,
+  timeout: 5000,
+  maximumAge: 30000,
+};
+
+export function startDualWatch(
+  callbacks: DualWatchCallbacks,
+): { primaryId: number; secondaryId: number } {
+  if (!navigator.geolocation) {
+    const err = { code: 0, message: "Geolocation is not supported" };
+    callbacks.onPrimaryError(err);
+    callbacks.onSecondaryError(err);
+    return { primaryId: -1, secondaryId: -1 };
+  }
+
+  const toResult = (p: GeolocationPosition): GeolocationResult => ({
+    lat: p.coords.latitude,
+    lng: p.coords.longitude,
+    heading: p.coords.heading,
+    speed: p.coords.speed,
+    accuracy: p.coords.accuracy,
+  });
+
+  const toError = (e: GeolocationPositionError): GeolocationErrorInfo => ({
+    code: e.code,
+    message: getErrorMessage(e.code),
+  });
+
+  const primaryId = navigator.geolocation.watchPosition(
+    (pos) => callbacks.onPrimary(toResult(pos)),
+    (err) => callbacks.onPrimaryError(toError(err)),
+    PRIMARY_OPTIONS,
+  );
+
+  const secondaryId = navigator.geolocation.watchPosition(
+    (pos) => callbacks.onSecondary(toResult(pos)),
+    (err) => callbacks.onSecondaryError(toError(err)),
+    SECONDARY_OPTIONS,
+  );
+
+  return { primaryId, secondaryId };
+}
+
+export function stopDualWatch(ids: { primaryId: number; secondaryId: number }): void {
+  clearPositionWatch(ids.primaryId);
+  clearPositionWatch(ids.secondaryId);
+}
+
 function getErrorMessage(code: number): string {
   switch (code) {
     case GeolocationPositionError.PERMISSION_DENIED:
