@@ -11,11 +11,7 @@ export type GeolocationErrorInfo = {
   message: string;
 };
 
-const FAST_OPTIONS: PositionOptions = {
-  enableHighAccuracy: false,
-  timeout: 5000,
-  maximumAge: 30000,
-};
+const LAST_KNOWN_POSITION_KEY = "flexroute:lastKnownPosition";
 
 const HIGH_ACCURACY_OPTIONS: PositionOptions = {
   enableHighAccuracy: true,
@@ -23,30 +19,29 @@ const HIGH_ACCURACY_OPTIONS: PositionOptions = {
   maximumAge: 0,
 };
 
-/** 地図の初期センタリング専用。マーカーは出さない。 */
-export function getCurrentPositionFast(): Promise<GeolocationResult> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject({ code: 0, message: "Geolocation is not supported" });
-      return;
-    }
+/** lastKnownPosition を localStorage に保存 */
+export function saveLastKnownPosition(lat: number, lng: number): void {
+  const data = { lat, lng, updatedAt: new Date().toISOString() };
+  localStorage.setItem(LAST_KNOWN_POSITION_KEY, JSON.stringify(data));
+}
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        resolve({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          heading: position.coords.heading,
-          speed: position.coords.speed,
-          accuracy: position.coords.accuracy,
-        });
-      },
-      (error) => {
-        reject({ code: error.code, message: getErrorMessage(error.code) });
-      },
-      FAST_OPTIONS,
-    );
-  });
+/** lastKnownPosition を localStorage から読み込み */
+export function getLastKnownPosition(): {
+  lat: number;
+  lng: number;
+  updatedAt: string;
+} | null {
+  try {
+    const raw = localStorage.getItem(LAST_KNOWN_POSITION_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (typeof data.lat !== "number" || typeof data.lng !== "number") {
+      return null;
+    }
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 /** 高精度位置監視。現在地マーカー・ナビ用。 */
