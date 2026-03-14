@@ -1,13 +1,13 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-11
+> 最終更新: 2026-03-14
 
 ## 機能一覧
 
 | ID | 機能 | 実装状態 | MS |
 |----|------|---------|-----|
 | F-MAP | 地図表示 | ✅ | 1-2 |
-| F-LOC | 現在地表示（2段階測位） | ✅ | 1-2, 1-4 |
+| F-LOC | 現在地表示（2系統並走測位） | ✅ | 1-2, 1-4, 1-5 |
 | F-WP-ADD | ウェイポイント追加（地図タップ） | ✅ | 1-3 |
 | F-WP-SEARCH | ウェイポイント追加（場所検索） | ✅ | 1-3 |
 | F-WP-INSERT | ウェイポイント経由地挿入 | ✅ | 1-3 |
@@ -69,24 +69,61 @@
 
 ---
 
-### F-LOC: 現在地表示（2段階測位）
+### F-LOC: 現在地表示（2系統並走測位）
 
-概要: GPS/WiFi で現在地を取得し、青い矢印マーカーで常時表示する。2段階測位で即時表示。
+概要: GPS（主系）と Wifi/IP（副系）の2本の watchPosition を並走させ、現在地マーカーを常時表示する。
 
-動作フロー:
-- useGeolocation フックが navigator.geolocation.watchPosition を開始
-- 位置取得 → navigationStore.setCurrentPosition(position, heading, speed)
-- CurrentLocationMarker が AdvancedMarker + カスタムSVG矢印で描画（ZIndex=100、常時最上位）
-- heading に応じて矢印が回転（transition: 0.3s ease-out）
-- ルート編集画面でウェイポイントなしの場合:
-  1. キャッシュ確認: navigationStore.currentPosition があれば即使用
-  2. 段階1: enableHighAccuracy: false（WiFi/IP、タイムアウト2秒）→ 即座に地図表示
-  3. 段階2: enableHighAccuracy: true（GPS）→ バックグラウンド実行、取得後 panTo
-  4. 段階1も失敗 → 東京（35.6895, 139.6917）をデフォルト表示
+#### 測位の2系統並走
+
+useGeolocation フックが2本の watchPosition を同時に開始する:
+
+| 系統 | enableHighAccuracy | 役割 |
+|------|-------------------|------|
+| 主系（GPS） | true | GPS優先。取得できればこちらを採用 |
+| 副系（Wifi/IP） | false | 主系が沈黙している間の保険 |
+
+採用ロジック:
+- 主系の結果が来たら即採用（高精度が最優先）
+- 主系が一定時間（例: 5秒）沈黙したら、副系の最新位置を採用
+- 主系が復帰したら即座に主系に戻す
+- 初回は副系の方が先に返ることが多い → 素早くマーカーが表示される
+
+#### positionQuality（位置品質の3状態）
+
+navigationStore が管理する:
+
+| 値 | 意味 | 判定条件 |
+|----|------|---------|
+| `'gps'` | GPS（主系）採用中 | 主系の結果を直近で採用 |
+| `'wifi'` | Wifi/IP（副系）採用中 | 副系のみ取得、主系が沈黙中 |
+| `'lost'` | 両方沈黙 | 一定時間どちらからも結果なし |
+
+呼び出し側は `currentPosition: LatLng | null` だけで位置を取得する。
+`positionQuality` はアイコン表示やアラートなど、種別が必要な箇所だけが参照する。
+
+#### 現在地マーカーのデザイン（positionQuality別）
+
+- `'gps'`: 青い矢印 + 白パルス背景（現行デザイン、DESIGN_REFERENCE セクション1）
+- `'wifi'`: デザイン未確定（1-5 or 1-6で決定）。GPS版と視覚的に区別できること
+- `'lost'`（ナビ中のみ）: 最後に取得した位置にマーカーを残し、不明アイコンに切替。デッドレコニング（加速度センサー推測）は行わない
+
+#### GPSロスト時のアラート（ナビ中のみ）
+
+- ナビ中に positionQuality が `'lost'` になった場合、地図上にアラートアイコンを表示する
+- アラートアイコンは方位磁石・ZOOM・CENTER等のナビコントロール群（DESIGN_REFERENCE セクション9）と統一デザイン（w-14 h-14 丸ボタン）
+- ルート編集中は lost になってもアラートは表示しない（安全に直結しないため）
+
+#### 地図初期表示
+
+ルート編集画面でウェイポイントなしの場合:
+1. キャッシュ確認: navigationStore.currentPosition があれば即使用
+2. 2系統並走の副系（Wifi/IP）が先に返る → 即座に地図表示
+3. 主系（GPS）が返ったら panTo で微調整
+4. 両方失敗 → 東京（35.6895, 139.6917）をデフォルト表示
 - ローディング画面は使用しない。地図は必ず即座に描画する
 
-入力: Geolocation API の watchPosition
-出力: 地図上に青い矢印マーカー。navigationStore に現在地・方向・速度を保持
+入力: Geolocation API の watchPosition × 2本
+出力: 地図上に現在地マーカー（positionQuality別デザイン）。navigationStore に現在地・方向・速度・positionQuality を保持
 エラー: 位置取得拒否/失敗 → 東京をデフォルト表示。エラーログ出力
 関連: F-MAP, F-NAV
 
@@ -827,8 +864,10 @@ Google Maps API 依存部分の方針:
 
 | 問題 | 発見時期 | 関連機能 | 状態 |
 |---|---|---|---|
-| 地図初期表示が東京→現在位置に切り替わる（2段階測位の挙動） | 1-5 | F-LOC, MapInitialView | 未対処 |
-| ウェイポイント追加時にGoogleデフォルトのポップアップが表示される | 1-5 | F-WP-ADD, PlaceActionModal | 判断保留 |
+| 現在地マーカーが表示されない + 初期表示で現在位置に移動しない（useGeolocation が高精度のみで watchPosition しており、デスクトップで失敗する。2系統並走設計で解決予定） | 1-5 | F-LOC | 未対処（1-5で修正） |
+| ルートロード時にポリラインの一部が画面からはみ出す（fitBoundsのpadding不足） | 1-5 | F-ROUTE-LOAD, MapInitialView | 未対処 |
+| ルート削除後のカード再表示にスライドアニメーションがない（ぱっと消えると削除できたか分かりにくい） | 1-5 | F-ROUTE-DELETE, RouteCard | 未対処（改善要望） |
+| ~~ウェイポイント追加時にGoogleデフォルトのポップアップが表示される~~ | 1-5 | F-WP-ADD | ✅ PlaceActionModal（1-5）で解決済み |
 
 ## MD反映待ちドラフト
 
