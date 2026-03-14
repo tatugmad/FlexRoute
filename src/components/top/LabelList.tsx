@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { useUiStore } from "@/stores/uiStore";
 import { useLabelStore } from "@/stores/labelStore";
@@ -59,35 +59,29 @@ type LabelItemProps = {
 
 function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2 relative">
-      <div className="absolute top-2 right-2 flex gap-1">
-        <button onClick={() => onEdit(label)} className="p-1 text-slate-400 hover:text-indigo-600">
-          <Pencil className="w-4 h-4" />
-        </button>
-        <button onClick={() => onDelete(label)} className="p-1 text-slate-400 hover:text-rose-500">
+    <button onClick={() => onEdit(label)} className="bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2 relative cursor-pointer">
+      <div className="absolute top-2 right-2">
+        <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
       <span className="w-8 h-8 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
       <span className="text-base font-bold text-slate-800 text-center truncate w-full">{label.name}</span>
       <span className="text-sm text-slate-600">0件</span>
-    </div>
+    </button>
   );
 }
 
 function LabelRow({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <div className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3">
+    <button onClick={() => onEdit(label)} className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 cursor-pointer text-left">
       <span className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
       <span className="flex-1 text-base font-bold text-slate-800">{label.name}</span>
       <span className="text-sm text-slate-600 mr-2">0件</span>
-      <button onClick={() => onEdit(label)} className="p-1 text-slate-400 hover:text-indigo-600">
-        <Pencil className="w-4 h-4" />
-      </button>
-      <button onClick={() => onDelete(label)} className="p-1 text-slate-400 hover:text-rose-500">
+      <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500">
         <Trash2 className="w-4 h-4" />
       </button>
-    </div>
+    </button>
   );
 }
 
