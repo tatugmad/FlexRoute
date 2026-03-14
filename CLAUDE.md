@@ -55,6 +55,24 @@ GitHub Pages は HTTPS のため、Geolocation を含む全機能をテスト可
 4. GitHub Pages（https://tatugmad.github.io/FlexRoute/）で動作確認
 5. 問題があればチャットで修正方針を決め → 2に戻る
 
+### CC Web ブランチ・PR運用ルール
+
+#### ブランチ運用
+- 新しいタスクは必ず main の最新から新ブランチを作成する
+  - `git checkout main && git pull origin main && git checkout -b feature/タスク名`
+- マージ済みのブランチに追加コミットしてはならない（PRが「作成」ではなく「表示」になり、マージできなくなる）
+- ブランチ命名例: `feature/f-label`, `fix/fitbounds-padding`, `docs/update-spec`
+
+#### PR作成
+- PR は CC Web の UI に表示される「PR作成」ボタンで作成する
+- gh CLI のインストールや GitHub API の直接呼び出しは行わない（CC Web 環境では利用できない）
+- 「PR作成」ボタンが表示されず「PRを表示」になっている場合、マージ済みブランチにコミットしてしまった可能性がある。新ブランチを作り直すこと
+
+#### 環境の自己認識
+- CC Web はサンドボックス環境で動作しており、ローカルファイルシステムではない
+- npm run dev によるローカルサーバー起動・localhost での確認は行わない
+- 動作確認は GitHub Pages（https://tatugmad.github.io/FlexRoute/）で行う
+
 ### タスク指示の原則
 - 1タスク = 1セッション（複数機能を同時に指示しない）
 - マイルストーン単位で進める
