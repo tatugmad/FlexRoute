@@ -1,9 +1,6 @@
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { MapView } from "@/components/map/MapView";
 import { MapInitialView } from "@/components/map/MapInitialView";
-import { AccuracyOverlay } from "@/components/map/AccuracyOverlay";
-import { CurrentLocationMarker } from "@/components/map/CurrentLocationMarker";
-import { LostAlert } from "@/components/map/LostAlert";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
@@ -13,9 +10,7 @@ import { TopView } from "@/components/top/TopView";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DebugPanel } from "@/components/ui/DebugPanel";
-import { useGeolocation } from "@/hooks/useGeolocation";
 import { useMapClickHandler } from "@/hooks/useMapClickHandler";
-import { useNavigationStore } from "@/stores/navigationStore";
 import { useUiStore } from "@/stores/uiStore";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
@@ -45,8 +40,6 @@ function AppRouter() {
 }
 
 function RouteScreen() {
-  useGeolocation();
-  const position = useNavigationStore((s) => s.currentPosition);
   const handleMapClick = useMapClickHandler();
   const isMapReady = useUiStore((s) => s.isMapReady);
 
@@ -58,13 +51,10 @@ function RouteScreen() {
           <ErrorBoundary fallbackLabel="MapView">
             <MapView onClick={handleMapClick}>
               <MapInitialView />
-              {position && <CurrentLocationMarker position={position} />}
               <RoutePolyline />
               <WaypointMarkers />
             </MapView>
           </ErrorBoundary>
-          <AccuracyOverlay />
-          <LostAlert />
           {!isMapReady && <MapLoadingOverlay />}
         </div>
         <SearchModal />

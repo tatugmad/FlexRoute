@@ -2,8 +2,7 @@ import { useEffect, useRef } from "react";
 
 import { useMap } from "@vis.gl/react-google-maps";
 
-import { getCurrentPositionFast } from "@/services/geolocation";
-import { useNavigationStore } from "@/stores/navigationStore";
+import { getLastKnownPosition } from "@/services/geolocation";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 
@@ -15,20 +14,17 @@ export function useMapInitialView() {
   const map = useMap();
   const currentRoute = useRouteStore((s) => s.currentRoute);
   const setMapReady = useUiStore((s) => s.setMapReady);
-  const currentPosition = useNavigationStore((s) => s.currentPosition);
   const hasInitialized = useRef(false);
-  const hasPannedToPosition = useRef(false);
 
   useEffect(() => {
     setMapReady(false);
     hasInitialized.current = false;
-    hasPannedToPosition.current = false;
     return () => {
       setMapReady(false);
     };
   }, [setMapReady]);
 
-  // 初期表示
+  // 初期表示（全て同期的に即座に決定）
   useEffect(() => {
     if (!map || hasInitialized.current) return;
     hasInitialized.current = true;
@@ -36,40 +32,20 @@ export function useMapInitialView() {
     const waypoints = currentRoute?.waypoints ?? [];
 
     if (waypoints.length === 0) {
-      // DEFAULT_CENTERで即描画
-      map.setCenter(DEFAULT_CENTER);
+      const lastKnown = getLastKnownPosition();
+      const center = lastKnown
+        ? { lat: lastKnown.lat, lng: lastKnown.lng }
+        : DEFAULT_CENTER;
+      map.setCenter(center);
       map.setZoom(DEFAULT_ZOOM);
-      setMapReady(true);
-
-      // getCurrentPositionFast で非同期にセンタリング
-      getCurrentPositionFast()
-        .then((result) => {
-          map.setCenter({ lat: result.lat, lng: result.lng });
-          map.setZoom(DEFAULT_ZOOM);
-          hasPannedToPosition.current = true;
-        })
-        .catch(() => {
-          // 失敗時はDEFAULT_CENTERのまま
-        });
     } else if (waypoints.length === 1) {
       map.setCenter(waypoints[0]!.position);
       map.setZoom(DEFAULT_ZOOM);
-      setMapReady(true);
     } else {
       fitBoundsToWaypoints(map, waypoints);
-      setMapReady(true);
     }
+    setMapReady(true);
   }, [map, currentRoute, setMapReady]);
-
-  // watchHighAccuracy から位置が来たら panTo（暫定: 常に panTo）
-  useEffect(() => {
-    if (!map || hasPannedToPosition.current || !currentPosition) return;
-    const waypoints = currentRoute?.waypoints ?? [];
-    if (waypoints.length === 0) {
-      map.panTo(currentPosition);
-      hasPannedToPosition.current = true;
-    }
-  }, [map, currentPosition, currentRoute]);
 }
 
 function fitBoundsToWaypoints(
