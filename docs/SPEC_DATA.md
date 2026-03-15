@@ -276,13 +276,13 @@ type SavedPlace = {
   id: string;
   placeId: string;
   name: string;
-  originalName: string;
+  originalName: string | null;
   address: string;
   position: LatLng;
   rating: number | null;
   photoUrl: string | null;
   labelIds: string[];
-  userNote: string;
+  memo: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -340,6 +340,14 @@ type SavedPlace = {
 | loadSavedRoutes | `()` | localStorage から全ルート読み込み |
 | newRoute | `()` | 新規ルートを作成 |
 | reset | `()` | 全状態を初期値に戻す |
+
+### routeConverters.ts（src/stores/routeConverters.ts）
+
+- **責務**: Route ↔ SavedRoute の変換と新規ルート生成
+- **公開関数**:
+  - `toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes, mapCenter, mapZoom)` — 編集中ルートを保存形式に変換
+  - `createNewRoute(travelMode)` — 新規空ルートを生成
+  - `toRoute(saved)` — 保存形式から編集形式に変換
 
 ### navigationStore（src/stores/navigationStore.ts）
 
@@ -404,6 +412,7 @@ type SavedPlace = {
 | placeModalData | `PlaceModalData \| null` | `null` | PlaceActionModal の表示データ |
 | placeModalOpen | `boolean` | `false` | PlaceActionModal の開閉 |
 | savedPlaces | `SavedPlace[]` | `[]` | 保存済み場所一覧 |
+| detailPlaceId | `string \| null` | `null` | PlaceDetailModal に表示中の場所ID |
 
 #### アクション
 
@@ -417,10 +426,12 @@ type SavedPlace = {
 | closePlaceModal | `()` | PlaceActionModal を閉じる |
 | reset | `()` | 全状態を初期値に戻す |
 | loadPlaces | `()` | localStorage から全場所を読み込み |
-| addPlace | `(place: Omit<SavedPlace, "id" \| "createdAt" \| "updatedAt">)` | 場所を追加（id/timestamps自動生成） |
-| updatePlace | `(id: string, updates: Partial<...>)` | 場所を更新（name, userNote, labelIds, photoUrl） |
+| savePlace | `(place: Omit<SavedPlace, "id" \| "createdAt" \| "updatedAt">)` | 場所を保存（id/timestamps自動生成） |
+| updatePlace | `(id: string, updates: Partial<Pick<SavedPlace, "name" \| "memo" \| "labelIds" \| "photoUrl" \| "originalName">>)` | 場所を更新 |
 | deletePlace | `(id: string)` | 場所を削除 |
 | isSaved | `(googlePlaceId: string)` | 指定placeIdの場所が保存済みか判定 |
+| openPlaceDetail | `(id: string)` | PlaceDetailModal を開く |
+| closePlaceDetail | `()` | PlaceDetailModal を閉じる |
 
 ### uiStore（src/stores/uiStore.ts）
 
@@ -711,6 +722,20 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **依存service**: なし
 - **呼び出し元**: RouteList.tsx
 
+### useMapViewState（src/hooks/useMapViewState.ts）
+
+- **責務**: ルート保存時の地図 center/zoom を記録し、ルートロード時に復元する
+- **使用箇所**: MapViewState.tsx
+- **依存**: routeStore（mapCenter, mapZoom）
+
+### usePlaceCache（src/hooks/usePlaceCache.ts）
+
+- **責務**: SavedPlace の photoUrl / originalName が null または期限切れの場合に Google Places API から再取得する。セッション内メモリキャッシュ付き
+- **使用箇所**: PlaceList, PlaceDetailModal
+- **依存**: placeStore（updatePlace）, placeDetailsService
+- **公開関数**:
+  - 戻り値: `{ photoUrl, originalName, isLoading, refetch }`
+
 ## Services 責務一覧
 
 ### storage.ts（src/services/storage.ts）
@@ -759,6 +784,13 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `placeStorageService.deletePlace(placeId)` — 場所を削除
   - `placeStorageService.getPlace(placeId)` — IDで場所を1件取得
   - `placeStorageService.findByGooglePlaceId(googlePlaceId)` — Google Place IDで場所を検索
+
+### placeDetailsService.ts（src/services/placeDetailsService.ts）
+
+- **責務**: Google Places API (Place class) を使って施設情報（displayName, formattedAddress, rating, photos）を取得する共通サービス
+- **公開関数**:
+  - `fetchPlaceDetails(placeId: string)` — placeId から施設情報を取得。戻り値: `{ name, address, rating, photoUrl }`（全て nullable）
+- **使用箇所**: useMapClickHandler, usePlaceCache
 
 ### logService.ts（src/services/logService.ts）
 

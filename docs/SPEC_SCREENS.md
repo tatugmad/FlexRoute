@@ -72,7 +72,12 @@ M-CONFIRM → 「キャンセル」 → M-CONFIRM閉じる
 
 ### タブ: 場所
 
-- 1-5で実装予定。「準備中」表示
+- 保存済み場所の一覧を表示（PlaceList）
+- タイル / リスト表示切替（ViewToggle）
+- タイル: 写真（h-20）、施設名、住所、メモ、ラベルチップ
+- リスト: アバター写真（w-10 h-10）、施設名、住所、メモ
+- タップ → PlaceDetailModal を開く
+- 0件時: EmptyState（「保存された場所はありません」）
 
 ## S-EDIT: ルート編集画面
 
@@ -169,9 +174,14 @@ TOP画面（viewMode === 'top'）のとき:
 - ルートポリライン（RoutePolyline）: 道路種別色分け、ステップ単位で描画
 - 現在地マーカー（CurrentLocationMarker）: DESIGN_REFERENCE セクション1、常時表示、ZIndex=100
 
+### MapViewState（src/components/map/MapViewState.tsx）
+
+useMapViewState フックのマウント用コンポーネント。MapView 内で使用。
+地図の center/zoom を保存・復元する。
+
 ### 地図の初期表示
 
-- ウェイポイントなし: 2系統並走測位（SPEC_NAVIGATION.md 参照）
+- ウェイポイントなし: lastKnownPosition（localStorage）で初期センタリング（D-020 参照）
 - ウェイポイントあり: fitBounds（全WPが収まるズーム、padding: 80）
 - ウェイポイント1つ: そのポイント中心、ズーム15
 
@@ -199,3 +209,18 @@ TOP画面（viewMode === 'top'）のとき:
 - Placeアイコンタップ時に表示
 - 施設写真・名前・住所・評価
 - 「経路に追加」「ラベルを付ける」「ナビ開始」ボタン
+
+### PlaceSaveStep（src/components/places/PlaceSaveStep.tsx）
+
+PlaceActionModal 内の保存ステップ。名前入力 + ラベル選択（チェックボックス） + メモ入力。
+「場所を保存」タップで表示。保存完了でモーダルを閉じる。
+
+### PlaceDetailModal（src/components/places/PlaceDetailModal.tsx）
+
+保存済み場所の詳細表示・編集モーダル。場所一覧からタップで開く。
+- 写真、施設名、originalName（名前変更時のみ表示）、住所、評価
+- ラベル編集（PlaceLabelEditor）、メモ blur 保存、場所削除
+
+### PlaceLabelEditor（src/components/places/PlaceLabelEditor.tsx）
+
+PlaceDetailModal 内のラベル編集コンポーネント。チェックボックスで付け外し、即時保存。
