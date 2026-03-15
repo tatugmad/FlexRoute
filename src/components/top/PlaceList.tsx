@@ -5,6 +5,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { PlaceCard, PlaceRow } from "@/components/top/PlaceCard";
 import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
+import { CARD_WIDTH } from "@/constants/cardLayout";
 import { useLabelStore } from "@/stores/labelStore";
 import { matchesQuery } from "@/utils/searchFilter";
 
@@ -60,7 +61,7 @@ export function PlaceList() {
               <motion.div
                 key={place.id}
                 exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-                className="w-[280px]"
+                style={{ width: CARD_WIDTH }}
               >
                 <PlaceCard place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
               </motion.div>

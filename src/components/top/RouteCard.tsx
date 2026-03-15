@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Trash2, Map } from "lucide-react";
+import { CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 import type { SavedRoute, RouteViewMode } from "@/types";
 
 type RouteCardProps = {
@@ -11,7 +12,7 @@ type RouteCardProps = {
 
 function TilePlaceholder() {
   return (
-    <div className="h-[110px] bg-slate-100 flex items-center justify-center border-b border-slate-300">
+    <div className="bg-slate-100 flex items-center justify-center border-b border-slate-300" style={{ height: CARD_THUMBNAIL_HEIGHT }}>
       <Map className="w-6 h-6 text-slate-400" />
     </div>
   );
@@ -76,7 +77,8 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
         <img
           src={route.thumbnailUrl!}
           alt=""
-          className="w-full h-[110px] object-cover"
+          className="w-full object-cover"
+          style={{ height: CARD_THUMBNAIL_HEIGHT }}
           onError={() => setImgError(true)}
         />
       ) : (

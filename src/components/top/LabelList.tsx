@@ -6,6 +6,7 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { LabelCard, LabelRow } from "@/components/top/LabelCard";
 import { useUiStore } from "@/stores/uiStore";
 import { useLabelStore } from "@/stores/labelStore";
+import { CARD_WIDTH } from "@/constants/cardLayout";
 import { matchesQuery } from "@/utils/searchFilter";
 import type { PlaceLabel } from "@/types";
 
@@ -57,7 +58,7 @@ export function LabelList() {
               <motion.div
                 key={label.id}
                 exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-                className="w-[280px]"
+                style={{ width: CARD_WIDTH }}
               >
                 <LabelCard label={label} onEdit={openLabelModal} onDelete={handleDelete} />
               </motion.div>
