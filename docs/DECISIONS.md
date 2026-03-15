@@ -82,6 +82,7 @@
 - **理由**: getCurrentPosition(enableHighAccuracy: true) は1〜5秒かかる。ローディング画面（グルグル）はUX劣悪。東京デフォルト→現在地移動はちらつきが発生。WiFi測位で即座に表示し、GPS取得後にpanToで微調整する方式が最善。2回目以降はnavigationStoreのキャッシュで即座表示
 - **却下**: ローディング表示 → 数秒待たされる。東京デフォルト→移動 → ちらつき発生
 - **発展**: D-017 により、初期表示だけでなく継続監視も2系統並走に拡張。GPSロスト時の保険として副系（Wifi/IP）が常時動作する
+- **ステータス**: D-020 により方針変更。ルート編集画面では Geolocation API を使用せず、lastKnownPosition（localStorage）で初期センタリングを行う
 
 ## D-013: ルートの保存条件
 
@@ -103,9 +104,22 @@
 - **決定**: useGeolocation で watchPosition を2本同時に走らせる。主系（enableHighAccuracy: true = GPS）と副系（enableHighAccuracy: false = Wifi/IP）
 - **理由**: 1本の watchPosition（高精度のみ）ではGPSロスト時（トンネル等）に位置更新が途絶える。ブラウザの Geolocation API は GPS→Wifi/IP への自動フォールバックを保証しない。2本並走で主系沈黙時に副系が保険として機能する。副系が先に返ることで初回表示も高速化される
 - **却下**: watchPosition 1本（高精度のみ）→ デスクトップやGPSロスト時に沈黙。accuracy ベースの推定 → 自分たちの設計では2系統を明示管理しているので不要
+- **ステータス**: D-019 により廃止。2系統並走の設計前提が崩れたため、accuracy 値ベースの管理に移行
 
 ## D-018: デッドレコニング（加速度センサー位置推測）の見送り
 
 - **決定**: GPSロスト時にスマホの加速度センサーで現在位置を推測する機能は Phase 1 では実装しない
 - **理由**: ブラウザの DeviceMotion API は加速度を取れるが、二重積分で距離を出すと誤差が秒単位で累積し実用精度は数秒が限界。車載ナビはジャイロ+車速パルスで補正するがブラウザにはそれがない。代わりに「最後に取得した位置にマーカーを残し、lost アイコンに切り替える」設計とする
 - **再検討時期**: Phase 2（ネイティブアプリ化でセンサー融合が使えるようになった段階）
+
+## D-019: accuracy値ベースの位置精度管理（2系統並走の廃止）
+
+- **決定**: 2系統並走（startDualWatch）を廃止し、coords.accuracy（メートル）の値のみで位置精度を管理する。PositionQuality は 'active' | 'lost' の2値に変更
+- **理由**: ブラウザ Geolocation API は enableHighAccuracy をヒントとして受け取るだけで、実際の測位手段（GPS / Wifi / IP）をアプリに通知しない。enableHighAccuracy: true でも Wifi/IP ベースの値が返る場合があり、2系統並走で測位手段を判別する設計前提が崩れた。accuracy の値で精度を管理すれば十分
+- **却下**: 2系統維持し positionQuality を highAccuracy/lowAccuracy に読み替え → 測位手段が判別できない以上、2本の watchPosition を維持する複雑さに見合うメリットがない
+
+## D-020: ルート編集画面からGPSを完全除去
+
+- **決定**: ルート編集画面で Geolocation API を一切使用しない。GPS（watchPosition）はナビゲーション画面（1-6）でのみ使用する。ルート編集画面の初期センタリングは lastKnownPosition（localStorage）で行う
+- **理由**: PCでのルート編集時にGPSは不要。デスクトップPCでは watchPosition の更新間隔が長く（30秒〜数分）、15秒の lost 判定閾値で active/lost が繰り返される問題が発生した。ナビゲーション中のみ GPS を使う設計がシンプルで、位置情報の権限ダイアログもルート編集時には出なくなる
+- **却下**: LOST_THRESHOLD を長くする / maximumAge でキャッシュ許容 → 根本的にルート編集にGPSが不要なので対症療法は不適切
