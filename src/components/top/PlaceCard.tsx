@@ -53,33 +53,38 @@ export function PlaceRow({ place, onClick, onDelete }: PlaceCardProps) {
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
 
   return (
-    <button onClick={onClick} className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow pr-4 text-left flex items-center gap-3">
-      <div className="w-24 h-16 rounded-l-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+    <button onClick={onClick} className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow pr-3 text-left flex items-stretch">
+      {/* サムネイル: items-stretch でカード高さに追従 */}
+      <div className="w-24 rounded-l-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
         {photoUrl ? (
           <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
         ) : (
           <MapPin className="w-5 h-5 text-slate-400" />
         )}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between">
-          <p className="text-base font-bold text-slate-800 truncate flex-1 mr-2">{place.name}</p>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(place.id); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+      {/* テキスト部分 */}
+      <div className="min-w-0 flex-1 py-2 pl-3">
+        <p className="text-base font-bold text-slate-800 truncate">{place.name}</p>
         <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
         {place.memo ? (
           <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>
         ) : null}
         {placeLabels.length > 0 && (
-          <div className="flex gap-1.5 mt-2 flex-wrap">
+          <div className="flex gap-1.5 mt-1.5 flex-wrap">
             {placeLabels.map((label) => (
               <LabelChip key={label.id} name={label.name} color={label.color} />
             ))}
           </div>
         )}
       </div>
+      {/* 削除ボタン: テキストの外に独立配置 */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(place.id); }}
+        className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors self-center shrink-0"
+        aria-label="削除"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
     </button>
   );
 }
