@@ -798,7 +798,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `STORAGE_KEY`（ラベル） | services/labelStorage.ts | `"flexroute:labels"` |
 | `DEFAULT_ZOOM` | hooks/useMapInitialView.ts | `15` |
 | `DEFAULT_CENTER` | hooks/useMapInitialView.ts | `{ lat: 35.6895, lng: 139.6917 }`（東京） |
-| `FIT_BOUNDS_PADDING` | hooks/useMapInitialView.ts | `{ top: 80, right: 80, bottom: 80, left: 420 }` |
+| `FIT_BOUNDS_PADDING` | hooks/useMapInitialView.ts | `80` |
 | `HIGHWAY_KEYWORDS` | utils/roadType.ts | `["高速", "有料", "自動車道", "IC", "JCT"]` |
 | `NATIONAL_KEYWORDS` | utils/roadType.ts | `["国道"]` |
 | `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |

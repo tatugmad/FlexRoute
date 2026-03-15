@@ -8,7 +8,7 @@ import { useUiStore } from "@/stores/uiStore";
 
 const DEFAULT_ZOOM = 15;
 const DEFAULT_CENTER = { lat: 35.6895, lng: 139.6917 };
-const FIT_BOUNDS_PADDING = { top: 80, right: 80, bottom: 80, left: 420 };
+const FIT_BOUNDS_PADDING = 80;
 
 export function useMapInitialView() {
   const map = useMap();
