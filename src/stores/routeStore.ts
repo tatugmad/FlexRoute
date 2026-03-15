@@ -99,9 +99,9 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
     );
     localStorageService.saveRoute(saved);
-    const updated = savedRoutes.some((r) => r.id === saved.id)
-      ? savedRoutes.map((r) => (r.id === saved.id ? saved : r))
-      : [...savedRoutes, saved];
+    const updated = state.savedRoutes.some((r) => r.id === saved.id)
+      ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))
+      : [...state.savedRoutes, saved];
     set({ savedRoutes: updated, isDirty: false });
     logService.info("ROUTE", "ルート保存完了", { id: saved.id, version: saved.version });
   },
