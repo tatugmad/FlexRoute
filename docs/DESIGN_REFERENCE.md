@@ -262,13 +262,19 @@ JSX:
 - 場所名: `font-medium text-slate-800`
 - 住所: `text-sm text-slate-500`
 
-## 17. RouteCard
+## 17. カード共通（RouteCard / LabelCard / PlaceCard）
 
-- タイル表示: `bg-white border border-slate-200 rounded-2xl hover:shadow-xl cursor-pointer flex flex-col overflow-hidden`
-- リスト表示: `bg-white border border-slate-200 rounded-xl hover:shadow-md cursor-pointer flex overflow-hidden min-h-[5rem]`
+- リスト行共通（3タブ共通）:
+  - 外枠: `bg-white border border-slate-300 rounded-2xl hover:shadow-xl transition-shadow pr-3 text-left flex items-center gap-3`
+  - サムネ領域: `w-24 h-16 rounded-l-2xl overflow-hidden shrink-0 bg-slate-100 flex items-center justify-center`
+    - ルート: 地図サムネイル画像 / Map アイコン（フォールバック）
+    - 場所: 施設写真 / MapPin アイコン（フォールバック）
+    - ラベル: カラーサークル（w-8 h-8）
+  - テキスト: `flex-1 min-w-0`
+  - 削除ボタン: テキストの外に兄弟配置、`p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors`
+- タイル表示: `bg-white border border-slate-300 rounded-2xl hover:shadow-xl cursor-pointer flex flex-col overflow-hidden`
 - ルート名: `font-bold text-lg text-slate-800`（タイル）/ `text-base`（リスト）
 - 名称未設定時: `text-slate-400 italic` で「名称未設定」表示
-- 削除ボタン: `p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl`
 
 ## 18. 空状態メッセージ
 
