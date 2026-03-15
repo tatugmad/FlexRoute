@@ -33,8 +33,11 @@ export function LabelList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3 mb-4">
         <ViewToggle current={viewMode} onChange={setViewMode} />
+        <div className="flex-1 min-w-0">
+          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ラベルを検索..." />
+        </div>
         <button
           onClick={() => openLabelModal()}
           className="bg-indigo-600 text-white p-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-500 transition-colors flex items-center text-sm"
@@ -42,8 +45,6 @@ export function LabelList() {
           <Plus className="w-5 h-5" />
         </button>
       </div>
-
-      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ラベルを検索..." />
 
       {labels.length === 0 ? (
         <EmptyState />

@@ -42,8 +42,11 @@ export function RouteList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-3 mb-4">
         <ViewToggle current={routeViewMode} onChange={setRouteViewMode} />
+        <div className="flex-1 min-w-0">
+          <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ルートを検索..." />
+        </div>
         <button
           onClick={handleNewRoute}
           className="bg-indigo-600 text-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-500 transition-colors flex items-center text-sm"
@@ -52,8 +55,6 @@ export function RouteList() {
           <span className="hidden sm:inline">新規作成</span>
         </button>
       </div>
-
-      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ルートを検索..." />
 
       {savedRoutes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-500">
