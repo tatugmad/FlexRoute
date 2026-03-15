@@ -1,11 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { RouteCard } from "@/components/top/RouteCard";
 import { ViewToggle } from "@/components/ui/ViewToggle";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useNewRoute } from "@/hooks/useNewRoute";
+import { matchesQuery } from "@/utils/searchFilter";
 
 export function RouteList() {
   const savedRoutes = useRouteStore((s) => s.savedRoutes);
@@ -17,6 +19,7 @@ export function RouteList() {
   const setViewMode = useUiStore((s) => s.setViewMode);
   const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const createNewRoute = useNewRoute();
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadSavedRoutes();
@@ -49,36 +52,50 @@ export function RouteList() {
         </button>
       </div>
 
+      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ルートを検索..." />
+
       {savedRoutes.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-500">
           <p className="text-sm">保存されたルートはありません</p>
         </div>
-      ) : (
-        <div
-          className={
-            routeViewMode === "tile"
-              ? "flex flex-wrap gap-3"
-              : "flex flex-col gap-3"
-          }
-        >
-          <AnimatePresence mode="popLayout">
-            {savedRoutes.map((route) => (
-              <motion.div
-                key={route.id}
-                layout
-                exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-              >
-                <RouteCard
-                  route={route}
-                  viewMode={routeViewMode}
-                  onSelect={handleSelect}
-                  onDelete={handleDelete}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+      ) : (() => {
+        const filteredRoutes = savedRoutes.filter((route) =>
+          matchesQuery(searchQuery, [
+            route.name,
+            ...route.waypoints.map((wp) => wp.label),
+          ])
+        );
+        return filteredRoutes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+            <p className="text-sm">一致するルートはありません</p>
+          </div>
+        ) : (
+          <div
+            className={
+              routeViewMode === "tile"
+                ? "flex flex-wrap gap-3"
+                : "flex flex-col gap-3"
+            }
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredRoutes.map((route) => (
+                <motion.div
+                  key={route.id}
+                  layout
+                  exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
+                >
+                  <RouteCard
+                    route={route}
+                    viewMode={routeViewMode}
+                    onSelect={handleSelect}
+                    onDelete={handleDelete}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        );
+      })()}
     </div>
   );
 }
