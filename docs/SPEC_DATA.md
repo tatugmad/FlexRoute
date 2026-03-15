@@ -269,6 +269,25 @@ type ComputeRoutesResponse = {
 };
 ```
 
+### SavedPlace
+
+```ts
+type SavedPlace = {
+  id: string;
+  placeId: string;
+  name: string;
+  originalName: string;
+  address: string;
+  position: LatLng;
+  rating: number | null;
+  photoUrl: string | null;
+  labelIds: string[];
+  userNote: string;
+  createdAt: string;
+  updatedAt: string;
+};
+```
+
 ### 未定義型（1-6以降で追加予定）
 
 以下の型は CLAUDE.md で設計済みだが、まだ `src/types/` には未定義:
@@ -276,7 +295,6 @@ type ComputeRoutesResponse = {
 - `GpsLog` — GPS走行記録
 - `TravelPoint` — GPS座標点
 - `StepPassage` — ステップ通過記録
-- `SavedPlace` — 保存済み場所
 - `SheetPosition` — ボトムシート位置
 - `ModalType` — モーダル種別
 
@@ -385,6 +403,7 @@ type ComputeRoutesResponse = {
 | isSearching | `boolean` | `false` | 検索中フラグ |
 | placeModalData | `PlaceModalData \| null` | `null` | PlaceActionModal の表示データ |
 | placeModalOpen | `boolean` | `false` | PlaceActionModal の開閉 |
+| savedPlaces | `SavedPlace[]` | `[]` | 保存済み場所一覧 |
 
 #### アクション
 
@@ -397,6 +416,11 @@ type ComputeRoutesResponse = {
 | openPlaceModal | `(data: PlaceModalData)` | PlaceActionModal を開く |
 | closePlaceModal | `()` | PlaceActionModal を閉じる |
 | reset | `()` | 全状態を初期値に戻す |
+| loadPlaces | `()` | localStorage から全場所を読み込み |
+| addPlace | `(place: Omit<SavedPlace, "id" \| "createdAt" \| "updatedAt">)` | 場所を追加（id/timestamps自動生成） |
+| updatePlace | `(id: string, updates: Partial<...>)` | 場所を更新（name, userNote, labelIds, photoUrl） |
+| deletePlace | `(id: string)` | 場所を削除 |
+| isSaved | `(googlePlaceId: string)` | 指定placeIdの場所が保存済みか判定 |
 
 ### uiStore（src/stores/uiStore.ts）
 
@@ -470,6 +494,7 @@ type StorageService = {
 |---|---|---|
 | `flexroute:routes` | `SavedRoute[]` のJSON文字列 | 全ルートを1キーに集約 |
 | `flexroute:labels` | `PlaceLabel[]` のJSON文字列 | 全ラベルを1キーに集約 |
+| `flexroute:places` | `SavedPlace[]` のJSON文字列 | 全保存済み場所を1キーに集約 |
 | `flexroute:lastKnownPosition` | `{ lat, lng, updatedAt }` のJSON文字列 | ナビ終了時の最終位置 |
 
 実装: `localStorageService`（src/services/storage.ts）
@@ -725,6 +750,16 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `labelStorageService.deleteLabel(labelId)` — ラベルを削除
   - `labelStorageService.getLabel(labelId)` — IDでラベルを1件取得
 
+### placeStorage.ts（src/services/placeStorage.ts）
+
+- **責務**: 保存済み場所データの localStorage 永続化
+- **公開関数**:
+  - `placeStorageService.getPlaces()` — 全場所を読み込み
+  - `placeStorageService.savePlace(place)` — 場所を保存（既存IDは上書き、新規は追加）
+  - `placeStorageService.deletePlace(placeId)` — 場所を削除
+  - `placeStorageService.getPlace(placeId)` — IDで場所を1件取得
+  - `placeStorageService.findByGooglePlaceId(googlePlaceId)` — Google Place IDで場所を検索
+
 ### logService.ts（src/services/logService.ts）
 
 - **責務**: アプリケーション統合ログ基盤。カテゴリ別・レベル別のログ記録とリングバッファによるメモリ保持。開発時はコンソール出力、本番はwarn/errorのみ保持
@@ -796,6 +831,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `LOST_THRESHOLD` | hooks/useGeolocation.ts | `15000` |
 | `CHECK_INTERVAL` | hooks/useGeolocation.ts | `1000` |
 | `STORAGE_KEY`（ラベル） | services/labelStorage.ts | `"flexroute:labels"` |
+| `STORAGE_KEY`（場所） | services/placeStorage.ts | `"flexroute:places"` |
 | `DEFAULT_ZOOM` | hooks/useMapInitialView.ts | `15` |
 | `DEFAULT_CENTER` | hooks/useMapInitialView.ts | `{ lat: 35.6895, lng: 139.6917 }`（東京） |
 | `FIT_BOUNDS_PADDING` | hooks/useMapInitialView.ts | `80` |
