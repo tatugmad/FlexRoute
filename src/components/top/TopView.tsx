@@ -3,6 +3,7 @@ import { LabelList } from "@/components/top/LabelList";
 import { PlaceList } from "@/components/top/PlaceList";
 import { QrCodePopover } from "@/components/ui/QrCodePopover";
 import { LabelEditModal } from "@/components/ui/LabelEditModal";
+import { PlaceDetailModal } from "@/components/places/PlaceDetailModal";
 import { useUiStore } from "@/stores/uiStore";
 import type { TopTab } from "@/types";
 
@@ -35,6 +36,7 @@ export function TopView() {
       </div>
 
       <LabelEditModal />
+      <PlaceDetailModal />
     </div>
   );
 }

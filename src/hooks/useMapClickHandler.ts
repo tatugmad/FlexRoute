@@ -4,6 +4,7 @@ import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
 import { userActionTracker } from "@/services/userActionTracker";
 import { generateId } from "@/utils/generateId";
+import { fetchPlaceDetails } from "@/services/placeDetailsService";
 import type { MapMouseEvent } from "@vis.gl/react-google-maps";
 
 export function useMapClickHandler() {
@@ -58,34 +59,3 @@ export function useMapClickHandler() {
   );
 }
 
-async function fetchPlaceDetails(placeId: string): Promise<{
-  name: string | null;
-  address: string | null;
-  rating: number | null;
-  photoUrl: string | null;
-}> {
-  try {
-    const { Place } = (await google.maps.importLibrary(
-      "places",
-    )) as google.maps.PlacesLibrary;
-    const place = new Place({ id: placeId });
-    await place.fetchFields({
-      fields: ["displayName", "formattedAddress", "rating", "photos"],
-    });
-
-    let photoUrl: string | null = null;
-    const firstPhoto = place.photos?.[0];
-    if (firstPhoto) {
-      photoUrl = firstPhoto.getURI({ maxWidth: 400 });
-    }
-
-    return {
-      name: place.displayName ?? null,
-      address: place.formattedAddress ?? null,
-      rating: place.rating ?? null,
-      photoUrl,
-    };
-  } catch {
-    return { name: null, address: null, rating: null, photoUrl: null };
-  }
-}
