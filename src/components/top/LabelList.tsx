@@ -73,15 +73,19 @@ type LabelItemProps = {
 
 function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <button onClick={() => onEdit(label)} className="w-[200px] min-h-[270px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center justify-center gap-2 relative cursor-pointer">
-      <div className="absolute top-2 right-2">
-        <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500">
-          <Trash2 className="w-4 h-4" />
-        </button>
+    <button onClick={() => onEdit(label)} className="w-[280px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col cursor-pointer">
+      <div className="h-[110px] w-full bg-slate-100 flex items-center justify-center relative">
+        <span className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+        <div className="absolute top-2 right-2">
+          <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
-      <span className="w-14 h-14 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
-      <span className="text-base font-bold text-slate-800 text-center truncate w-full">{label.name}</span>
-      <span className="text-sm text-slate-600">0件</span>
+      <div className="p-3">
+        <p className="text-base font-bold text-slate-800 truncate">{label.name}</p>
+        <p className="text-sm text-slate-600 mt-0.5">0件</p>
+      </div>
     </button>
   );
 }

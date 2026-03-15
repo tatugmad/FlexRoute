@@ -83,6 +83,7 @@ export function RouteList() {
                   key={route.id}
                   layout
                   exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
+                  className={routeViewMode === "tile" ? "w-[280px]" : "w-full"}
                 >
                   <RouteCard
                     route={route}

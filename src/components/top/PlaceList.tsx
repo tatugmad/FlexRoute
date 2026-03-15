@@ -69,8 +69,8 @@ function PlaceCard({ place, onClick }: { place: SavedPlace; onClick: () => void 
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
 
   return (
-    <button onClick={onClick} className="w-[200px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col">
-      <div className="h-[150px] w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+    <button onClick={onClick} className="w-[280px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col">
+      <div className="h-[110px] w-full bg-slate-100 flex items-center justify-center overflow-hidden">
         {photoUrl ? (
           <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
         ) : (
