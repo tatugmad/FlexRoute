@@ -53,10 +53,10 @@ export function PlaceRow({ place, onClick, onDelete }: PlaceCardProps) {
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
 
   return (
-    <button onClick={onClick} className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 text-left flex items-center gap-3">
-      <div className="w-24 h-16 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+    <button onClick={onClick} className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow pr-4 text-left flex items-center gap-3">
+      <div className="w-24 h-16 rounded-l-xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
         {photoUrl ? (
-          <img src={photoUrl} alt={place.name} className="w-24 h-16 rounded-lg object-cover shrink-0" onError={() => refetch()} />
+          <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
         ) : (
           <MapPin className="w-5 h-5 text-slate-400" />
         )}

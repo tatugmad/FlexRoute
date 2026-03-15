@@ -20,7 +20,7 @@ function TilePlaceholder() {
 
 function ListPlaceholder() {
   return (
-    <div className="w-24 h-16 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 border border-slate-300">
+    <div className="w-24 h-16 bg-slate-100 flex items-center justify-center">
       <Map className="w-5 h-5 text-slate-400" />
     </div>
   );
@@ -41,18 +41,20 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
     return (
       <button
         onClick={() => onSelect(route.id)}
-        className="w-full flex items-center gap-3 bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow px-3 py-3 text-left"
+        className="w-full flex items-center gap-3 bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow pr-3 text-left"
       >
-        {showImage ? (
-          <img
-            src={route.thumbnailUrl!}
-            alt=""
-            className="w-24 h-16 rounded-lg object-cover shrink-0"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <ListPlaceholder />
-        )}
+        <div className="w-24 h-16 rounded-l-2xl overflow-hidden shrink-0">
+          {showImage ? (
+            <img
+              src={route.thumbnailUrl!}
+              alt=""
+              className="w-full h-full object-cover"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <ListPlaceholder />
+          )}
+        </div>
         <div className="flex-1 min-w-0">
           <p className="text-base font-bold text-slate-800 truncate">{displayName}</p>
           <p className="text-sm text-slate-600">{waypointCount}地点</p>
