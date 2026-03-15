@@ -1,6 +1,7 @@
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { MapView } from "@/components/map/MapView";
 import { MapInitialView } from "@/components/map/MapInitialView";
+import { MapViewState } from "@/components/map/MapViewState";
 import { RoutePolyline } from "@/components/map/RoutePolyline";
 import { WaypointMarkers } from "@/components/map/WaypointMarkers";
 import { RouteEditor } from "@/components/route/RouteEditor";
@@ -51,6 +52,7 @@ function RouteScreen() {
           <ErrorBoundary fallbackLabel="MapView">
             <MapView onClick={handleMapClick}>
               <MapInitialView />
+              <MapViewState />
               <RoutePolyline />
               <WaypointMarkers />
             </MapView>

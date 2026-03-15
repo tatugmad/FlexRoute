@@ -42,7 +42,14 @@ export function useMapInitialView() {
       map.setCenter(waypoints[0]!.position);
       map.setZoom(DEFAULT_ZOOM);
     } else {
-      fitBoundsToWaypoints(map, waypoints);
+      const mapCenter = useRouteStore.getState().mapCenter;
+      const mapZoom = useRouteStore.getState().mapZoom;
+      if (mapCenter && mapZoom != null) {
+        map.setCenter(mapCenter);
+        map.setZoom(mapZoom);
+      } else {
+        fitBoundsToWaypoints(map, waypoints);
+      }
     }
     setMapReady(true);
   }, [map, currentRoute, setMapReady]);

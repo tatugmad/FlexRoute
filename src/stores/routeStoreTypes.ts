@@ -1,4 +1,5 @@
 import type {
+  LatLng,
   Route,
   RoutesApiStep,
   SavedRoute,
@@ -18,6 +19,8 @@ export type RouteStoreState = {
   encodedPolyline: string | null;
   currentLegs: SavedRouteLeg[];
   isDirty: boolean;
+  mapCenter: LatLng | null;
+  mapZoom: number | null;
   setCurrentRoute: (route: Route | null) => void;
   addWaypoint: (waypoint: Waypoint, insertIndex?: number) => void;
   removeWaypoint: (waypointId: string) => void;
@@ -34,6 +37,7 @@ export type RouteStoreState = {
   setRouteError: (error: string | null) => void;
   setIsCalculatingRoute: (isCalculating: boolean) => void;
   setIsDirty: (dirty: boolean) => void;
+  setMapViewState: (center: LatLng, zoom: number) => void;
   clearRouteData: () => void;
   saveCurrentRoute: () => void;
   loadRoute: (id: string) => void;
