@@ -56,4 +56,5 @@ export type SavedRoute = {
   updatedAt: string;
   mapCenter: LatLng | null;
   mapZoom: number | null;
+  thumbnailUrl: string | null;
 };
