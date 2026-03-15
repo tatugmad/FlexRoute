@@ -269,20 +269,20 @@ type ComputeRoutesResponse = {
 };
 ```
 
-### SavedPlace
+### SavedPlace（src/types/place.ts）
 
 ```ts
 type SavedPlace = {
   id: string;
-  placeId: string;
-  name: string;
-  originalName: string;
+  placeId: string;              // Google Place ID
+  name: string;                 // ユーザー編集可能な表示名
+  originalName: string | null;  // Google Places のオリジナル施設名（キャッシュ）
   address: string;
   position: LatLng;
   rating: number | null;
-  photoUrl: string | null;
-  labelIds: string[];
-  userNote: string;
+  photoUrl: string | null;      // 写真URLキャッシュ（期限切れ時に placeId から再取得）
+  labelIds: string[];           // PlaceLabel.id の配列
+  memo: string;                 // ユーザーメモ
   createdAt: string;
   updatedAt: string;
 };
@@ -417,10 +417,9 @@ type SavedPlace = {
 | closePlaceModal | `()` | PlaceActionModal を閉じる |
 | reset | `()` | 全状態を初期値に戻す |
 | loadPlaces | `()` | localStorage から全場所を読み込み |
-| addPlace | `(place: Omit<SavedPlace, "id" \| "createdAt" \| "updatedAt">)` | 場所を追加（id/timestamps自動生成） |
-| updatePlace | `(id: string, updates: Partial<...>)` | 場所を更新（name, userNote, labelIds, photoUrl） |
+| savePlace | `(place: SavedPlace)` | 場所を保存（新規追加 or 既存上書き） |
+| updatePlace | `(id: string, updates: Partial<...>)` | 場所を部分更新（name, memo, labelIds, photoUrl, originalName） |
 | deletePlace | `(id: string)` | 場所を削除 |
-| isSaved | `(googlePlaceId: string)` | 指定placeIdの場所が保存済みか判定 |
 
 ### uiStore（src/stores/uiStore.ts）
 
@@ -758,7 +757,6 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `placeStorageService.savePlace(place)` — 場所を保存（既存IDは上書き、新規は追加）
   - `placeStorageService.deletePlace(placeId)` — 場所を削除
   - `placeStorageService.getPlace(placeId)` — IDで場所を1件取得
-  - `placeStorageService.findByGooglePlaceId(googlePlaceId)` — Google Place IDで場所を検索
 
 ### logService.ts（src/services/logService.ts）
 

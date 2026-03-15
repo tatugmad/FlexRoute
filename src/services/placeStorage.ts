@@ -45,8 +45,4 @@ export const placeStorageService = {
   getPlace: (placeId: string): SavedPlace | undefined => {
     return readAll().find((p) => p.id === placeId);
   },
-
-  findByGooglePlaceId: (googlePlaceId: string): SavedPlace | undefined => {
-    return readAll().find((p) => p.placeId === googlePlaceId);
-  },
 };

@@ -114,21 +114,8 @@ export type PerformanceMetric = {
   max: number;
 };
 
-// ── 保存済み場所 ──
-export type SavedPlace = {
-  id: string;
-  placeId: string;
-  name: string;
-  originalName: string;
-  address: string;
-  position: LatLng;
-  rating: number | null;
-  photoUrl: string | null;
-  labelIds: string[];
-  userNote: string;
-  createdAt: string;
-  updatedAt: string;
-};
+// ── 保存済み場所（src/types/place.ts から re-export） ──
+export type { SavedPlace } from "@/types/place";
 
 // ── 測位品質 ──
 export type PositionQuality = 'active' | 'lost';

@@ -537,13 +537,13 @@ navigationStore が管理する:
 
 #### Session 1: データレイヤー（実装済み）
 
-- SavedPlace 型定義（src/types/index.ts）
-  - id, placeId, name, originalName, address, position, rating, photoUrl, labelIds, userNote, createdAt, updatedAt
-  - originalName: ユーザーがnameを変更してもPlace元名を保持
+- SavedPlace 型定義（src/types/place.ts、index.ts から re-export）
+  - id, placeId, name, originalName（string | null）, address, position, rating, photoUrl, labelIds, memo, createdAt, updatedAt
+  - originalName: Google Places のオリジナル施設名キャッシュ。ユーザーがnameを変更しても保持
 - placeStorageService（src/services/placeStorage.ts）
-  - localStorage CRUD + findByGooglePlaceId
+  - localStorage CRUD（getPlaces, savePlace, deletePlace, getPlace）
   - キー: "flexroute:places"
-- placeStore 拡張（savedPlaces + loadPlaces/addPlace/updatePlace/deletePlace/isSaved）
+- placeStore 拡張（savedPlaces + loadPlaces/savePlace/updatePlace/deletePlace）
 - PlaceList をダミーデータから実データ接続に変更
   - loadPlaces を useEffect で呼び出し
   - labelIds から実ラベルを解決して表示

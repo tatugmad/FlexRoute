@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { placeStorageService } from "@/services/placeStorage";
-import { generateId } from "@/utils/generateId";
 import { logService } from "@/services/logService";
 import type { PlaceResult, PlaceModalData, SavedPlace } from "@/types";
 
@@ -23,10 +22,9 @@ type PlaceActions = {
   closePlaceModal: () => void;
   reset: () => void;
   loadPlaces: () => void;
-  addPlace: (place: Omit<SavedPlace, "id" | "createdAt" | "updatedAt">) => SavedPlace;
-  updatePlace: (id: string, updates: Partial<Pick<SavedPlace, "name" | "userNote" | "labelIds" | "photoUrl">>) => void;
+  savePlace: (place: SavedPlace) => void;
+  updatePlace: (id: string, updates: Partial<Pick<SavedPlace, "name" | "memo" | "labelIds" | "photoUrl" | "originalName">>) => void;
   deletePlace: (id: string) => void;
-  isSaved: (googlePlaceId: string) => boolean;
 };
 
 const initialState: PlaceState = {
@@ -39,7 +37,7 @@ const initialState: PlaceState = {
   savedPlaces: [],
 };
 
-export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => ({
+export const usePlaceStore = create<PlaceState & PlaceActions>()((set) => ({
   ...initialState,
 
   setQuery: (query) => set({ query }),
@@ -55,18 +53,16 @@ export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => (
     set({ savedPlaces });
   },
 
-  addPlace: (data) => {
-    const now = new Date().toISOString();
-    const place: SavedPlace = {
-      ...data,
-      id: generateId(),
-      createdAt: now,
-      updatedAt: now,
-    };
+  savePlace: (place) => {
     placeStorageService.savePlace(place);
-    logService.info("PLACE_STORE", "場所追加", { id: place.id, name: place.name });
-    set((state) => ({ savedPlaces: [...state.savedPlaces, place] }));
-    return place;
+    logService.info("PLACE_STORE", "場所保存", { id: place.id, name: place.name });
+    set((state) => {
+      const exists = state.savedPlaces.some((p) => p.id === place.id);
+      if (exists) {
+        return { savedPlaces: state.savedPlaces.map((p) => (p.id === place.id ? place : p)) };
+      }
+      return { savedPlaces: [...state.savedPlaces, place] };
+    });
   },
 
   updatePlace: (id, updates) => {
@@ -88,9 +84,5 @@ export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => (
     placeStorageService.deletePlace(id);
     logService.info("PLACE_STORE", "場所削除", { id });
     set((state) => ({ savedPlaces: state.savedPlaces.filter((p) => p.id !== id) }));
-  },
-
-  isSaved: (googlePlaceId) => {
-    return get().savedPlaces.some((p) => p.placeId === googlePlaceId);
   },
 }));
