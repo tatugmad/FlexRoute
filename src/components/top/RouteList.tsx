@@ -57,7 +57,7 @@ export function RouteList() {
         <div
           className={
             routeViewMode === "tile"
-              ? "grid grid-cols-2 gap-3"
+              ? "flex flex-wrap gap-3"
               : "flex flex-col gap-3"
           }
         >
