@@ -28,7 +28,7 @@
 | F-CACHE | キャッシュ対策（F5リロード） | ✅ | - |
 | F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | ✅ | 1-5 |
 | F-LABEL | ラベル管理（CRUD） | ✅ | 1-5 |
-| F-PLACE | 場所保存・一覧 | 未実装 | 1-5 |
+| F-PLACE | 場所保存・一覧 | データレイヤーのみ | 1-5 |
 | F-THUMB | ルートサムネイル（Static Maps API） | 未実装 | 1-5 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 未実装 | 1-6 |
 | F-NAV-WIPE | ワイプマップ（PiP） | 未実装 | 1-6 |
@@ -531,14 +531,38 @@ navigationStore が管理する:
 
 ---
 
-### F-PLACE: 場所保存・一覧（1-5で実装）
+### F-PLACE: 場所保存・一覧（1-5で実装、3セッション構成）
 
 概要: お気に入りの場所を保存し、一覧表示する。
 
-仕様:
-- 場所の保存（Place情報 + ユーザーメモ + ラベル）
-- TOP画面の「場所」タブに一覧表示
-- 保存済み場所からウェイポイントに追加可能
+#### Session 1: データレイヤー（実装済み）
+
+- SavedPlace 型定義（src/types/index.ts）
+  - id, placeId, name, originalName, address, position, rating, photoUrl, labelIds, userNote, createdAt, updatedAt
+  - originalName: ユーザーがnameを変更してもPlace元名を保持
+- placeStorageService（src/services/placeStorage.ts）
+  - localStorage CRUD + findByGooglePlaceId
+  - キー: "flexroute:places"
+- placeStore 拡張（savedPlaces + loadPlaces/addPlace/updatePlace/deletePlace/isSaved）
+- PlaceList をダミーデータから実データ接続に変更
+  - loadPlaces を useEffect で呼び出し
+  - labelIds から実ラベルを解決して表示
+
+#### Session 2: 保存フロー（未実装）
+
+- PlaceActionModal に2段階UI（actions → save）
+- ラベル選択 + メモ入力 → SavedPlace 保存
+- 保存済み判定（isSaved）
+
+#### Session 3: 一覧 + 詳細 + 写真再取得（未実装）
+
+- usePlaceCache フック（photoUrl / originalName 再取得）
+- PlaceDetailModal（メモblur保存、ラベル即時編集、削除）
+
+設計判断:
+- D-007（blur保存）をメモ編集に適用
+- 写真URL: 保存時キャッシュ → 期限切れ時に placeId から再取得
+- originalName: 写真と同仕様。ユーザーが name を変更しても保持
 
 関連: F-PLACE-MODAL, F-LABEL
 
