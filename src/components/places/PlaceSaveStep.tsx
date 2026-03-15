@@ -13,7 +13,7 @@ type Props = {
 export function PlaceSaveStep({ data, onBack, onSaved }: Props) {
   const labels = useLabelStore((s) => s.labels);
   const openLabelModal = useLabelStore((s) => s.openLabelModal);
-  const addPlace = usePlaceStore((s) => s.addPlace);
+  const savePlace = usePlaceStore((s) => s.savePlace);
   const [name, setName] = useState(data.name);
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [memo, setMemo] = useState("");
@@ -25,7 +25,7 @@ export function PlaceSaveStep({ data, onBack, onSaved }: Props) {
   };
 
   const handleSave = () => {
-    addPlace({
+    savePlace({
       placeId: data.placeId,
       name: name.trim() || data.name,
       originalName: data.name,
@@ -34,7 +34,7 @@ export function PlaceSaveStep({ data, onBack, onSaved }: Props) {
       rating: data.rating,
       photoUrl: data.photoUrl,
       labelIds: selectedLabelIds,
-      userNote: memo,
+      memo,
     });
     onSaved();
   };

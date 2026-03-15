@@ -35,12 +35,12 @@ function PlaceDetailContent({ place, onClose }: { place: SavedPlace; onClose: ()
   const deletePlace = usePlaceStore((s) => s.deletePlace);
   const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
-  const [memo, setMemo] = useState(place.userNote);
+  const [memo, setMemo] = useState(place.memo);
   const [editingLabels, setEditingLabels] = useState(false);
 
   const handleMemoBlur = () => {
-    if (memo !== place.userNote) {
-      updatePlace(place.id, { userNote: memo });
+    if (memo !== place.memo) {
+      updatePlace(place.id, { memo });
     }
   };
 
