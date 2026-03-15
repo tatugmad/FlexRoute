@@ -35,7 +35,7 @@ export function LabelList() {
       {labels.length === 0 ? (
         <EmptyState />
       ) : viewMode === "tile" ? (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-wrap gap-3">
           {labels.map((label) => (
             <LabelCard key={label.id} label={label} onEdit={openLabelModal} onDelete={handleDelete} />
           ))}
@@ -59,13 +59,13 @@ type LabelItemProps = {
 
 function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <button onClick={() => onEdit(label)} className="bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center gap-2 relative cursor-pointer">
+    <button onClick={() => onEdit(label)} className="w-[200px] min-h-[270px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow p-4 text-left flex flex-col items-center justify-center gap-2 relative cursor-pointer">
       <div className="absolute top-2 right-2">
         <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-      <span className="w-8 h-8 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+      <span className="w-14 h-14 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
       <span className="text-base font-bold text-slate-800 text-center truncate w-full">{label.name}</span>
       <span className="text-sm text-slate-600">0件</span>
     </button>

@@ -11,7 +11,7 @@ type RouteCardProps = {
 
 function TilePlaceholder() {
   return (
-    <div className="h-[120px] bg-slate-100 flex flex-col items-center justify-center border-b border-slate-300">
+    <div className="h-[150px] bg-slate-100 flex flex-col items-center justify-center border-b border-slate-300">
       <Map className="w-6 h-6 text-slate-400" />
       <span className="text-xs text-slate-400 mt-1">サムネイル</span>
     </div>
@@ -72,13 +72,13 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
   return (
     <button
       onClick={() => onSelect(route.id)}
-      className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col"
+      className="w-[200px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col"
     >
       {showImage ? (
         <img
           src={route.thumbnailUrl!}
           alt=""
-          className="w-full h-[120px] object-cover"
+          className="w-full h-[150px] object-cover"
           onError={() => setImgError(true)}
         />
       ) : (
