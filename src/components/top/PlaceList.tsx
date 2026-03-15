@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
-import { MapPin, Trash2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { SearchInput } from "@/components/ui/SearchInput";
+import { PlaceCard, PlaceRow } from "@/components/top/PlaceCard";
 import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
 import { useLabelStore } from "@/stores/labelStore";
-import { usePlaceCache } from "@/hooks/usePlaceCache";
 import { matchesQuery } from "@/utils/searchFilter";
-import type { SavedPlace } from "@/types";
 
 export function PlaceList() {
   const savedPlaces = usePlaceStore((s) => s.savedPlaces);
@@ -56,101 +55,34 @@ export function PlaceList() {
         </div>
       ) : viewMode === "tile" ? (
         <div className="flex flex-wrap gap-3">
-          {filteredPlaces.map((place) => (
-            <PlaceCard key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {filteredPlaces.map((place) => (
+              <motion.div
+                key={place.id}
+                exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
+                className="w-[280px]"
+              >
+                <PlaceCard place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {filteredPlaces.map((place) => (
-            <PlaceRow key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {filteredPlaces.map((place) => (
+              <motion.div
+                key={place.id}
+                exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
+                className="w-full"
+              >
+                <PlaceRow place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>
-  );
-}
-
-function PlaceCard({ place, onClick, onDelete }: { place: SavedPlace; onClick: () => void; onDelete: (id: string) => void }) {
-  const labels = useLabelStore((s) => s.labels);
-  const placeLabels = labels.filter((l) => place.labelIds.includes(l.id));
-  const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
-
-  return (
-    <button onClick={onClick} className="w-[280px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col">
-      <div className="h-[110px] w-full bg-slate-100 flex items-center justify-center overflow-hidden">
-        {photoUrl ? (
-          <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
-        ) : (
-          <MapPin className="w-6 h-6 text-slate-400" />
-        )}
-      </div>
-      <div className="p-3">
-        <div className="flex items-center justify-between">
-          <p className="text-base font-bold text-slate-800 truncate flex-1 mr-2">{place.name}</p>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(place.id); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-        <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
-        {place.memo ? (
-          <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>
-        ) : null}
-        {placeLabels.length > 0 && (
-          <div className="flex gap-1 mt-2 flex-wrap">
-            {placeLabels.map((label) => (
-              <LabelChip key={label.id} name={label.name} color={label.color} />
-            ))}
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function PlaceRow({ place, onClick, onDelete }: { place: SavedPlace; onClick: () => void; onDelete: (id: string) => void }) {
-  const labels = useLabelStore((s) => s.labels);
-  const placeLabels = labels.filter((l) => place.labelIds.includes(l.id));
-  const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
-
-  return (
-    <button onClick={onClick} className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 text-left flex items-center gap-3">
-      <div className="w-24 h-16 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-        {photoUrl ? (
-          <img src={photoUrl} alt={place.name} className="w-24 h-16 rounded-lg object-cover shrink-0" onError={() => refetch()} />
-        ) : (
-          <MapPin className="w-5 h-5 text-slate-400" />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between">
-          <p className="text-base font-bold text-slate-800 truncate flex-1 mr-2">{place.name}</p>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(place.id); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-        <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
-        {place.memo ? (
-          <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>
-        ) : null}
-        {placeLabels.length > 0 && (
-          <div className="flex gap-1.5 mt-2 flex-wrap">
-            {placeLabels.map((label) => (
-              <LabelChip key={label.id} name={label.name} color={label.color} />
-            ))}
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function LabelChip({ name, color }: { name: string; color: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full">
-      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      {name}
-    </span>
   );
 }
 
