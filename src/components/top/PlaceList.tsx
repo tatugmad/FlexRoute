@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { MapPin } from "lucide-react";
+import { MapPin, Trash2 } from "lucide-react";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { useUiStore } from "@/stores/uiStore";
@@ -12,11 +12,19 @@ import type { SavedPlace } from "@/types";
 export function PlaceList() {
   const savedPlaces = usePlaceStore((s) => s.savedPlaces);
   const loadPlaces = usePlaceStore((s) => s.loadPlaces);
+  const deletePlace = usePlaceStore((s) => s.deletePlace);
   const openPlaceDetail = usePlaceStore((s) => s.openPlaceDetail);
   const labels = useLabelStore((s) => s.labels);
+  const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const viewMode = useUiStore((s) => s.placesViewMode);
   const setViewMode = useUiStore((s) => s.setPlacesViewMode);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleDeletePlace = (id: string) => {
+    const place = savedPlaces.find((p) => p.id === id);
+    if (!place) return;
+    openConfirmDialog(`「${place.name}」を削除しますか？`, () => deletePlace(id));
+  };
 
   useEffect(() => { loadPlaces(); }, [loadPlaces]);
 
@@ -49,13 +57,13 @@ export function PlaceList() {
       ) : viewMode === "tile" ? (
         <div className="flex flex-wrap gap-3">
           {filteredPlaces.map((place) => (
-            <PlaceCard key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} />
+            <PlaceCard key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {filteredPlaces.map((place) => (
-            <PlaceRow key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} />
+            <PlaceRow key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
           ))}
         </div>
       )}
@@ -63,7 +71,7 @@ export function PlaceList() {
   );
 }
 
-function PlaceCard({ place, onClick }: { place: SavedPlace; onClick: () => void }) {
+function PlaceCard({ place, onClick, onDelete }: { place: SavedPlace; onClick: () => void; onDelete: (id: string) => void }) {
   const labels = useLabelStore((s) => s.labels);
   const placeLabels = labels.filter((l) => place.labelIds.includes(l.id));
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
@@ -78,7 +86,12 @@ function PlaceCard({ place, onClick }: { place: SavedPlace; onClick: () => void 
         )}
       </div>
       <div className="p-3">
-        <p className="text-base font-bold text-slate-800 truncate">{place.name}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-base font-bold text-slate-800 truncate flex-1 mr-2">{place.name}</p>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(place.id); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
         <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
         {place.memo ? (
           <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>
@@ -95,22 +108,27 @@ function PlaceCard({ place, onClick }: { place: SavedPlace; onClick: () => void 
   );
 }
 
-function PlaceRow({ place, onClick }: { place: SavedPlace; onClick: () => void }) {
+function PlaceRow({ place, onClick, onDelete }: { place: SavedPlace; onClick: () => void; onDelete: (id: string) => void }) {
   const labels = useLabelStore((s) => s.labels);
   const placeLabels = labels.filter((l) => place.labelIds.includes(l.id));
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
 
   return (
     <button onClick={onClick} className="w-full bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 text-left flex items-center gap-3">
-      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="w-24 h-16 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
         {photoUrl ? (
-          <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
+          <img src={photoUrl} alt={place.name} className="w-24 h-16 rounded-lg object-cover shrink-0" onError={() => refetch()} />
         ) : (
           <MapPin className="w-5 h-5 text-slate-400" />
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-base font-bold text-slate-800 truncate">{place.name}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-base font-bold text-slate-800 truncate flex-1 mr-2">{place.name}</p>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(place.id); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
         <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
         {place.memo ? (
           <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>

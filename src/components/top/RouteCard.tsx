@@ -11,18 +11,16 @@ type RouteCardProps = {
 
 function TilePlaceholder() {
   return (
-    <div className="h-[110px] bg-slate-100 flex flex-col items-center justify-center border-b border-slate-300">
+    <div className="h-[110px] bg-slate-100 flex items-center justify-center border-b border-slate-300">
       <Map className="w-6 h-6 text-slate-400" />
-      <span className="text-xs text-slate-400 mt-1">サムネイル</span>
     </div>
   );
 }
 
 function ListPlaceholder() {
   return (
-    <div className="w-16 h-16 bg-slate-100 rounded-xl flex flex-col items-center justify-center shrink-0 border border-slate-300">
+    <div className="w-24 h-16 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 border border-slate-300">
       <Map className="w-5 h-5 text-slate-400" />
-      <span className="text-[10px] text-slate-400 mt-0.5">サムネイル</span>
     </div>
   );
 }
@@ -48,7 +46,7 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
           <img
             src={route.thumbnailUrl!}
             alt=""
-            className="w-16 h-16 rounded-xl object-cover shrink-0"
+            className="w-24 h-16 rounded-lg object-cover shrink-0"
             onError={() => setImgError(true)}
           />
         ) : (

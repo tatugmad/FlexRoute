@@ -43,7 +43,7 @@ export function migrateThumbnails<T extends { thumbnailUrl?: string | null; enco
 function buildUrl(encodedPath: string, apiKey: string): string {
   return (
     "https://maps.googleapis.com/maps/api/staticmap?" +
-    "size=400x200" +
+    "size=600x300" +
     "&maptype=roadmap" +
     `&path=color:0x4F46E5FF|weight:3|enc:${encodedPath}` +
     `&key=${apiKey}`
