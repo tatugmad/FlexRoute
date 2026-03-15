@@ -1,15 +1,27 @@
-import { X, Star, MapPin, Bookmark, Navigation } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Star, MapPin, Bookmark, Navigation, Check } from "lucide-react";
 import { usePlaceStore } from "@/stores/placeStore";
 import { useRouteStore } from "@/stores/routeStore";
 import { generateId } from "@/utils/generateId";
+import { PlaceSaveStep } from "./PlaceSaveStep";
+
+type Step = "actions" | "save";
 
 export function PlaceActionModal() {
   const isOpen = usePlaceStore((s) => s.placeModalOpen);
   const data = usePlaceStore((s) => s.placeModalData);
   const closePlaceModal = usePlaceStore((s) => s.closePlaceModal);
   const addWaypoint = useRouteStore((s) => s.addWaypoint);
+  const isSaved = usePlaceStore((s) => s.isSaved);
+  const [step, setStep] = useState<Step>("actions");
+
+  useEffect(() => {
+    if (!isOpen) setStep("actions");
+  }, [isOpen]);
 
   if (!isOpen || !data) return null;
+
+  const alreadySaved = isSaved(data.placeId);
 
   const handleAddToRoute = () => {
     addWaypoint({
@@ -21,6 +33,26 @@ export function PlaceActionModal() {
     });
     closePlaceModal();
   };
+
+  if (step === "save") {
+    return (
+      <div
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+        onClick={closePlaceModal}
+      >
+        <div
+          className="bg-white w-full max-w-md rounded-t-2xl shadow-2xl overflow-hidden animate-slide-up"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <PlaceSaveStep
+            data={data}
+            onBack={() => setStep("actions")}
+            onSaved={closePlaceModal}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -74,10 +106,23 @@ export function PlaceActionModal() {
               <MapPin className="w-4 h-4" />
               経路に追加
             </button>
-            <button className="flex-1 bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-400 transition-colors flex items-center justify-center gap-1.5">
-              <Bookmark className="w-4 h-4" />
-              場所を保存
-            </button>
+            {alreadySaved ? (
+              <button
+                disabled
+                className="flex-1 bg-slate-200 text-slate-500 py-2.5 rounded-xl text-sm font-bold cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                保存済み
+              </button>
+            ) : (
+              <button
+                onClick={() => setStep("save")}
+                className="flex-1 bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-400 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Bookmark className="w-4 h-4" />
+                場所を保存
+              </button>
+            )}
             <button className="flex-1 bg-slate-300 text-slate-500 py-2.5 rounded-xl text-sm font-bold cursor-not-allowed flex items-center justify-center gap-1.5">
               <Navigation className="w-4 h-4" />
               ナビ開始
