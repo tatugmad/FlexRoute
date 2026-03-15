@@ -1,5 +1,6 @@
 import { MapPin, Trash2 } from "lucide-react";
 import { useLabelStore } from "@/stores/labelStore";
+import { CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 import { usePlaceCache } from "@/hooks/usePlaceCache";
 import type { SavedPlace } from "@/types";
 
@@ -16,7 +17,7 @@ export function PlaceCard({ place, onClick, onDelete }: PlaceCardProps) {
 
   return (
     <button onClick={onClick} className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col">
-      <div className="h-[110px] w-full bg-slate-100 flex items-center justify-center overflow-hidden">
+      <div className="w-full bg-slate-100 flex items-center justify-center overflow-hidden" style={{ height: CARD_THUMBNAIL_HEIGHT }}>
         {photoUrl ? (
           <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
         ) : (

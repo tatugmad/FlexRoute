@@ -6,6 +6,7 @@ import { ViewToggle } from "@/components/ui/ViewToggle";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
+import { CARD_WIDTH } from "@/constants/cardLayout";
 import { useNewRoute } from "@/hooks/useNewRoute";
 import { matchesQuery } from "@/utils/searchFilter";
 
@@ -82,7 +83,8 @@ export function RouteList() {
                 <motion.div
                   key={route.id}
                   exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-                  className={routeViewMode === "tile" ? "w-[280px]" : "w-full"}
+                  style={routeViewMode === "tile" ? { width: CARD_WIDTH } : undefined}
+                  className={routeViewMode === "tile" ? "" : "w-full"}
                 >
                   <RouteCard
                     route={route}

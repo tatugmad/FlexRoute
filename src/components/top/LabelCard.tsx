@@ -1,4 +1,5 @@
 import { Trash2 } from "lucide-react";
+import { CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 import type { PlaceLabel } from "@/types";
 
 type LabelItemProps = {
@@ -10,7 +11,7 @@ type LabelItemProps = {
 export function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
   return (
     <button onClick={() => onEdit(label)} className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col cursor-pointer">
-      <div className="h-[110px] w-full bg-slate-100 flex items-center justify-center">
+      <div className="w-full bg-slate-100 flex items-center justify-center" style={{ height: CARD_THUMBNAIL_HEIGHT }}>
         <span className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
       </div>
       <div className="px-3 py-2">

@@ -1,5 +1,6 @@
 import { decodePolyline, encodePolyline } from "@/utils/polylineCodec";
 import { simplifyPolyline } from "@/utils/simplifyPolyline";
+import { CARD_WIDTH, CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 
 const MAX_URL_LENGTH = 8192;
 const DEFAULT_TOLERANCE = 0.0001;
@@ -77,7 +78,8 @@ function buildUrl(
 ): string {
   let url =
     "https://maps.googleapis.com/maps/api/staticmap?" +
-    "size=600x300" +
+    `size=${CARD_WIDTH}x${CARD_THUMBNAIL_HEIGHT}` +
+    "&scale=2" +
     "&maptype=roadmap" +
     `&path=color:0x4F46E5FF|weight:5|enc:${encodedPath}`;
 
