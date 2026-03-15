@@ -135,6 +135,9 @@ type SavedRoute = {
   version: number;
   createdAt: string;
   updatedAt: string;
+  mapCenter: LatLng | null;
+  mapZoom: number | null;
+  thumbnailUrl: string | null;
 };
 ```
 
@@ -643,6 +646,7 @@ X-Goog-FieldMask: routes.duration,routes.distanceMeters,routes.polyline.encodedP
 - Places API
 - Places API (New)
 - Geocoding API
+- Maps Static API
 
 ## デプロイ構成
 

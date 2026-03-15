@@ -25,6 +25,7 @@ export function toSavedRoute(
     updatedAt: now,
     mapCenter,
     mapZoom,
+    thumbnailUrl: existing?.thumbnailUrl ?? null,
   };
 }
 

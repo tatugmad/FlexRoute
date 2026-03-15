@@ -4,6 +4,7 @@ import { localStorageService } from "@/services/storage";
 import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
 import { toSavedRoute, toRoute, createNewRoute } from "@/stores/routeConverters";
+import { generateThumbnailUrl, migrateThumbnails } from "@/utils/thumbnailUrl";
 
 function isValidPosition(pos: { lat: number; lng: number }): boolean {
   return Number.isFinite(pos.lat) && Number.isFinite(pos.lng) && !(pos.lat === 0 && pos.lng === 0);
@@ -98,6 +99,8 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       state.currentRoute, state.routeName, state.encodedPolyline,
       state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
     );
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+    saved.thumbnailUrl = generateThumbnailUrl(saved.encodedPolyline, apiKey);
     localStorageService.saveRoute(saved);
     const updated = state.savedRoutes.some((r) => r.id === saved.id)
       ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))
@@ -131,16 +134,17 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   },
 
   loadSavedRoutes: () => {
-    const routes = localStorageService.getRoutes();
+    const raw = localStorageService.getRoutes();
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+    const { routes, changed } = migrateThumbnails(raw, apiKey);
+    if (changed) routes.forEach((r) => localStorageService.saveRoute(r));
     set({ savedRoutes: routes });
   },
 
   newRoute: () => set({
-    currentRoute: createNewRoute(get().travelMode),
-    routeName: "", encodedPolyline: null, routeSteps: [],
-    currentLegs: [], isDirty: false, routeError: null,
-    mapCenter: null, mapZoom: null,
+    currentRoute: createNewRoute(get().travelMode), routeName: "",
+    encodedPolyline: null, routeSteps: [], currentLegs: [],
+    isDirty: false, routeError: null, mapCenter: null, mapZoom: null,
   }),
-
   reset: () => set(initialState),
 }));
