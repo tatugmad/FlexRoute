@@ -29,19 +29,21 @@ export function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
 
 export function LabelRow({ label, onEdit, onDelete }: LabelItemProps) {
   return (
-    <button onClick={() => onEdit(label)} className="w-full flex items-center gap-3 bg-white rounded-xl border border-slate-300 hover:shadow-md transition-shadow px-4 py-3 cursor-pointer text-left">
-      <div className="w-24 h-16 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+    <button onClick={() => onEdit(label)} className="w-full flex items-center gap-3 bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow pr-3 cursor-pointer text-left">
+      <div className="w-24 h-16 rounded-l-2xl bg-slate-100 flex items-center justify-center shrink-0">
         <span className="w-8 h-8 rounded-full" style={{ backgroundColor: label.color }} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-slate-800 truncate flex-1 mr-2">{label.name}</span>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
+        <span className="text-base font-bold text-slate-800 truncate block">{label.name}</span>
         <span className="text-sm text-slate-600">0件</span>
       </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(label); }}
+        className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors shrink-0"
+        aria-label="削除"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
     </button>
   );
 }
