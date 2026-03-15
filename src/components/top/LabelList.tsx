@@ -1,8 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { ViewToggle } from "@/components/ui/ViewToggle";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { useUiStore } from "@/stores/uiStore";
 import { useLabelStore } from "@/stores/labelStore";
+import { matchesQuery } from "@/utils/searchFilter";
 import type { PlaceLabel } from "@/types";
 
 export function LabelList() {
@@ -14,7 +16,13 @@ export function LabelList() {
   const viewMode = useUiStore((s) => s.labelViewMode);
   const setViewMode = useUiStore((s) => s.setLabelViewMode);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   useEffect(() => { loadLabels(); }, [loadLabels]);
+
+  const filteredLabels = labels.filter((label) =>
+    matchesQuery(searchQuery, [label.name])
+  );
 
   const handleDelete = (label: PlaceLabel) => {
     openConfirmDialog(`「${label.name}」を削除しますか？`, () => deleteLabel(label.id));
@@ -32,17 +40,23 @@ export function LabelList() {
         </button>
       </div>
 
+      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ラベルを検索..." />
+
       {labels.length === 0 ? (
         <EmptyState />
+      ) : filteredLabels.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+          <p className="text-sm">一致するラベルはありません</p>
+        </div>
       ) : viewMode === "tile" ? (
         <div className="flex flex-wrap gap-3">
-          {labels.map((label) => (
+          {filteredLabels.map((label) => (
             <LabelCard key={label.id} label={label} onEdit={openLabelModal} onDelete={handleDelete} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {labels.map((label) => (
+          {filteredLabels.map((label) => (
             <LabelRow key={label.id} label={label} onEdit={openLabelModal} onDelete={handleDelete} />
           ))}
         </div>

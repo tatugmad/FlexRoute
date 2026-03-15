@@ -1,20 +1,36 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MapPin } from "lucide-react";
 import { ViewToggle } from "@/components/ui/ViewToggle";
+import { SearchInput } from "@/components/ui/SearchInput";
 import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
 import { useLabelStore } from "@/stores/labelStore";
 import { usePlaceCache } from "@/hooks/usePlaceCache";
+import { matchesQuery } from "@/utils/searchFilter";
 import type { SavedPlace } from "@/types";
 
 export function PlaceList() {
   const savedPlaces = usePlaceStore((s) => s.savedPlaces);
   const loadPlaces = usePlaceStore((s) => s.loadPlaces);
   const openPlaceDetail = usePlaceStore((s) => s.openPlaceDetail);
+  const labels = useLabelStore((s) => s.labels);
   const viewMode = useUiStore((s) => s.placesViewMode);
   const setViewMode = useUiStore((s) => s.setPlacesViewMode);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => { loadPlaces(); }, [loadPlaces]);
+
+  const filteredPlaces = savedPlaces.filter((place) => {
+    const labelNames = place.labelIds
+      .map((id) => labels.find((l) => l.id === id)?.name ?? "")
+      .filter(Boolean);
+    return matchesQuery(searchQuery, [
+      place.name,
+      place.address,
+      place.memo,
+      ...labelNames,
+    ]);
+  });
 
   return (
     <div className="p-4">
@@ -22,17 +38,23 @@ export function PlaceList() {
         <ViewToggle current={viewMode} onChange={setViewMode} />
       </div>
 
+      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="場所を検索..." />
+
       {savedPlaces.length === 0 ? (
         <EmptyState />
+      ) : filteredPlaces.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-500">
+          <p className="text-sm">一致する場所はありません</p>
+        </div>
       ) : viewMode === "tile" ? (
         <div className="flex flex-wrap gap-3">
-          {savedPlaces.map((place) => (
+          {filteredPlaces.map((place) => (
             <PlaceCard key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} />
           ))}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {savedPlaces.map((place) => (
+          {filteredPlaces.map((place) => (
             <PlaceRow key={place.id} place={place} onClick={() => openPlaceDetail(place.id)} />
           ))}
         </div>
