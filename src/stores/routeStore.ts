@@ -20,6 +20,8 @@ const initialState = {
   encodedPolyline: null,
   currentLegs: [],
   isDirty: false,
+  mapCenter: null,
+  mapZoom: null,
 };
 
 export const useRouteStore = create<RouteStoreState>()((set, get) => ({
@@ -74,34 +76,28 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   setTravelMode: (travelMode) => set({ travelMode }),
   setRouteName: (routeName) => set({ routeName, isDirty: true }),
   setIsDirty: (isDirty) => set({ isDirty }),
+  setRouteError: (routeError) => set({ routeError, isCalculatingRoute: false }),
+  setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
+  setMapViewState: (center, zoom) => set({ mapCenter: center, mapZoom: zoom }),
+  clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
 
   setRouteData: (data) =>
     set((state) => ({
       currentRoute: state.currentRoute
-        ? {
-            ...state.currentRoute,
-            totalDistanceMeters: data.totalDistanceMeters,
-            totalDurationSeconds: data.totalDurationSeconds,
-            updatedAt: Date.now(),
-          }
+        ? { ...state.currentRoute, totalDistanceMeters: data.totalDistanceMeters,
+            totalDurationSeconds: data.totalDurationSeconds, updatedAt: Date.now() }
         : null,
-      encodedPolyline: data.encodedPolyline,
-      routeSteps: data.steps,
-      currentLegs: data.legs,
-      isCalculatingRoute: false,
-      routeError: null,
-      isDirty: true,
+      encodedPolyline: data.encodedPolyline, routeSteps: data.steps,
+      currentLegs: data.legs, isCalculatingRoute: false, routeError: null, isDirty: true,
     })),
 
-  setRouteError: (routeError) => set({ routeError, isCalculatingRoute: false }),
-  setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
-
-  clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
-
   saveCurrentRoute: () => {
-    const { currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes } = get();
-    if (!currentRoute) return;
-    const saved = toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes);
+    const state = get();
+    if (!state.currentRoute) return;
+    const saved = toSavedRoute(
+      state.currentRoute, state.routeName, state.encodedPolyline,
+      state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
+    );
     localStorageService.saveRoute(saved);
     const updated = savedRoutes.some((r) => r.id === saved.id)
       ? savedRoutes.map((r) => (r.id === saved.id ? saved : r))
@@ -120,6 +116,8 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       encodedPolyline: saved.encodedPolyline || null,
       currentLegs: saved.legs ?? [],
       isDirty: false,
+      mapCenter: saved.mapCenter ?? null,
+      mapZoom: saved.mapZoom ?? null,
     });
     logService.info("ROUTE", "ルート読み込み", { id, name: saved.name });
   },
@@ -141,6 +139,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     currentRoute: createNewRoute(get().travelMode),
     routeName: "", encodedPolyline: null, routeSteps: [],
     currentLegs: [], isDirty: false, routeError: null,
+    mapCenter: null, mapZoom: null,
   }),
 
   reset: () => set(initialState),

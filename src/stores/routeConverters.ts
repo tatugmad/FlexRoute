@@ -1,4 +1,4 @@
-import type { Route, SavedRoute, SavedRouteLeg, TravelMode } from "@/types";
+import type { LatLng, Route, SavedRoute, SavedRouteLeg, TravelMode } from "@/types";
 import { generateId } from "@/utils/generateId";
 
 export function toSavedRoute(
@@ -7,6 +7,8 @@ export function toSavedRoute(
   encodedPolyline: string | null,
   currentLegs: SavedRouteLeg[],
   savedRoutes: SavedRoute[],
+  mapCenter: LatLng | null,
+  mapZoom: number | null,
 ): SavedRoute {
   const existing = savedRoutes.find((r) => r.id === currentRoute.id);
   const now = new Date().toISOString();
@@ -21,6 +23,8 @@ export function toSavedRoute(
     version: existing ? existing.version + 1 : 1,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
+    mapCenter,
+    mapZoom,
   };
 }
 
