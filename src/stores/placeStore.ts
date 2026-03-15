@@ -24,8 +24,8 @@ type PlaceActions = {
   closePlaceModal: () => void;
   reset: () => void;
   loadPlaces: () => void;
-  addPlace: (place: Omit<SavedPlace, "id" | "createdAt" | "updatedAt">) => SavedPlace;
-  updatePlace: (id: string, updates: Partial<Pick<SavedPlace, "name" | "userNote" | "labelIds" | "photoUrl">>) => void;
+  savePlace: (place: Omit<SavedPlace, "id" | "createdAt" | "updatedAt">) => SavedPlace;
+  updatePlace: (id: string, updates: Partial<Pick<SavedPlace, "name" | "memo" | "labelIds" | "photoUrl" | "originalName">>) => void;
   deletePlace: (id: string) => void;
   isSaved: (googlePlaceId: string) => boolean;
   openPlaceDetail: (id: string) => void;
@@ -59,7 +59,7 @@ export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => (
     set({ savedPlaces });
   },
 
-  addPlace: (data) => {
+  savePlace: (data) => {
     const now = new Date().toISOString();
     const place: SavedPlace = {
       ...data,

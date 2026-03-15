@@ -58,8 +58,8 @@ function PlaceCard({ place, onClick }: { place: SavedPlace; onClick: () => void 
       <div className="p-3">
         <p className="text-base font-bold text-slate-800 truncate">{place.name}</p>
         <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
-        {place.userNote ? (
-          <p className="text-sm text-slate-500 mt-0.5 truncate">{place.userNote}</p>
+        {place.memo ? (
+          <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>
         ) : null}
         {placeLabels.length > 0 && (
           <div className="flex gap-1 mt-2 flex-wrap">
@@ -90,8 +90,8 @@ function PlaceRow({ place, onClick }: { place: SavedPlace; onClick: () => void }
       <div className="min-w-0 flex-1">
         <p className="text-base font-bold text-slate-800 truncate">{place.name}</p>
         <p className="text-sm text-slate-600 mt-0.5 truncate">{place.address}</p>
-        {place.userNote ? (
-          <p className="text-sm text-slate-500 mt-0.5 truncate">{place.userNote}</p>
+        {place.memo ? (
+          <p className="text-sm text-slate-500 mt-0.5 truncate">{place.memo}</p>
         ) : null}
         {placeLabels.length > 0 && (
           <div className="flex gap-1.5 mt-2 flex-wrap">

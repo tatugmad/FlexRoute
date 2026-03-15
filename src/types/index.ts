@@ -119,13 +119,13 @@ export type SavedPlace = {
   id: string;
   placeId: string;
   name: string;
-  originalName: string;
+  originalName: string | null;
   address: string;
   position: LatLng;
   rating: number | null;
   photoUrl: string | null;
   labelIds: string[];
-  userNote: string;
+  memo: string;
   createdAt: string;
   updatedAt: string;
 };
