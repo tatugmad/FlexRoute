@@ -12,6 +12,7 @@ type PlaceState = {
   placeModalData: PlaceModalData | null;
   placeModalOpen: boolean;
   savedPlaces: SavedPlace[];
+  detailPlaceId: string | null;
 };
 
 type PlaceActions = {
@@ -27,6 +28,8 @@ type PlaceActions = {
   updatePlace: (id: string, updates: Partial<Pick<SavedPlace, "name" | "userNote" | "labelIds" | "photoUrl">>) => void;
   deletePlace: (id: string) => void;
   isSaved: (googlePlaceId: string) => boolean;
+  openPlaceDetail: (id: string) => void;
+  closePlaceDetail: () => void;
 };
 
 const initialState: PlaceState = {
@@ -37,6 +40,7 @@ const initialState: PlaceState = {
   placeModalData: null,
   placeModalOpen: false,
   savedPlaces: [],
+  detailPlaceId: null,
 };
 
 export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => ({
@@ -93,4 +97,7 @@ export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => (
   isSaved: (googlePlaceId) => {
     return get().savedPlaces.some((p) => p.placeId === googlePlaceId);
   },
+
+  openPlaceDetail: (id) => set({ detailPlaceId: id }),
+  closePlaceDetail: () => set({ detailPlaceId: null }),
 }));
