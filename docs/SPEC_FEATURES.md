@@ -28,7 +28,7 @@
 | F-CACHE | キャッシュ対策（F5リロード） | ✅ | - |
 | F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | ✅ | 1-5 |
 | F-LABEL | ラベル管理（CRUD） | ✅ | 1-5 |
-| F-PLACE | 場所保存・一覧 | データレイヤーのみ | 1-5 |
+| F-PLACE | 場所保存・一覧 | ✅ | 1-5 |
 | F-THUMB | ルートサムネイル（Static Maps API） | 未実装 | 1-5 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 未実装 | 1-6 |
 | F-NAV-WIPE | ワイプマップ（PiP） | 未実装 | 1-6 |
