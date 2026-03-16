@@ -5,7 +5,7 @@ import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
 import { toSavedRoute, toRoute, createNewRoute } from "@/stores/routeConverters";
 import { migrateThumbnails } from "@/utils/thumbnailUrl";
-import { generateRouteThumbnailUrl } from "@/utils/routeThumbnail";
+import { generateRouteThumbnailUrl, generateRouteThumbnailUrlSmall } from "@/utils/routeThumbnail";
 import { isValidPosition } from "@/utils/validation";
 
 const initialState = {
@@ -102,6 +102,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     );
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
     saved.thumbnailUrl = generateRouteThumbnailUrl(saved, apiKey);
+    saved.thumbnailUrlSmall = generateRouteThumbnailUrlSmall(saved, apiKey);
     localStorageService.saveRoute(saved);
     const updated = state.savedRoutes.some((r) => r.id === saved.id)
       ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))

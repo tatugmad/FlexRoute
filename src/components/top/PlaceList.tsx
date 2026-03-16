@@ -55,7 +55,7 @@ export function PlaceList() {
           <p className="text-sm">一致する場所はありません</p>
         </div>
       ) : viewMode === "tile" ? (
-        <div className="grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,150px)] sm:grid-cols-[repeat(auto-fill,280px)] justify-center gap-2 sm:gap-3">
           <AnimatePresence mode="popLayout">
             {filteredPlaces.map((place) => (
               <motion.div

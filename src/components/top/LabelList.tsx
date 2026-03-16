@@ -52,7 +52,7 @@ export function LabelList() {
           <p className="text-sm">一致するラベルはありません</p>
         </div>
       ) : viewMode === "tile" ? (
-        <div className="grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,150px)] sm:grid-cols-[repeat(auto-fill,280px)] justify-center gap-2 sm:gap-3">
           <AnimatePresence mode="popLayout">
             {filteredLabels.map((label) => (
               <motion.div
