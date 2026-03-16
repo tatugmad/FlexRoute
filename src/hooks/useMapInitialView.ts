@@ -31,7 +31,15 @@ export function useMapInitialView() {
 
     const waypoints = currentRoute?.waypoints ?? [];
 
-    if (waypoints.length === 0) {
+    const mapCenter = useRouteStore.getState().mapCenter;
+    const mapZoom = useRouteStore.getState().mapZoom;
+
+    if (mapCenter && mapZoom != null) {
+      // 全ケース共通: 保存済みの位置があればそれを復元
+      map.setCenter(mapCenter);
+      map.setZoom(mapZoom);
+    } else if (waypoints.length === 0) {
+      // WP0件、保存位置なし: lastKnownPosition またはデフォルト
       const lastKnown = getLastKnownPosition();
       const center = lastKnown
         ? { lat: lastKnown.lat, lng: lastKnown.lng }
@@ -39,17 +47,12 @@ export function useMapInitialView() {
       map.setCenter(center);
       map.setZoom(DEFAULT_ZOOM);
     } else if (waypoints.length === 1) {
+      // WP1件、保存位置なし: WP座標にセンタリング
       map.setCenter(waypoints[0]!.position);
       map.setZoom(DEFAULT_ZOOM);
     } else {
-      const mapCenter = useRouteStore.getState().mapCenter;
-      const mapZoom = useRouteStore.getState().mapZoom;
-      if (mapCenter && mapZoom != null) {
-        map.setCenter(mapCenter);
-        map.setZoom(mapZoom);
-      } else {
-        fitBoundsToWaypoints(map, waypoints);
-      }
+      // WP2件以上、保存位置なし: 全WPが収まるようにfitBounds
+      fitBoundsToWaypoints(map, waypoints);
     }
     setMapReady(true);
   }, [map, currentRoute, setMapReady]);
