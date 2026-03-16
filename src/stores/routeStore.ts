@@ -23,6 +23,8 @@ const initialState = {
   isDirty: false,
   mapCenter: null,
   mapZoom: null,
+  mapWidth: null,
+  mapHeight: null,
 };
 
 export const useRouteStore = create<RouteStoreState>()((set, get) => ({
@@ -79,7 +81,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   setIsDirty: (isDirty) => set({ isDirty }),
   setRouteError: (routeError) => set({ routeError, isCalculatingRoute: false }),
   setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
-  setMapViewState: (center, zoom) => set({ mapCenter: center, mapZoom: zoom }),
+  setMapViewState: (center, zoom, width, height) => set({ mapCenter: center, mapZoom: zoom, mapWidth: width, mapHeight: height }),
   clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
 
   setRouteData: (data) =>
@@ -98,11 +100,12 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     const saved = toSavedRoute(
       state.currentRoute, state.routeName, state.encodedPolyline,
       state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
+      state.mapWidth, state.mapHeight,
     );
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
     saved.thumbnailUrl = generateThumbnailUrl(saved.encodedPolyline, apiKey)
-      ?? generateMarkerThumbnailUrl(saved.waypoints, saved.mapZoom, apiKey)
-      ?? generateMapThumbnailUrl(saved.mapCenter, saved.mapZoom, apiKey);
+      ?? generateMarkerThumbnailUrl(saved.waypoints, saved.mapZoom, saved.mapWidth, saved.mapHeight, apiKey)
+      ?? generateMapThumbnailUrl(saved.mapCenter, saved.mapZoom, saved.mapWidth, saved.mapHeight, apiKey);
     localStorageService.saveRoute(saved);
     const updated = state.savedRoutes.some((r) => r.id === saved.id)
       ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))
@@ -147,6 +150,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     currentRoute: createNewRoute(get().travelMode), routeName: "",
     encodedPolyline: null, routeSteps: [], currentLegs: [],
     isDirty: false, routeError: null, mapCenter: null, mapZoom: null,
+    mapWidth: null, mapHeight: null,
   }),
   reset: () => set(initialState),
 }));

@@ -19,7 +19,8 @@ export function useMapViewState() {
       if (!center || zoom == null) return;
 
       const latLng = { lat: center.lat(), lng: center.lng() };
-      setMapViewState(latLng, zoom);
+      const div = map.getDiv();
+      setMapViewState(latLng, zoom, div.clientWidth, div.clientHeight);
 
       if (isFirstIdle.current) {
         isFirstIdle.current = false;

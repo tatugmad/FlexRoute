@@ -9,6 +9,8 @@ export function toSavedRoute(
   savedRoutes: SavedRoute[],
   mapCenter: LatLng | null,
   mapZoom: number | null,
+  mapWidth: number | null,
+  mapHeight: number | null,
 ): SavedRoute {
   const existing = savedRoutes.find((r) => r.id === currentRoute.id);
   const now = new Date().toISOString();
@@ -25,6 +27,8 @@ export function toSavedRoute(
     updatedAt: now,
     mapCenter,
     mapZoom,
+    mapWidth,
+    mapHeight,
     thumbnailUrl: existing?.thumbnailUrl ?? null,
   };
 }
