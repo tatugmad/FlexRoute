@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Trash2, Map } from "lucide-react";
-import { CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 import type { SavedRoute, RouteViewMode } from "@/types";
 
 type RouteCardProps = {
@@ -12,7 +11,7 @@ type RouteCardProps = {
 
 function TilePlaceholder() {
   return (
-    <div className="bg-slate-100 flex items-center justify-center border-b border-slate-300" style={{ height: CARD_THUMBNAIL_HEIGHT }}>
+    <div className="bg-slate-100 flex items-center justify-center border-b border-slate-300 h-[86px] sm:h-[160px]">
       <Map className="w-6 h-6 text-slate-400" />
     </div>
   );
@@ -73,24 +72,31 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
   return (
     <button
       onClick={() => onSelect(route.id)}
-      className="w-[280px] bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col"
+      className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col"
     >
       {showImage ? (
-        <img
-          src={route.thumbnailUrl!}
-          alt=""
-          className="w-full object-cover"
-          style={{ height: CARD_THUMBNAIL_HEIGHT }}
-          onError={() => setImgError(true)}
-        />
+        <>
+          <img
+            src={route.thumbnailUrlSmall ?? route.thumbnailUrl!}
+            alt=""
+            className="w-full h-[86px] object-cover sm:hidden"
+            onError={() => setImgError(true)}
+          />
+          <img
+            src={route.thumbnailUrl!}
+            alt=""
+            className="w-full hidden sm:block sm:h-[160px] object-cover"
+            onError={() => setImgError(true)}
+          />
+        </>
       ) : (
         <TilePlaceholder />
       )}
       <div className="p-3">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-base font-bold text-slate-800 truncate">{displayName}</p>
-            <p className="text-sm text-slate-600 mt-0.5">{waypointCount}地点</p>
+            <p className="text-xs sm:text-base font-bold text-slate-800 truncate">{displayName}</p>
+            <p className="text-[10px] sm:text-sm text-slate-600 mt-0.5">{waypointCount}地点</p>
           </div>
           <button
             onClick={handleDelete}

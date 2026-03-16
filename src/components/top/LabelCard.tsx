@@ -1,5 +1,4 @@
 import { Trash2 } from "lucide-react";
-import { CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 import type { Label } from "@/types";
 
 type LabelItemProps = {
@@ -11,17 +10,17 @@ type LabelItemProps = {
 export function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {
   return (
     <button onClick={() => onEdit(label)} className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow overflow-hidden text-left flex flex-col cursor-pointer">
-      <div className="w-full bg-slate-100 flex items-center justify-center" style={{ height: CARD_THUMBNAIL_HEIGHT }}>
+      <div className="w-full bg-slate-100 flex items-center justify-center h-[86px] sm:h-[160px]">
         <span className="w-12 h-12 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
       </div>
       <div className="px-3 py-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-800 truncate flex-1 mr-2">{label.name}</span>
+          <span className="text-xs sm:text-sm font-bold text-slate-800 truncate flex-1 mr-2">{label.name}</span>
           <button onClick={(e) => { e.stopPropagation(); onDelete(label); }} className="p-1 text-slate-400 hover:text-rose-500 shrink-0" aria-label="削除">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
-        <span className="text-xs text-slate-500">0件</span>
+        <span className="text-[10px] sm:text-xs text-slate-500">0件</span>
       </div>
     </button>
   );

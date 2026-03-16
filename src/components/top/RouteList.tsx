@@ -74,7 +74,7 @@ export function RouteList() {
           <div
             className={
               routeViewMode === "tile"
-                ? "grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-3"
+                ? "grid grid-cols-[repeat(auto-fill,150px)] sm:grid-cols-[repeat(auto-fill,280px)] justify-center gap-2 sm:gap-3"
                 : "flex flex-col gap-3"
             }
           >

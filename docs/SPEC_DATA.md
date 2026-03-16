@@ -142,6 +142,7 @@ type SavedRoute = {
   mapWidth: number | null;
   mapHeight: number | null;
   thumbnailUrl: string | null;
+  thumbnailUrlSmall: string | null;
 };
 ```
 
@@ -890,6 +891,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: ルートサムネイルURL生成のファサード（3段階フォールバックを集約）
 - **公開関数**:
   - `generateRouteThumbnailUrl(saved, apiKey)` — ポリライン → マーカー → 地図のみ の優先順でサムネイルURLを生成
+  - `generateRouteThumbnailUrlSmall(saved, apiKey)` — スモール版（150x86）サムネイルURLを生成（sm未満のカード用）
 - **使用箇所**: routeStore（saveCurrentRoute）
 
 ### generateId.ts（src/utils/generateId.ts）
@@ -906,6 +908,8 @@ useRouteCalculation でもルート計算前にフィルタ:
 |---|---|---|
 | `CARD_WIDTH` | `280` | タイルカードの幅 (px) |
 | `CARD_THUMBNAIL_HEIGHT` | `160` | タイルカードのサムネイル/写真エリア高さ (px) |
+| `CARD_WIDTH_SM` | `150` | スマホ用タイルカードの幅 (px) |
+| `CARD_THUMBNAIL_HEIGHT_SM` | `86` | スマホ用タイルカードのサムネイル/写真エリア高さ (px) |
 
 ### src/constants/
 
@@ -936,7 +940,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
 | `CARD_WIDTH` | constants/cardLayout.ts | `280` |
 | `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
-| `APP_VERSION` | constants/appVersion.ts | `"1.5.5"` |
+| `APP_VERSION` | constants/appVersion.ts | `"1.5.6"` |
 
 ## フォーマットユーティリティ
 

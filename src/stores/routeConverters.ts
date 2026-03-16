@@ -30,6 +30,7 @@ export function toSavedRoute(
     mapWidth,
     mapHeight,
     thumbnailUrl: existing?.thumbnailUrl ?? null,
+    thumbnailUrlSmall: existing?.thumbnailUrlSmall ?? null,
   };
 }
 
