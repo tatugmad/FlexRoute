@@ -1,8 +1,10 @@
 // ── ラベル ──
-export type PlaceLabel = {
+export type Label = {
   id: string;
   name: string;
   color: string;
+  forRoute: boolean;
+  forPlace: boolean;
   createdAt: string;
   updatedAt: string;
 };

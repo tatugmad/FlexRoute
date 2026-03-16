@@ -18,24 +18,28 @@ export function LabelEditModal() {
 
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_COLOR);
+  const [forRoute, setForRoute] = useState(true);
+  const [forPlace, setForPlace] = useState(true);
 
   useEffect(() => {
     if (isOpen) {
       setName(editingLabel?.name ?? "");
       setColor(editingLabel?.color ?? DEFAULT_COLOR);
+      setForRoute(editingLabel?.forRoute ?? true);
+      setForPlace(editingLabel?.forPlace ?? true);
     }
   }, [isOpen, editingLabel]);
 
   if (!isOpen) return null;
 
-  const isValid = name.trim().length > 0;
+  const isValid = name.trim().length > 0 && (forRoute || forPlace);
 
   const handleSave = () => {
     if (!isValid) return;
     if (editingLabel) {
-      updateLabel(editingLabel.id, { name: name.trim(), color });
+      updateLabel(editingLabel.id, { name: name.trim(), color, forRoute, forPlace });
     } else {
-      addLabel(name.trim(), color);
+      addLabel(name.trim(), color, forRoute, forPlace);
     }
     closeLabelModal();
   };
@@ -72,6 +76,27 @@ export function LabelEditModal() {
               style={{ backgroundColor: c }}
             />
           ))}
+        </div>
+
+        <div className="flex flex-col gap-2 mb-6">
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={forRoute}
+              onChange={(e) => setForRoute(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            ルートに使う
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={forPlace}
+              onChange={(e) => setForPlace(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            場所に使う
+          </label>
         </div>
 
         <div className="flex justify-end gap-3">

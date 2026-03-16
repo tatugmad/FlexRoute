@@ -2,20 +2,20 @@ import { create } from "zustand";
 import { labelStorageService } from "@/services/labelStorage";
 import { generateId } from "@/utils/generateId";
 import { logService } from "@/services/logService";
-import type { PlaceLabel } from "@/types";
+import type { Label } from "@/types";
 
 type LabelState = {
-  labels: PlaceLabel[];
-  editingLabel: PlaceLabel | null;
+  labels: Label[];
+  editingLabel: Label | null;
   isLabelModalOpen: boolean;
 };
 
 type LabelActions = {
   loadLabels: () => void;
-  addLabel: (name: string, color: string) => void;
-  updateLabel: (id: string, updates: { name?: string; color?: string }) => void;
+  addLabel: (name: string, color: string, forRoute: boolean, forPlace: boolean) => void;
+  updateLabel: (id: string, updates: { name?: string; color?: string; forRoute?: boolean; forPlace?: boolean }) => void;
   deleteLabel: (id: string) => void;
-  openLabelModal: (label?: PlaceLabel) => void;
+  openLabelModal: (label?: Label) => void;
   closeLabelModal: () => void;
 };
 
@@ -25,16 +25,23 @@ export const useLabelStore = create<LabelState & LabelActions>()((set) => ({
   isLabelModalOpen: false,
 
   loadLabels: () => {
-    const labels = labelStorageService.getLabels();
+    const raw = labelStorageService.getLabels();
+    const labels = raw.map((l) => ({
+      ...l,
+      forRoute: l.forRoute ?? true,
+      forPlace: l.forPlace ?? true,
+    }));
     set({ labels });
   },
 
-  addLabel: (name, color) => {
+  addLabel: (name, color, forRoute, forPlace) => {
     const now = new Date().toISOString();
-    const label: PlaceLabel = {
+    const label: Label = {
       id: generateId(),
       name,
       color,
+      forRoute,
+      forPlace,
       createdAt: now,
       updatedAt: now,
     };
@@ -47,7 +54,7 @@ export const useLabelStore = create<LabelState & LabelActions>()((set) => ({
     set((state) => {
       const target = state.labels.find((l) => l.id === id);
       if (!target) return state;
-      const updated: PlaceLabel = {
+      const updated: Label = {
         ...target,
         ...updates,
         updatedAt: new Date().toISOString(),

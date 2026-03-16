@@ -1,11 +1,11 @@
 import { Trash2 } from "lucide-react";
 import { CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
-import type { PlaceLabel } from "@/types";
+import type { Label } from "@/types";
 
 type LabelItemProps = {
-  label: PlaceLabel;
-  onEdit: (label: PlaceLabel) => void;
-  onDelete: (label: PlaceLabel) => void;
+  label: Label;
+  onEdit: (label: Label) => void;
+  onDelete: (label: Label) => void;
 };
 
 export function LabelCard({ label, onEdit, onDelete }: LabelItemProps) {

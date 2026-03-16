@@ -1,30 +1,30 @@
 import { logService } from "@/services/logService";
-import type { PlaceLabel } from "@/types";
+import type { Label } from "@/types";
 
 const STORAGE_KEY = "flexroute:labels";
 
-function readAll(): PlaceLabel[] {
+function readAll(): Label[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
-    return JSON.parse(raw) as PlaceLabel[];
+    return JSON.parse(raw) as Label[];
   } catch {
     return [];
   }
 }
 
-function writeAll(labels: PlaceLabel[]): void {
+function writeAll(labels: Label[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(labels));
 }
 
 export const labelStorageService = {
-  getLabels: (): PlaceLabel[] => {
+  getLabels: (): Label[] => {
     const labels = readAll();
     logService.info("LABEL_STORAGE", "ラベル一覧読み込み", { count: labels.length });
     return labels;
   },
 
-  saveLabel: (label: PlaceLabel): void => {
+  saveLabel: (label: Label): void => {
     const labels = readAll();
     const index = labels.findIndex((l) => l.id === label.id);
     if (index >= 0) {
@@ -42,7 +42,7 @@ export const labelStorageService = {
     logService.info("LABEL_STORAGE", "ラベル削除", { id: labelId });
   },
 
-  getLabel: (labelId: string): PlaceLabel | undefined => {
+  getLabel: (labelId: string): Label | undefined => {
     return readAll().find((l) => l.id === labelId);
   },
 };

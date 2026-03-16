@@ -526,6 +526,10 @@ navigationStore が管理する:
 - ラベルの CRUD（作成・読取・更新・削除）
 - TOP画面の「ラベル」タブに一覧表示
 - ラベルで場所をフィルタ・検索
+- ラベルには forRoute（ルート用）と forPlace（場所用）のフラグがある
+- 新規作成時はデフォルトで両方 true
+- ルートのラベル選択UIでは forRoute === true のラベルのみ表示
+- 場所のラベル選択UIでは forPlace === true のラベルのみ表示
 
 関連: F-PLACE-MODAL, F-PLACE
 
