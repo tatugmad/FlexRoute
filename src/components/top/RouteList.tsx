@@ -6,7 +6,6 @@ import { ViewToggle } from "@/components/ui/ViewToggle";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
-import { CARD_WIDTH } from "@/constants/cardLayout";
 import { useNewRoute } from "@/hooks/useNewRoute";
 import { matchesQuery } from "@/utils/searchFilter";
 
@@ -75,7 +74,7 @@ export function RouteList() {
           <div
             className={
               routeViewMode === "tile"
-                ? "flex flex-wrap gap-3"
+                ? "grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-3"
                 : "flex flex-col gap-3"
             }
           >
@@ -84,7 +83,6 @@ export function RouteList() {
                 <motion.div
                   key={route.id}
                   exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-                  style={routeViewMode === "tile" ? { width: CARD_WIDTH } : undefined}
                   className={routeViewMode === "tile" ? "" : "w-full"}
                 >
                   <RouteCard

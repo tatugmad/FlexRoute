@@ -5,7 +5,6 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { PlaceCard, PlaceRow } from "@/components/top/PlaceCard";
 import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
-import { CARD_WIDTH } from "@/constants/cardLayout";
 import { useLabelStore } from "@/stores/labelStore";
 import { matchesQuery } from "@/utils/searchFilter";
 
@@ -56,13 +55,12 @@ export function PlaceList() {
           <p className="text-sm">一致する場所はありません</p>
         </div>
       ) : viewMode === "tile" ? (
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-3">
           <AnimatePresence mode="popLayout">
             {filteredPlaces.map((place) => (
               <motion.div
                 key={place.id}
                 exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-                style={{ width: CARD_WIDTH }}
               >
                 <PlaceCard place={place} onClick={() => openPlaceDetail(place.id)} onDelete={handleDeletePlace} />
               </motion.div>
