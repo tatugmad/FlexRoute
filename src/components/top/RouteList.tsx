@@ -42,14 +42,14 @@ export function RouteList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <ViewToggle current={routeViewMode} onChange={setRouteViewMode} />
-        <div className="flex-1 min-w-0">
+        <div className="w-full order-last sm:order-none sm:w-auto sm:flex-1 min-w-0">
           <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ルートを検索..." />
         </div>
         <button
           onClick={handleNewRoute}
-          className="bg-indigo-600 text-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-500 transition-colors flex items-center text-sm"
+          className="ml-auto bg-indigo-600 text-white p-2.5 sm:px-4 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-indigo-500 transition-colors flex items-center text-sm"
         >
           <Plus className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-1.5" />
           <span className="hidden sm:inline">新規作成</span>

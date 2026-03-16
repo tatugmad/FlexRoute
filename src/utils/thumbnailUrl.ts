@@ -63,7 +63,7 @@ function buildUrl(
     `size=${CARD_WIDTH}x${CARD_THUMBNAIL_HEIGHT}` +
     "&scale=2" +
     "&maptype=roadmap" +
-    `&path=color:0x4F46E5FF|weight:5|enc:${encodedPath}`;
+    `&path=color:0x4F46E5FF|weight:3|enc:${encodedPath}`;
 
   if (startPoint) {
     url += `&markers=color:green|label:S|${startPoint.lat},${startPoint.lng}`;

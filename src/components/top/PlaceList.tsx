@@ -42,9 +42,9 @@ export function PlaceList() {
 
   return (
     <div className="p-4">
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <ViewToggle current={viewMode} onChange={setViewMode} />
-        <div className="flex-1 min-w-0">
+        <div className="w-full order-last sm:order-none sm:w-auto sm:flex-1 min-w-0">
           <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="場所を検索..." />
         </div>
       </div>
