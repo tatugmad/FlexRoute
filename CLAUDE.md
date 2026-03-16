@@ -1,6 +1,6 @@
 # FlexRoute
 
-> 最終更新: 2026-03-14
+> 最終更新: 2026-03-16
 
 ## ドキュメント体系
 
@@ -47,6 +47,14 @@ GitHub Pages は HTTPS のため、Geolocation を含む全機能をテスト可
 | setup.bat | 初期セットアップ（npm install + .env作成） |
 | dev.bat | 開発サーバー起動（LAN公開込み） |
 | build-check.bat | ビルドが通るか確認 |
+
+### APP_VERSION 運用ルール
+- `src/constants/appVersion.ts` にバージョン番号を管理する
+- バージョン体系: `{マイルストーン}.{タスク連番}`（例: `1.5.3` = MS 1-5 の3番目のタスク）
+- CC Web への全てのタスク指示に次のバージョン番号を含める
+- CC Web はタスク実行時に `APP_VERSION` を指示されたバージョンに更新する
+- TOP画面ヘッダーに `v{APP_VERSION} ({branch}@{commitHash})` 形式で表示する
+- マイルストーンが変わったら第2セグメントをリセット（例: 1.5.x → 1.6.1）
 
 ### 開発サイクル
 1. チャット（claude.ai）で設計を固める
