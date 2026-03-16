@@ -6,13 +6,15 @@
 
 全型は `src/types/index.ts`、`src/types/route.ts`、`src/types/routesApi.ts` に集約。
 
-### PlaceLabel
+### Label
 
 ```ts
-type PlaceLabel = {
+type Label = {
   id: string;
   name: string;
   color: string;
+  forRoute: boolean;
+  forPlace: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -389,8 +391,8 @@ type SavedPlace = {
 
 | プロパティ | 型 | 初期値 | 説明 |
 |---|---|---|---|
-| labels | `PlaceLabel[]` | `[]` | ラベル一覧 |
-| editingLabel | `PlaceLabel \| null` | `null` | 編集中のラベル |
+| labels | `Label[]` | `[]` | ラベル一覧 |
+| editingLabel | `Label \| null` | `null` | 編集中のラベル |
 | isLabelModalOpen | `boolean` | `false` | ラベルモーダル開閉 |
 
 #### アクション
@@ -398,10 +400,10 @@ type SavedPlace = {
 | アクション | 引数 | 説明 |
 |---|---|---|
 | loadLabels | `()` | localStorage から全ラベルを読み込み |
-| addLabel | `(name: string, color: string)` | ラベルを追加 |
-| updateLabel | `(id: string, updates: { name?: string; color?: string })` | ラベルを更新 |
+| addLabel | `(name: string, color: string, forRoute: boolean, forPlace: boolean)` | ラベルを追加 |
+| updateLabel | `(id: string, updates: { name?: string; color?: string; forRoute?: boolean; forPlace?: boolean })` | ラベルを更新 |
 | deleteLabel | `(id: string)` | ラベルを削除 |
-| openLabelModal | `(label?: PlaceLabel)` | ラベルモーダルを開く（label指定で編集、省略で新規） |
+| openLabelModal | `(label?: Label)` | ラベルモーダルを開く（label指定で編集、省略で新規） |
 | closeLabelModal | `()` | ラベルモーダルを閉じる |
 
 ### placeStore（src/stores/placeStore.ts）
@@ -509,7 +511,7 @@ type StorageService = {
 | キー | 値 | 説明 |
 |---|---|---|
 | `flexroute:routes` | `SavedRoute[]` のJSON文字列 | 全ルートを1キーに集約 |
-| `flexroute:labels` | `PlaceLabel[]` のJSON文字列 | 全ラベルを1キーに集約 |
+| `flexroute:labels` | `Label[]` のJSON文字列 | 全ラベルを1キーに集約 |
 | `flexroute:places` | `SavedPlace[]` のJSON文字列 | 全保存済み場所を1キーに集約 |
 | `flexroute:lastKnownPosition` | `{ lat, lng, updatedAt }` のJSON文字列 | ナビ終了時の最終位置 |
 
@@ -934,7 +936,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
 | `CARD_WIDTH` | constants/cardLayout.ts | `280` |
 | `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
-| `APP_VERSION` | constants/appVersion.ts | `"1.5.2"` |
+| `APP_VERSION` | constants/appVersion.ts | `"1.5.5"` |
 
 ## フォーマットユーティリティ
 

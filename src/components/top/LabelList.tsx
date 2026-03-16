@@ -7,7 +7,7 @@ import { LabelCard, LabelRow } from "@/components/top/LabelCard";
 import { useUiStore } from "@/stores/uiStore";
 import { useLabelStore } from "@/stores/labelStore";
 import { matchesQuery } from "@/utils/searchFilter";
-import type { PlaceLabel } from "@/types";
+import type { Label } from "@/types";
 
 export function LabelList() {
   const labels = useLabelStore((s) => s.labels);
@@ -26,7 +26,7 @@ export function LabelList() {
     matchesQuery(searchQuery, [label.name])
   );
 
-  const handleDelete = (label: PlaceLabel) => {
+  const handleDelete = (label: Label) => {
     openConfirmDialog(`「${label.name}」を削除しますか？`, () => deleteLabel(label.id));
   };
 
