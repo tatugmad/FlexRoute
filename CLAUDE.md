@@ -16,6 +16,7 @@
 | docs/SPEC_NAVIGATION.md | ナビゲーション・GPS・リルート詳細仕様 |
 | docs/SPEC_FEATURES.md | 機能一覧と各機能の動作定義 |
 | docs/DECISIONS.md | 設計判断の記録（なぜこうしたか） |
+| strategy/ | サービス企画戦略（APIコスト・収益化・競合分析・規約調査） |
 
 ## 開発フロー
 
