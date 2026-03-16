@@ -4,11 +4,9 @@ import { localStorageService } from "@/services/storage";
 import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
 import { toSavedRoute, toRoute, createNewRoute } from "@/stores/routeConverters";
-import { generateThumbnailUrl, generateMarkerThumbnailUrl, generateMapThumbnailUrl, migrateThumbnails } from "@/utils/thumbnailUrl";
-
-function isValidPosition(pos: { lat: number; lng: number }): boolean {
-  return Number.isFinite(pos.lat) && Number.isFinite(pos.lng) && !(pos.lat === 0 && pos.lng === 0);
-}
+import { migrateThumbnails } from "@/utils/thumbnailUrl";
+import { generateRouteThumbnailUrl } from "@/utils/routeThumbnail";
+import { isValidPosition } from "@/utils/validation";
 
 const initialState = {
   currentRoute: null,
@@ -103,9 +101,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       state.mapWidth, state.mapHeight,
     );
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-    saved.thumbnailUrl = generateThumbnailUrl(saved.encodedPolyline, apiKey)
-      ?? generateMarkerThumbnailUrl(saved.waypoints, saved.mapZoom, saved.mapWidth, saved.mapHeight, apiKey)
-      ?? generateMapThumbnailUrl(saved.mapCenter, saved.mapZoom, saved.mapWidth, saved.mapHeight, apiKey);
+    saved.thumbnailUrl = generateRouteThumbnailUrl(saved, apiKey);
     localStorageService.saveRoute(saved);
     const updated = state.savedRoutes.some((r) => r.id === saved.id)
       ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))
@@ -117,15 +113,10 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   loadRoute: (id) => {
     const saved = get().savedRoutes.find((r) => r.id === id);
     if (!saved) return;
-    const route = toRoute(saved);
     set({
-      currentRoute: route,
-      routeName: saved.name,
-      encodedPolyline: saved.encodedPolyline || null,
-      currentLegs: saved.legs ?? [],
-      isDirty: false,
-      mapCenter: saved.mapCenter ?? null,
-      mapZoom: saved.mapZoom ?? null,
+      currentRoute: toRoute(saved), routeName: saved.name,
+      encodedPolyline: saved.encodedPolyline || null, currentLegs: saved.legs ?? [],
+      isDirty: false, mapCenter: saved.mapCenter ?? null, mapZoom: saved.mapZoom ?? null,
     });
     logService.info("ROUTE", "ルート読み込み", { id, name: saved.name });
   },
