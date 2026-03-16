@@ -2,6 +2,19 @@ import { decodePolyline, encodePolyline } from "@/utils/polylineCodec";
 import { simplifyPolyline } from "@/utils/simplifyPolyline";
 import { CARD_WIDTH, CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 
+function adjustZoomForThumbnail(
+  editZoom: number,
+  mapWidth: number | null,
+  mapHeight: number | null,
+): number {
+  if (!mapWidth || !mapHeight || mapWidth <= 0 || mapHeight <= 0) return editZoom;
+  const zOffsetW = Math.log2(CARD_WIDTH / mapWidth);
+  const zOffsetH = Math.log2(CARD_THUMBNAIL_HEIGHT / mapHeight);
+  const adjusted = editZoom + Math.min(zOffsetW, zOffsetH);
+  // Static Maps API の zoom は整数のみ。Math.round で丸める。最小値 0。
+  return Math.max(0, Math.round(adjusted));
+}
+
 const MAX_URL_LENGTH = 8192;
 const DEFAULT_TOLERANCE = 0.0001;
 const FALLBACK_TOLERANCE = 0.0005;
@@ -40,6 +53,8 @@ export function generateThumbnailUrl(
 export function generateMarkerThumbnailUrl(
   waypoints: Array<{ position: { lat: number; lng: number } }>,
   zoom: number | null,
+  mapWidth: number | null,
+  mapHeight: number | null,
   apiKey: string,
 ): string | null {
   if (waypoints.length === 0 || zoom == null || !apiKey) return null;
@@ -51,7 +66,7 @@ export function generateMarkerThumbnailUrl(
   if (waypoints.length === 1) {
     const wp = waypoints[0]!;
     url += `&center=${wp.position.lat},${wp.position.lng}`;
-    url += `&zoom=${zoom}`;
+    url += `&zoom=${adjustZoomForThumbnail(zoom, mapWidth, mapHeight)}`;
     url += `&markers=color:red|${wp.position.lat},${wp.position.lng}`;
   } else {
     const first = waypoints[0]!;
@@ -66,6 +81,8 @@ export function generateMarkerThumbnailUrl(
 export function generateMapThumbnailUrl(
   center: { lat: number; lng: number } | null,
   zoom: number | null,
+  mapWidth: number | null,
+  mapHeight: number | null,
   apiKey: string,
 ): string | null {
   if (!center || zoom == null || !apiKey) return null;
@@ -75,7 +92,7 @@ export function generateMapThumbnailUrl(
     "&scale=2" +
     "&maptype=roadmap" +
     `&center=${center.lat},${center.lng}` +
-    `&zoom=${zoom}` +
+    `&zoom=${adjustZoomForThumbnail(zoom, mapWidth, mapHeight)}` +
     `&key=${apiKey}`;
   return url;
 }
@@ -86,6 +103,8 @@ export function migrateThumbnails<T extends {
   waypoints: Array<{ position: { lat: number; lng: number } }>;
   mapCenter: { lat: number; lng: number } | null;
   mapZoom: number | null;
+  mapWidth?: number | null;
+  mapHeight?: number | null;
 }>(
   routes: T[],
   apiKey: string,
@@ -94,8 +113,8 @@ export function migrateThumbnails<T extends {
   const result = routes.map((r) => {
     if (!r.thumbnailUrl) {
       const url = generateThumbnailUrl(r.encodedPolyline, apiKey)
-        ?? generateMarkerThumbnailUrl(r.waypoints, r.mapZoom, apiKey)
-        ?? generateMapThumbnailUrl(r.mapCenter, r.mapZoom, apiKey);
+        ?? generateMarkerThumbnailUrl(r.waypoints, r.mapZoom, r.mapWidth ?? null, r.mapHeight ?? null, apiKey)
+        ?? generateMapThumbnailUrl(r.mapCenter, r.mapZoom, r.mapWidth ?? null, r.mapHeight ?? null, apiKey);
       if (url) {
         changed = true;
         return { ...r, thumbnailUrl: url };

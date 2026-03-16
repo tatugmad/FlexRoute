@@ -21,6 +21,8 @@ export type RouteStoreState = {
   isDirty: boolean;
   mapCenter: LatLng | null;
   mapZoom: number | null;
+  mapWidth: number | null;
+  mapHeight: number | null;
   setCurrentRoute: (route: Route | null) => void;
   addWaypoint: (waypoint: Waypoint, insertIndex?: number) => void;
   removeWaypoint: (waypointId: string) => void;
@@ -37,7 +39,7 @@ export type RouteStoreState = {
   setRouteError: (error: string | null) => void;
   setIsCalculatingRoute: (isCalculating: boolean) => void;
   setIsDirty: (dirty: boolean) => void;
-  setMapViewState: (center: LatLng, zoom: number) => void;
+  setMapViewState: (center: LatLng, zoom: number, width: number, height: number) => void;
   clearRouteData: () => void;
   saveCurrentRoute: () => void;
   loadRoute: (id: string) => void;

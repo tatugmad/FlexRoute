@@ -137,6 +137,8 @@ type SavedRoute = {
   updatedAt: string;
   mapCenter: LatLng | null;
   mapZoom: number | null;
+  mapWidth: number | null;
+  mapHeight: number | null;
   thumbnailUrl: string | null;
 };
 ```
@@ -348,7 +350,7 @@ type SavedPlace = {
 
 - **責務**: Route ↔ SavedRoute の変換と新規ルート生成
 - **公開関数**:
-  - `toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes, mapCenter, mapZoom)` — 編集中ルートを保存形式に変換
+  - `toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes, mapCenter, mapZoom, mapWidth, mapHeight)` — 編集中ルートを保存形式に変換
   - `createNewRoute(travelMode)` — 新規空ルートを生成
   - `toRoute(saved)` — 保存形式から編集形式に変換
 
