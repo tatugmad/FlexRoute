@@ -1,6 +1,6 @@
 # FlexRoute データ仕様書
 
-> 最終更新: 2026-03-14
+> 最終更新: 2026-03-16
 
 ## 型定義一覧
 
@@ -851,8 +851,8 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### src/constants/
 
-現時点では `.gitkeep` のみ存在し、定数ファイルは未作成。
-各定数はそれぞれのファイル内にローカル定義されている:
+`appVersion.ts` と `cardLayout.ts` が存在する。
+その他の定数はそれぞれのファイル内にローカル定義されている:
 
 | 定数 | 定義場所 | 値 |
 |------|---------|-----|
@@ -876,6 +876,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |
 | `ROAD_COLORS` | utils/roadType.ts | highway=#ec4899, national=#eab308, prefectural=#22c55e, local=#4f46e5 |
 | `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
+| `APP_VERSION` | constants/appVersion.ts | `"1.5.1"` |
 
 ## フォーマットユーティリティ
 
