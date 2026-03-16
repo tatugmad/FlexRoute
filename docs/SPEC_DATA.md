@@ -877,6 +877,19 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `generateMapThumbnailUrl(center, zoom, apiKey)` — マーカーなし地図サムネイルURL生成
   - `migrateThumbnails(routes, apiKey)` — thumbnailUrl 未設定のルートに対して3段階フォールバックでURL付与
 
+### validation.ts（src/utils/validation.ts）
+
+- **責務**: データバリデーションユーティリティ
+- **公開関数**:
+  - `isValidPosition(pos)` — 座標が有効か検証（NaN, Infinity, (0,0) を拒否）
+
+### routeThumbnail.ts（src/utils/routeThumbnail.ts）
+
+- **責務**: ルートサムネイルURL生成のファサード（3段階フォールバックを集約）
+- **公開関数**:
+  - `generateRouteThumbnailUrl(saved, apiKey)` — ポリライン → マーカー → 地図のみ の優先順でサムネイルURLを生成
+- **使用箇所**: routeStore（saveCurrentRoute）
+
 ### generateId.ts（src/utils/generateId.ts）
 
 - **責務**: UUID v4 形式のユニークID生成
