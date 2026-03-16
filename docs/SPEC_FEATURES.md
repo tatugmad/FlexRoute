@@ -391,7 +391,7 @@ navigationStore が管理する:
 - タブバー: uiStore.topTab で切替（"routes" / "labels" / "places"）
 - 「ルート」タブ: F-ROUTE-LIST
 - 「ラベル」タブ: F-LABEL（ラベル一覧・CRUD）
-- 「場所」タブ: 「準備中」表示（1-5で実装）
+- 「場所」タブ: F-PLACE（場所一覧・詳細・保存）
 - 「新規作成」ボタン → routeStore.newRoute() → viewMode → "route"
 
 入力: タブ切替、新規作成ボタン

@@ -847,7 +847,48 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `PREFECTURAL_KEYWORDS` — ["県道", "都道", "府道", "道道"]
   - `ROAD_COLORS` — { highway: "#ec4899", national: "#eab308", prefectural: "#22c55e", local: "#4f46e5" }
 
+### searchFilter.ts（src/utils/searchFilter.ts）
+
+- **責務**: 検索クエリで文字列配列をフィルタする。スペース区切り=AND、"|"区切り=OR、大文字小文字区別なし
+- **公開関数**:
+  - `matchesQuery(query, targets)` — 検索クエリが対象文字列配列にマッチするか判定。OR が先に評価される（"A B|C" → "A AND (B OR C)"）
+
+### polylineCodec.ts（src/utils/polylineCodec.ts）
+
+- **責務**: Google Encoded Polyline Algorithm のエンコード・デコード
+- **公開関数**:
+  - `decodePolyline(encoded)` — エンコード済みポリライン文字列を `{ lat, lng }[]` に変換
+  - `encodePolyline(points)` — `{ lat, lng }[]` をエンコード済みポリライン文字列に変換
+
+### simplifyPolyline.ts（src/utils/simplifyPolyline.ts）
+
+- **責務**: Douglas-Peucker アルゴリズムによるポリラインの簡略化
+- **公開関数**:
+  - `simplifyPolyline(points, tolerance?)` — 座標配列を指定した許容誤差で間引く（デフォルト tolerance = 0.0001）
+
+### thumbnailUrl.ts（src/utils/thumbnailUrl.ts）
+
+- **責務**: Static Maps API を使ったルートサムネイルURL生成。3段階フォールバック（ポリライン→マーカー→地図）対応
+- **公開関数**:
+  - `generateThumbnailUrl(encodedPolyline, apiKey)` — ポリライン付きサムネイルURL生成。長すぎる場合は簡略化してリトライ
+  - `generateMarkerThumbnailUrl(waypoints, zoom, apiKey)` — マーカーのみのサムネイルURL生成
+  - `generateMapThumbnailUrl(center, zoom, apiKey)` — マーカーなし地図サムネイルURL生成
+  - `migrateThumbnails(routes, apiKey)` — thumbnailUrl 未設定のルートに対して3段階フォールバックでURL付与
+
+### generateId.ts（src/utils/generateId.ts）
+
+- **責務**: UUID v4 形式のユニークID生成
+- **公開関数**:
+  - `generateId()` — `crypto.randomUUID()` を優先し、未対応環境では Math.random ベースのフォールバックで UUID v4 を生成
+
 ## Constants
+
+### src/constants/cardLayout.ts
+
+| 定数 | 値 | 説明 |
+|---|---|---|
+| `CARD_WIDTH` | `280` | タイルカードの幅 (px) |
+| `CARD_THUMBNAIL_HEIGHT` | `160` | タイルカードのサムネイル/写真エリア高さ (px) |
 
 ### src/constants/
 
@@ -876,7 +917,9 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |
 | `ROAD_COLORS` | utils/roadType.ts | highway=#ec4899, national=#eab308, prefectural=#22c55e, local=#4f46e5 |
 | `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
-| `APP_VERSION` | constants/appVersion.ts | `"1.5.1"` |
+| `CARD_WIDTH` | constants/cardLayout.ts | `280` |
+| `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
+| `APP_VERSION` | constants/appVersion.ts | `"1.5.2"` |
 
 ## フォーマットユーティリティ
 
