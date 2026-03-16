@@ -4,7 +4,7 @@ import { localStorageService } from "@/services/storage";
 import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
 import { toSavedRoute, toRoute, createNewRoute } from "@/stores/routeConverters";
-import { generateThumbnailUrl, migrateThumbnails } from "@/utils/thumbnailUrl";
+import { generateThumbnailUrl, generateMarkerThumbnailUrl, generateMapThumbnailUrl, migrateThumbnails } from "@/utils/thumbnailUrl";
 
 function isValidPosition(pos: { lat: number; lng: number }): boolean {
   return Number.isFinite(pos.lat) && Number.isFinite(pos.lng) && !(pos.lat === 0 && pos.lng === 0);
@@ -100,7 +100,9 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
     );
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-    saved.thumbnailUrl = generateThumbnailUrl(saved.encodedPolyline, apiKey);
+    saved.thumbnailUrl = generateThumbnailUrl(saved.encodedPolyline, apiKey)
+      ?? generateMarkerThumbnailUrl(saved.waypoints, saved.mapZoom, apiKey)
+      ?? generateMapThumbnailUrl(saved.mapCenter, saved.mapZoom, apiKey);
     localStorageService.saveRoute(saved);
     const updated = state.savedRoutes.some((r) => r.id === saved.id)
       ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))

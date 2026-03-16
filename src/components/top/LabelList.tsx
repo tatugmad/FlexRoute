@@ -6,7 +6,6 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { LabelCard, LabelRow } from "@/components/top/LabelCard";
 import { useUiStore } from "@/stores/uiStore";
 import { useLabelStore } from "@/stores/labelStore";
-import { CARD_WIDTH } from "@/constants/cardLayout";
 import { matchesQuery } from "@/utils/searchFilter";
 import type { PlaceLabel } from "@/types";
 
@@ -53,13 +52,12 @@ export function LabelList() {
           <p className="text-sm">一致するラベルはありません</p>
         </div>
       ) : viewMode === "tile" ? (
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,280px)] justify-center gap-3">
           <AnimatePresence mode="popLayout">
             {filteredLabels.map((label) => (
               <motion.div
                 key={label.id}
                 exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
-                style={{ width: CARD_WIDTH }}
               >
                 <LabelCard label={label} onEdit={openLabelModal} onDelete={handleDelete} />
               </motion.div>

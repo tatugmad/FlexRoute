@@ -1,6 +1,6 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-14
+> 最終更新: 2026-03-16
 
 ## 機能一覧
 
@@ -29,7 +29,7 @@
 | F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | ✅ | 1-5 |
 | F-LABEL | ラベル管理（CRUD） | ✅ | 1-5 |
 | F-PLACE | 場所保存・一覧 | ✅ | 1-5 |
-| F-THUMB | ルートサムネイル（Static Maps API） | 未実装 | 1-5 |
+| F-THUMB | ルートサムネイル（Static Maps API） | ✅ | 1-5 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 未実装 | 1-6 |
 | F-NAV-WIPE | ワイプマップ（PiP） | 未実装 | 1-6 |
 | F-NAV-REROUTE | 逸脱検知・リルート（3選択肢） | 未実装 | 1-6 |
@@ -568,12 +568,16 @@ navigationStore が管理する:
 
 ---
 
-### F-THUMB: ルートサムネイル（1-5で実装）
+### F-THUMB: ルートサムネイル
 
-概要: ルート一覧のカードにルートのサムネイル画像を表示する。
+概要: ルート一覧のカードにルートのサムネイル画像を表示する。Static Maps API で生成。
 
 動作フロー:
-- Static Maps API でサムネイルURLを生成
+- 保存時（saveCurrentRoute）に以下の3段階フォールバックでサムネイルURLを生成:
+  1. ポリラインサムネイル（WP2件以上、encodedPolyline あり）: ポリライン+S/Gマーカー。center/zoom は API 自動調整
+  2. マーカーサムネイル（WP1件以上、encodedPolyline なし）: WP位置のマーカーのみ。center=WP座標、zoom=保存時の mapZoom
+  3. 地図サムネイル（WP0件）: マーカーなし。保存時の mapCenter / mapZoom を使用
+- 全段階失敗時（通常フローでは発生しない）は thumbnailUrl = null、RouteCard で Map アイコンを表示
 - 生成したURLを SavedRoute.thumbnailUrl にキャッシュする
 - ルート変更時（version変更時）のみ再生成する
 - RouteCard マウント時に毎回再生成してはならない（アンチパターン禁止1）
@@ -581,7 +585,10 @@ navigationStore が管理する:
   （この用途でのポリライン簡略化は許可。禁止されているのは「毎回のマウント時の再生成」）
 - RouteCard のヘッダー部分に表示
 
-関連: F-ROUTE-LIST
+入力: SavedRoute の encodedPolyline, waypoints, mapCenter, mapZoom
+出力: Static Maps API の画像URL → SavedRoute.thumbnailUrl
+エラー: API キー無効 → null（Map アイコン表示）
+関連: F-ROUTE-LIST, F-ROUTE-SAVE
 
 ---
 

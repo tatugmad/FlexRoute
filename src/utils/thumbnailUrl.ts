@@ -37,15 +37,69 @@ export function generateThumbnailUrl(
   return fallbackUrl.length <= MAX_URL_LENGTH ? fallbackUrl : null;
 }
 
-export function migrateThumbnails<T extends { thumbnailUrl?: string | null; encodedPolyline: string }>(
+export function generateMarkerThumbnailUrl(
+  waypoints: Array<{ position: { lat: number; lng: number } }>,
+  zoom: number | null,
+  apiKey: string,
+): string | null {
+  if (waypoints.length === 0 || zoom == null || !apiKey) return null;
+  let url =
+    "https://maps.googleapis.com/maps/api/staticmap?" +
+    `size=${CARD_WIDTH}x${CARD_THUMBNAIL_HEIGHT}` +
+    "&scale=2" +
+    "&maptype=roadmap";
+  if (waypoints.length === 1) {
+    const wp = waypoints[0]!;
+    url += `&center=${wp.position.lat},${wp.position.lng}`;
+    url += `&zoom=${zoom}`;
+    url += `&markers=color:red|${wp.position.lat},${wp.position.lng}`;
+  } else {
+    const first = waypoints[0]!;
+    const last = waypoints[waypoints.length - 1]!;
+    url += `&markers=color:green|label:S|${first.position.lat},${first.position.lng}`;
+    url += `&markers=color:red|label:G|${last.position.lat},${last.position.lng}`;
+  }
+  url += `&key=${apiKey}`;
+  return url;
+}
+
+export function generateMapThumbnailUrl(
+  center: { lat: number; lng: number } | null,
+  zoom: number | null,
+  apiKey: string,
+): string | null {
+  if (!center || zoom == null || !apiKey) return null;
+  const url =
+    "https://maps.googleapis.com/maps/api/staticmap?" +
+    `size=${CARD_WIDTH}x${CARD_THUMBNAIL_HEIGHT}` +
+    "&scale=2" +
+    "&maptype=roadmap" +
+    `&center=${center.lat},${center.lng}` +
+    `&zoom=${zoom}` +
+    `&key=${apiKey}`;
+  return url;
+}
+
+export function migrateThumbnails<T extends {
+  thumbnailUrl?: string | null;
+  encodedPolyline: string;
+  waypoints: Array<{ position: { lat: number; lng: number } }>;
+  mapCenter: { lat: number; lng: number } | null;
+  mapZoom: number | null;
+}>(
   routes: T[],
   apiKey: string,
 ): { routes: T[]; changed: boolean } {
   let changed = false;
   const result = routes.map((r) => {
-    if (!r.thumbnailUrl && r.encodedPolyline) {
-      changed = true;
-      return { ...r, thumbnailUrl: generateThumbnailUrl(r.encodedPolyline, apiKey) };
+    if (!r.thumbnailUrl) {
+      const url = generateThumbnailUrl(r.encodedPolyline, apiKey)
+        ?? generateMarkerThumbnailUrl(r.waypoints, r.mapZoom, apiKey)
+        ?? generateMapThumbnailUrl(r.mapCenter, r.mapZoom, apiKey);
+      if (url) {
+        changed = true;
+        return { ...r, thumbnailUrl: url };
+      }
     }
     return r;
   });
