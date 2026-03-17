@@ -1,6 +1,6 @@
 # FlexRoute データ仕様書
 
-> 最終更新: 2026-03-16
+> 最終更新: 2026-03-17
 
 ## 型定義一覧
 
@@ -650,7 +650,6 @@ X-Goog-FieldMask: routes.duration,routes.distanceMeters,routes.polyline.encodedP
 - Routes API
 - Places API
 - Places API (New)
-- Geocoding API
 - Maps Static API
 
 ## デプロイ構成

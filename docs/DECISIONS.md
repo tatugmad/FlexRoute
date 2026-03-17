@@ -1,6 +1,6 @@
 # FlexRoute 設計判断記録
 
-> 最終更新: 2026-03-16
+> 最終更新: 2026-03-17
 
 各判断について「決定」「理由」「却下した選択肢」「却下理由」を記載する。
 これにより、将来の開発者やAIが「なぜこうなっているのか」を理解でき、
@@ -123,3 +123,20 @@
 - **決定**: ルート編集画面で Geolocation API を一切使用しない。GPS（watchPosition）はナビゲーション画面（1-6）でのみ使用する。ルート編集画面の初期センタリングは lastKnownPosition（localStorage）で行う
 - **理由**: PCでのルート編集時にGPSは不要。デスクトップPCでは watchPosition の更新間隔が長く（30秒〜数分）、15秒の lost 判定閾値で active/lost が繰り返される問題が発生した。ナビゲーション中のみ GPS を使う設計がシンプルで、位置情報の権限ダイアログもルート編集時には出なくなる
 - **却下**: LOST_THRESHOLD を長くする / maximumAge でキャッシュ許容 → 根本的にルート編集にGPSが不要なので対症療法は不適切
+
+## D-021: Google Maps Platform のコスト戦略
+
+- **決定**: 段階的移行モデルを採用する。初期はFlexRouteの共有APIキーで運営し、ユーザー増加に応じて個人APIキーへの移行を案内する。個人APIキーを使うユーザーはGoogle Maps Platformの無料枠内で利用でき、APIコストがゼロになる
+- **理由**: FlexRouteの想定ヘビーユーザーの月間利用は全SKUで無料枠の6〜20%しか消費せず、個人が通常利用で無料枠を使い切ることは現実的にありえない。1ユーザーの月間コスト試算（全SKU合計）は無料枠内に余裕で収まる
+- **規約確認**: Google Maps Platform ToS Section 3.2.1(c)(ii)「avoid incurring Fees」条項を精査。各ユーザーが自分のGoogle Cloudアカウントで自分のためにAPIを使う形態は、回避すべきFeesがそもそも存在しないため規約違反ではない
+- **技術的制約**: 請求先アカウント作成とカード登録はAPI自動化不可（Google Cloud Console手動のみ）。クイックセットアップURL（https://console.cloud.google.com/google/maps-apis/start）で手順を短縮可能
+- **無料枠超過防止**: FlexRouteのローカルカウンタ + Cloud Monitoring API同期で管理。ユーザーに課金が発生する可能性をゼロにする設計
+- **却下**: FlexRouteの1キーで全ユーザーを賄いサブスクで回収 → 1,000ユーザーで月170万円、採算が困難
+- **却下**: OAuth自動セットアップ → 請求先アカウント作成がAPI不可のため技術的に実現不能
+- **詳細**: strategy/PERSONAL_APIKEY_STRATEGY.md, strategy/API_COST_ANALYSIS.md
+
+## D-022: Routes API は Pro SKU（TRAFFIC_AWARE）を継続使用
+
+- **決定**: Routes API の TRAFFIC_AWARE 設定（Pro SKU, $10/1,000）を維持する。Essentials（$5/1,000）への切替は行わない
+- **理由**: 個人APIキー戦略（D-021）により、APIコストはユーザー個人の無料枠内に収まる。Pro SKU の無料枠5,000回/月に対し、想定利用は890回/月（18%）で十分な余裕がある。コスト削減のために交通情報を犠牲にする必要がない
+- **再検討条件**: 個人APIキー戦略を断念し、FlexRoute共有キーで運営する方針に変更した場合
