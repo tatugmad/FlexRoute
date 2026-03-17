@@ -35,6 +35,8 @@ export function useRouteCalculation() {
   const setRouteData = useRouteStore((s) => s.setRouteData);
   const setRouteError = useRouteStore((s) => s.setRouteError);
   const setIsCalculating = useRouteStore((s) => s.setIsCalculatingRoute);
+  const skipNextCalculation = useRouteStore((s) => s.skipNextCalculation);
+  const setSkipNextCalculation = useRouteStore((s) => s.setSkipNextCalculation);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -45,6 +47,11 @@ export function useRouteCalculation() {
         !(wp.position.lat === 0 && wp.position.lng === 0),
     );
     if (validWps.length < 2) return;
+
+    if (skipNextCalculation) {
+      setSkipNextCalculation(false);
+      return;
+    }
 
     abortRef.current?.abort();
     const controller = new AbortController();
@@ -116,5 +123,5 @@ export function useRouteCalculation() {
       });
 
     return () => controller.abort();
-  }, [waypoints, travelMode, setRouteData, setRouteError, setIsCalculating]);
+  }, [waypoints, travelMode, setRouteData, setRouteError, setIsCalculating, skipNextCalculation, setSkipNextCalculation]);
 }

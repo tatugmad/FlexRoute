@@ -2,14 +2,16 @@ import { decodePolyline, encodePolyline } from "@/utils/polylineCodec";
 import { simplifyPolyline } from "@/utils/simplifyPolyline";
 import { CARD_WIDTH, CARD_THUMBNAIL_HEIGHT } from "@/constants/cardLayout";
 
-function adjustZoomForThumbnail(
+export function adjustZoomForThumbnail(
   editZoom: number,
   mapWidth: number | null,
   mapHeight: number | null,
+  targetWidth: number = CARD_WIDTH,
+  targetHeight: number = CARD_THUMBNAIL_HEIGHT,
 ): number {
   if (!mapWidth || !mapHeight || mapWidth <= 0 || mapHeight <= 0) return editZoom;
-  const zOffsetW = Math.log2(CARD_WIDTH / mapWidth);
-  const zOffsetH = Math.log2(CARD_THUMBNAIL_HEIGHT / mapHeight);
+  const zOffsetW = Math.log2(targetWidth / mapWidth);
+  const zOffsetH = Math.log2(targetHeight / mapHeight);
   const adjusted = editZoom + Math.min(zOffsetW, zOffsetH);
   // Static Maps API の zoom は整数のみ。Math.round で丸める。最小値 0。
   return Math.max(0, Math.round(adjusted));

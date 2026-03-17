@@ -23,6 +23,7 @@ export type RouteStoreState = {
   mapZoom: number | null;
   mapWidth: number | null;
   mapHeight: number | null;
+  skipNextCalculation: boolean;
   setCurrentRoute: (route: Route | null) => void;
   addWaypoint: (waypoint: Waypoint, insertIndex?: number) => void;
   removeWaypoint: (waypointId: string) => void;
@@ -46,5 +47,6 @@ export type RouteStoreState = {
   deleteRoute: (id: string) => void;
   loadSavedRoutes: () => void;
   newRoute: () => void;
+  setSkipNextCalculation: (skip: boolean) => void;
   reset: () => void;
 };
