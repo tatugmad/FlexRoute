@@ -1,6 +1,6 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-16
+> 最終更新: 2026-03-17
 
 ## 機能一覧
 
@@ -41,6 +41,7 @@
 | F-MOBILE | モバイルUI（ボトムシート） | 未実装 | 1-7 |
 | F-SPIDER | クモの巣走破地図（deck.gl） | 未実装 | Phase2 |
 | F-AUTH | 認証・アカウント管理 | 未実装 | Phase2 |
+| F-APIKEY | 個人APIキー設定 | 未実装 | Phase2 |
 | F-SUBSCRIBE | サブスクリプション課金（Stripe） | 未実装 | Phase2 |
 | F-GEMINI | Gemini API 自然言語検索 | 未実装 | Phase2（検討） |
 | F-THEME | カラーテーマ切替（プリセット選択） | 未実装 | 未定 |
@@ -752,11 +753,33 @@ navigationStore が管理する:
 概要: ユーザー認証とアカウント管理。localStorage からクラウド同期への移行。
 
 仕様:
-- 認証方式: 未確定（OAuth / メール+パスワード）
+- 認証方式: Google OAuth 2.0 を前提として検討中（strategy/PERSONAL_APIKEY_STRATEGY.md で個人APIキー発行に Google アカウントが必須のため）。Phase 2 設計開始前に最終確定する
 - ルートデータのクラウド同期
 - 複数デバイス間でのデータ共有
+- アカウント登録完了後に F-APIKEY の設定案内を表示（任意）
 
-関連: F-SUBSCRIBE
+関連: F-SUBSCRIBE, F-APIKEY, F-SECURITY, D-021
+
+---
+
+### F-APIKEY: 個人APIキー設定（Phase2で実装）
+
+概要: ユーザーが自分の Google Cloud API キーを FlexRoute に設定し、個人の無料枠で利用できるようにする。
+
+仕様:
+- 設定画面に「自分の API キーを使う」オプションを用意
+- 「Google Cloud を開く」ボタンでクイックセットアップURL（https://console.cloud.google.com/google/maps-apis/start）に遷移
+- 戻ってきたらキーを貼り付け、「キーを検証して保存」で動作チェック
+- 検証: Maps JavaScript API を1回呼んで成功するか確認
+- キーは FlexRoute のアカウント情報に保存（Phase 2 サーバー）
+- 無料枠超過防止: ローカルカウンタ + Cloud Monitoring API 同期（詳細は strategy/PERSONAL_APIKEY_STRATEGY.md）
+- 段階的制限: 70%で警告バナー、80%で高コストAPI停止（地図表示と閲覧は継続）
+
+前提: F-AUTH
+入力: ユーザーが Google Cloud Console で発行した API キー
+出力: FlexRoute が個人キーで動作。APIコスト = ¥0
+エラー: キー検証失敗 → エラーメッセージ + 再入力案内
+関連: F-AUTH, F-SECURITY, D-021
 
 ---
 
