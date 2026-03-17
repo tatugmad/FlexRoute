@@ -2,6 +2,7 @@ import {
   generateThumbnailUrl,
   generateMarkerThumbnailUrl,
   generateMapThumbnailUrl,
+  adjustZoomForThumbnail,
 } from "@/utils/thumbnailUrl";
 import {
   CARD_WIDTH, CARD_THUMBNAIL_HEIGHT,
@@ -46,7 +47,9 @@ export function generateRouteThumbnailUrlSmall(
     );
   }
   // マーカー / 地図のみ: 小サイズ用にzoomを再計算してURLを直接構築
-  const zoom = adjustZoomSmall(saved.mapZoom, saved.mapWidth, saved.mapHeight);
+  const zoom = saved.mapZoom != null
+    ? adjustZoomForThumbnail(saved.mapZoom, saved.mapWidth, saved.mapHeight, CARD_WIDTH_SM, CARD_THUMBNAIL_HEIGHT_SM)
+    : null;
   if (saved.waypoints.length > 0 && zoom != null) {
     return buildSmallMarkerUrl(saved.waypoints, zoom, apiKey);
   }
@@ -54,20 +57,6 @@ export function generateRouteThumbnailUrlSmall(
     return buildSmallMapUrl(saved.mapCenter, zoom, apiKey);
   }
   return null;
-}
-
-/** スモールカード用のzoom補正 */
-function adjustZoomSmall(
-  editZoom: number | null,
-  mapWidth: number | null,
-  mapHeight: number | null,
-): number | null {
-  if (editZoom == null) return null;
-  if (!mapWidth || !mapHeight || mapWidth <= 0 || mapHeight <= 0) return editZoom;
-  const zOffsetW = Math.log2(CARD_WIDTH_SM / mapWidth);
-  const zOffsetH = Math.log2(CARD_THUMBNAIL_HEIGHT_SM / mapHeight);
-  const adjusted = editZoom + Math.min(zOffsetW, zOffsetH);
-  return Math.max(0, Math.round(adjusted));
 }
 
 /** スモールマーカーURL構築 */

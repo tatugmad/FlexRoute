@@ -23,6 +23,7 @@ const initialState = {
   mapZoom: null,
   mapWidth: null,
   mapHeight: null,
+  skipNextCalculation: false,
 };
 
 export const useRouteStore = create<RouteStoreState>()((set, get) => ({
@@ -118,6 +119,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       currentRoute: toRoute(saved), routeName: saved.name,
       encodedPolyline: saved.encodedPolyline || null, currentLegs: saved.legs ?? [],
       isDirty: false, mapCenter: saved.mapCenter ?? null, mapZoom: saved.mapZoom ?? null,
+      skipNextCalculation: true,
     });
     logService.info("ROUTE", "ルート読み込み", { id, name: saved.name });
   },
@@ -138,11 +140,12 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     set({ savedRoutes: routes });
   },
 
+  setSkipNextCalculation: (skipNextCalculation) => set({ skipNextCalculation }),
   newRoute: () => set({
     currentRoute: createNewRoute(get().travelMode), routeName: "",
     encodedPolyline: null, routeSteps: [], currentLegs: [],
     isDirty: false, routeError: null, mapCenter: null, mapZoom: null,
-    mapWidth: null, mapHeight: null,
+    mapWidth: null, mapHeight: null, skipNextCalculation: false,
   }),
-  reset: () => set(initialState),
+  reset: () => set({ ...initialState, skipNextCalculation: false }),
 }));
