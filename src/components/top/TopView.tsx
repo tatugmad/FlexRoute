@@ -1,4 +1,5 @@
 import { APP_VERSION } from "@/constants/appVersion";
+import { APP_NAME } from "@/constants/appConfig";
 import { RouteList } from "@/components/top/RouteList";
 import { LabelList } from "@/components/top/LabelList";
 import { PlaceList } from "@/components/top/PlaceList";
@@ -22,7 +23,7 @@ export function TopView() {
     <div className="h-screen w-full flex flex-col bg-slate-50">
       <header className="bg-indigo-600 text-white px-4 pt-3 pb-2">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold tracking-tight">FlexRoute</h1>
+          <h1 className="text-lg font-bold tracking-tight">{APP_NAME}</h1>
           <span className="text-xs text-indigo-300 font-mono">v{APP_VERSION} ({__DEV_VERSION__})</span>
           <QrCodePopover />
         </div>
