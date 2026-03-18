@@ -22,7 +22,7 @@ export function LabelLinkedItems({ labelId }: Props) {
       {linkedRoutes.length === 0 ? (
         <p className="text-sm text-slate-400">なし</p>
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-2">
           {linkedRoutes.map((route) => (
             <RouteItem key={route.id} route={route} />
           ))}
@@ -33,7 +33,7 @@ export function LabelLinkedItems({ labelId }: Props) {
       {linkedPlaces.length === 0 ? (
         <p className="text-sm text-slate-400">なし</p>
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-2">
           {linkedPlaces.map((place) => (
             <PlaceItem key={place.id} place={place} />
           ))}
@@ -56,16 +56,16 @@ function RouteItem({ route }: { route: SavedRoute }) {
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-slate-50 rounded-lg px-2 transition-colors"
+      className="w-full flex items-stretch gap-3 bg-white rounded-2xl border border-slate-200 hover:shadow-md transition-shadow pr-3 text-left"
     >
-      <div className="w-12 h-10 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+      <div className="w-20 rounded-l-2xl overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
         {thumb ? (
           <img src={thumb} alt={route.name} className="w-full h-full object-cover" />
         ) : (
           <Map className="w-5 h-5 text-slate-400" />
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-2">
         <p className="text-sm font-medium text-slate-800 truncate">
           {route.name.trim() || "名称未設定"}
         </p>
@@ -84,16 +84,16 @@ function PlaceItem({ place }: { place: SavedPlace }) {
   return (
     <button
       onClick={handleClick}
-      className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-slate-50 rounded-lg px-2 transition-colors"
+      className="w-full flex items-stretch gap-3 bg-white rounded-2xl border border-slate-200 hover:shadow-md transition-shadow pr-3 text-left"
     >
-      <div className="w-12 h-10 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+      <div className="w-20 rounded-l-2xl overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
         {place.photoUrl ? (
           <img src={place.photoUrl} alt={place.name} className="w-full h-full object-cover" />
         ) : (
           <MapPin className="w-5 h-5 text-slate-400" />
         )}
       </div>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-2">
         <p className="text-sm font-medium text-slate-800 truncate">{place.name}</p>
         {place.address && (
           <p className="text-xs text-slate-500 truncate">{place.address}</p>
