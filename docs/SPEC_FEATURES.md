@@ -353,6 +353,12 @@ navigationStore が管理する:
   - タイル: 2列グリッド、rounded-2xl、ルート名・距離・時間
   - リスト: 1列、rounded-xl、コンパクト表示
 - 表示切替: uiStore.routeViewMode（"tile" / "list"）
+- 並び順選択: uiStore.routeSortKey で4種類から選択
+  - "updatedAt"（デフォルト）: 更新日の降順（新しい順）
+  - "createdAt": 作成日の降順（新しい順）
+  - "name": 名前の昇順（localeCompare で日本語対応）。空名は末尾
+  - "distance": 総距離の降順（長い順）。legs の distanceMeters を合算。legs が空の場合は末尾
+- ソートは検索フィルタ後に適用
 - ルート名がtrim()で空 → 「名称未設定」（text-slate-400 italic）
 - 0件時 → 空状態メッセージ
 

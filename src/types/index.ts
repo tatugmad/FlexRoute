@@ -84,6 +84,8 @@ export type TopTab = "routes" | "labels" | "places";
 
 export type RouteViewMode = "tile" | "list";
 
+export type RouteSortKey = "updatedAt" | "createdAt" | "name" | "distance";
+
 export type Panel = "route" | "search" | "navigation" | "settings";
 
 export type MapViewport = {
