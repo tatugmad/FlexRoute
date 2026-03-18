@@ -55,11 +55,13 @@ export function PlaceRow({ place, onClick, onDelete }: PlaceCardProps) {
   return (
     <button onClick={onClick} className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow pr-3 text-left flex items-stretch gap-3">
       {/* サムネイル */}
-      <div className="w-24 rounded-l-2xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="w-24 relative rounded-l-2xl bg-slate-100 overflow-hidden shrink-0">
         {photoUrl ? (
-          <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
+          <img src={photoUrl} alt={place.name} className="absolute inset-0 w-full h-full object-cover" onError={() => refetch()} />
         ) : (
-          <MapPin className="w-5 h-5 text-slate-400" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-slate-400" />
+          </div>
         )}
       </div>
       {/* テキスト部分 */}
