@@ -58,11 +58,13 @@ function RouteItem({ route }: { route: SavedRoute }) {
       onClick={handleClick}
       className="w-full flex items-stretch gap-3 bg-white rounded-2xl border border-slate-200 hover:shadow-md transition-shadow pr-3 text-left"
     >
-      <div className="w-20 rounded-l-2xl overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+      <div className="w-20 relative rounded-l-2xl overflow-hidden bg-slate-100 shrink-0">
         {thumb ? (
-          <img src={thumb} alt={route.name} className="w-full h-full object-cover" />
+          <img src={thumb} alt={route.name} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <Map className="w-5 h-5 text-slate-400" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Map className="w-5 h-5 text-slate-400" />
+          </div>
         )}
       </div>
       <div className="min-w-0 flex-1 py-2">
@@ -86,11 +88,13 @@ function PlaceItem({ place }: { place: SavedPlace }) {
       onClick={handleClick}
       className="w-full flex items-stretch gap-3 bg-white rounded-2xl border border-slate-200 hover:shadow-md transition-shadow pr-3 text-left"
     >
-      <div className="w-20 rounded-l-2xl overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+      <div className="w-20 relative rounded-l-2xl overflow-hidden bg-slate-100 shrink-0">
         {place.photoUrl ? (
-          <img src={place.photoUrl} alt={place.name} className="w-full h-full object-cover" />
+          <img src={place.photoUrl} alt={place.name} className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <MapPin className="w-5 h-5 text-slate-400" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-slate-400" />
+          </div>
         )}
       </div>
       <div className="min-w-0 flex-1 py-2">
