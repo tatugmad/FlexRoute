@@ -1,0 +1,104 @@
+import { Map, MapPin } from "lucide-react";
+import { useRouteStore } from "@/stores/routeStore";
+import { usePlaceStore } from "@/stores/placeStore";
+import { useLabelStore } from "@/stores/labelStore";
+import { useUiStore } from "@/stores/uiStore";
+import type { SavedRoute, SavedPlace } from "@/types";
+
+type Props = {
+  labelId: string;
+};
+
+export function LabelLinkedItems({ labelId }: Props) {
+  const savedRoutes = useRouteStore((s) => s.savedRoutes);
+  const savedPlaces = usePlaceStore((s) => s.savedPlaces);
+
+  const linkedRoutes = savedRoutes.filter((r) => r.labelIds?.includes(labelId));
+  const linkedPlaces = savedPlaces.filter((p) => p.labelIds.includes(labelId));
+
+  return (
+    <div>
+      <p className="text-sm font-medium text-slate-600 mb-2">ルート</p>
+      {linkedRoutes.length === 0 ? (
+        <p className="text-sm text-slate-400">なし</p>
+      ) : (
+        <div className="flex flex-col">
+          {linkedRoutes.map((route) => (
+            <RouteItem key={route.id} route={route} />
+          ))}
+        </div>
+      )}
+
+      <p className="text-sm font-medium text-slate-600 mb-2 mt-4">場所</p>
+      {linkedPlaces.length === 0 ? (
+        <p className="text-sm text-slate-400">なし</p>
+      ) : (
+        <div className="flex flex-col">
+          {linkedPlaces.map((place) => (
+            <PlaceItem key={place.id} place={place} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RouteItem({ route }: { route: SavedRoute }) {
+  const thumb = route.thumbnailUrlSmall ?? route.thumbnailUrl;
+  const wpCount = route.waypoints?.length ?? 0;
+
+  const handleClick = () => {
+    useLabelStore.getState().closeLabelModal();
+    useRouteStore.getState().loadRoute(route.id);
+    useUiStore.getState().setViewMode("route");
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-slate-50 rounded-lg px-2 transition-colors"
+    >
+      <div className="w-12 h-10 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+        {thumb ? (
+          <img src={thumb} alt={route.name} className="w-full h-full object-cover" />
+        ) : (
+          <Map className="w-5 h-5 text-slate-400" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-800 truncate">
+          {route.name.trim() || "名称未設定"}
+        </p>
+        <p className="text-xs text-slate-500">{wpCount}地点</p>
+      </div>
+    </button>
+  );
+}
+
+function PlaceItem({ place }: { place: SavedPlace }) {
+  const handleClick = () => {
+    useLabelStore.getState().closeLabelModal();
+    usePlaceStore.getState().openPlaceDetail(place.id);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className="flex items-center gap-3 w-full text-left py-1.5 hover:bg-slate-50 rounded-lg px-2 transition-colors"
+    >
+      <div className="w-12 h-10 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
+        {place.photoUrl ? (
+          <img src={place.photoUrl} alt={place.name} className="w-full h-full object-cover" />
+        ) : (
+          <MapPin className="w-5 h-5 text-slate-400" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-slate-800 truncate">{place.name}</p>
+        {place.address && (
+          <p className="text-xs text-slate-500 truncate">{place.address}</p>
+        )}
+      </div>
+    </button>
+  );
+}

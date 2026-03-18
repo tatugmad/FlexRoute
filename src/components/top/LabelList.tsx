@@ -6,8 +6,20 @@ import { SearchInput } from "@/components/ui/SearchInput";
 import { LabelCard, LabelRow } from "@/components/top/LabelCard";
 import { useUiStore } from "@/stores/uiStore";
 import { useLabelStore } from "@/stores/labelStore";
+import { useRouteStore } from "@/stores/routeStore";
+import { usePlaceStore } from "@/stores/placeStore";
 import { matchesQuery } from "@/utils/searchFilter";
-import type { Label } from "@/types";
+import type { Label, SavedRoute, SavedPlace } from "@/types";
+
+function countLabelUsage(
+  labelId: string,
+  routes: SavedRoute[],
+  places: SavedPlace[],
+): number {
+  const routeCount = routes.filter((r) => r.labelIds?.includes(labelId)).length;
+  const placeCount = places.filter((p) => p.labelIds.includes(labelId)).length;
+  return routeCount + placeCount;
+}
 
 export function LabelList() {
   const labels = useLabelStore((s) => s.labels);
@@ -17,10 +29,18 @@ export function LabelList() {
   const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const viewMode = useUiStore((s) => s.labelViewMode);
   const setViewMode = useUiStore((s) => s.setLabelViewMode);
+  const savedRoutes = useRouteStore((s) => s.savedRoutes);
+  const loadSavedRoutes = useRouteStore((s) => s.loadSavedRoutes);
+  const savedPlaces = usePlaceStore((s) => s.savedPlaces);
+  const loadPlaces = usePlaceStore((s) => s.loadPlaces);
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => { loadLabels(); }, [loadLabels]);
+  useEffect(() => {
+    loadLabels();
+    loadSavedRoutes();
+    loadPlaces();
+  }, [loadLabels, loadSavedRoutes, loadPlaces]);
 
   const filteredLabels = labels.filter((label) =>
     matchesQuery(searchQuery, [label.name])
@@ -59,7 +79,7 @@ export function LabelList() {
                 key={label.id}
                 exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
               >
-                <LabelCard label={label} onEdit={openLabelModal} onDelete={handleDelete} />
+                <LabelCard label={label} count={countLabelUsage(label.id, savedRoutes, savedPlaces)} onEdit={openLabelModal} onDelete={handleDelete} />
               </motion.div>
             ))}
           </AnimatePresence>
@@ -73,7 +93,7 @@ export function LabelList() {
                 exit={{ opacity: 0, x: -30, transition: { duration: 0.25 } }}
                 className="w-full"
               >
-                <LabelRow label={label} onEdit={openLabelModal} onDelete={handleDelete} />
+                <LabelRow label={label} count={countLabelUsage(label.id, savedRoutes, savedPlaces)} onEdit={openLabelModal} onDelete={handleDelete} />
               </motion.div>
             ))}
           </AnimatePresence>
