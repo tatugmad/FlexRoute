@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { useLabelStore } from "@/stores/labelStore";
+import { LabelLinkedItems } from "./LabelLinkedItems";
 
 const PRESET_COLORS = [
   "#ef4444", "#f59e0b", "#22c55e", "#3b82f6",
@@ -45,8 +46,9 @@ export function LabelEditModal() {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeLabelModal}>
-      <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl mx-4" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={closeLabelModal}>
+      <div className="bg-white w-full max-w-md rounded-t-2xl shadow-2xl overflow-hidden animate-slide-up max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-slate-800">
             {editingLabel ? "ラベルを編集" : "ラベルを作成"}
@@ -117,6 +119,13 @@ export function LabelEditModal() {
           >
             保存
           </button>
+        </div>
+
+        {editingLabel && (
+          <div className="mt-4 pt-4 border-t border-slate-200">
+            <LabelLinkedItems labelId={editingLabel.id} />
+          </div>
+        )}
         </div>
       </div>
     </div>
