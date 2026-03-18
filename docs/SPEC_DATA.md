@@ -143,6 +143,7 @@ type SavedRoute = {
   mapHeight: number | null;
   thumbnailUrl: string | null;
   thumbnailUrlSmall: string | null;
+  labelIds: string[];
 };
 ```
 
@@ -326,6 +327,7 @@ type SavedPlace = {
 | encodedPolyline | `string \| null` | `null` | ルート全体のポリライン |
 | currentLegs | `SavedRouteLeg[]` | `[]` | 変換済みの保存用leg |
 | isDirty | `boolean` | `false` | 未保存の変更あり |
+| currentLabelIds | `string[]` | `[]` | 編集中ルートのラベルID一覧 |
 
 #### アクション
 
@@ -347,13 +349,15 @@ type SavedPlace = {
 | deleteRoute | `(id: string)` | ルートを削除 |
 | loadSavedRoutes | `()` | localStorage から全ルート読み込み |
 | newRoute | `()` | 新規ルートを作成 |
+| setCurrentLabelIds | `(labelIds: string[])` | ルートのラベルIDを設定（isDirty = true） |
 | reset | `()` | 全状態を初期値に戻す |
 
 ### routeConverters.ts（src/stores/routeConverters.ts）
 
 - **責務**: Route ↔ SavedRoute の変換と新規ルート生成
 - **公開関数**:
-  - `toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes, mapCenter, mapZoom, mapWidth, mapHeight)` — 編集中ルートを保存形式に変換
+  - `toSavedRoute(currentRoute, routeName, encodedPolyline, currentLegs, savedRoutes, mapCenter, mapZoom, mapWidth, mapHeight, currentLabelIds)` — 編集中ルートを保存形式に変換
+  - `migrateLabelIds(routes)` — labelIds 未設定の古いデータを [] にマイグレーション
   - `createNewRoute(travelMode)` — 新規空ルートを生成
   - `toRoute(saved)` — 保存形式から編集形式に変換
 

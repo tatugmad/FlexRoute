@@ -11,6 +11,7 @@ export function toSavedRoute(
   mapZoom: number | null,
   mapWidth: number | null,
   mapHeight: number | null,
+  currentLabelIds: string[],
 ): SavedRoute {
   const existing = savedRoutes.find((r) => r.id === currentRoute.id);
   const now = new Date().toISOString();
@@ -31,6 +32,7 @@ export function toSavedRoute(
     mapHeight,
     thumbnailUrl: existing?.thumbnailUrl ?? null,
     thumbnailUrlSmall: existing?.thumbnailUrlSmall ?? null,
+    labelIds: currentLabelIds,
   };
 }
 
@@ -47,6 +49,15 @@ export function createNewRoute(travelMode: TravelMode): Route {
     createdAt: now,
     updatedAt: now,
   };
+}
+
+/** labelIds 未設定の古いデータを [] にマイグレーション。変更があれば true を返す */
+export function migrateLabelIds(routes: SavedRoute[]): boolean {
+  let changed = false;
+  routes.forEach((r) => {
+    if (!r.labelIds) { r.labelIds = []; changed = true; }
+  });
+  return changed;
 }
 
 export function toRoute(saved: SavedRoute): Route {

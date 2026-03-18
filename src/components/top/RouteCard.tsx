@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Trash2, Map } from "lucide-react";
+import { useLabelStore } from "@/stores/labelStore";
+import { LabelChip } from "@/components/ui/LabelChip";
 import type { SavedRoute, RouteViewMode } from "@/types";
 
 type RouteCardProps = {
@@ -27,6 +29,8 @@ function ListPlaceholder() {
 
 export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProps) {
   const [imgError, setImgError] = useState(false);
+  const labels = useLabelStore((s) => s.labels);
+  const routeLabels = labels.filter((l) => route.labelIds?.includes(l.id));
   const waypointCount = route.waypoints.length;
   const displayName = route.name.trim() || "名称未設定";
   const showImage = route.thumbnailUrl && !imgError;
@@ -57,6 +61,11 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
         <div className="flex-1 min-w-0">
           <p className="text-base font-bold text-slate-800 truncate">{displayName}</p>
           <p className="text-sm text-slate-600">{waypointCount}地点</p>
+          {routeLabels.length > 0 && (
+            <div className="flex gap-1 mt-1 flex-wrap">
+              {routeLabels.map((l) => <LabelChip key={l.id} name={l.name} color={l.color} />)}
+            </div>
+          )}
         </div>
         <button
           onClick={handleDelete}
@@ -97,6 +106,11 @@ export function RouteCard({ route, viewMode, onSelect, onDelete }: RouteCardProp
           <div className="flex-1 min-w-0">
             <p className="text-xs sm:text-base font-bold text-slate-800 truncate">{displayName}</p>
             <p className="text-[10px] sm:text-sm text-slate-600 mt-0.5">{waypointCount}地点</p>
+            {routeLabels.length > 0 && (
+              <div className="flex gap-1 mt-1.5 flex-wrap">
+                {routeLabels.map((l) => <LabelChip key={l.id} name={l.name} color={l.color} />)}
+              </div>
+            )}
           </div>
           <button
             onClick={handleDelete}

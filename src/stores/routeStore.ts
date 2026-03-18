@@ -3,7 +3,7 @@ import { userActionTracker } from "@/services/userActionTracker";
 import { localStorageService } from "@/services/storage";
 import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
-import { toSavedRoute, toRoute, createNewRoute } from "@/stores/routeConverters";
+import { toSavedRoute, toRoute, createNewRoute, migrateLabelIds } from "@/stores/routeConverters";
 import { migrateThumbnails } from "@/utils/thumbnailUrl";
 import { generateRouteThumbnailUrl, generateRouteThumbnailUrlSmall } from "@/utils/routeThumbnail";
 import { isValidPosition } from "@/utils/validation";
@@ -23,14 +23,13 @@ const initialState = {
   mapZoom: null,
   mapWidth: null,
   mapHeight: null,
+  currentLabelIds: [] as string[],
   skipNextCalculation: false,
 };
 
 export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   ...initialState,
-
   setCurrentRoute: (route) => set({ currentRoute: route }),
-
   addWaypoint: (waypoint, insertIndex) =>
     set((state) => {
       if (!state.currentRoute) return state;
@@ -50,7 +49,6 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
         currentRoute: { ...state.currentRoute, waypoints: wps, updatedAt: Date.now() },
       };
     }),
-
   removeWaypoint: (waypointId) =>
     set((state) => {
       if (!state.currentRoute) return state;
@@ -64,7 +62,6 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
         },
       };
     }),
-
   reorderWaypoints: (waypoints) =>
     set((state) => {
       if (!state.currentRoute) return state;
@@ -74,7 +71,6 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
         currentRoute: { ...state.currentRoute, waypoints, updatedAt: Date.now() },
       };
     }),
-
   setTravelMode: (travelMode) => set({ travelMode }),
   setRouteName: (routeName) => set({ routeName, isDirty: true }),
   setIsDirty: (isDirty) => set({ isDirty }),
@@ -82,7 +78,6 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
   setMapViewState: (center, zoom, width, height) => set({ mapCenter: center, mapZoom: zoom, mapWidth: width, mapHeight: height }),
   clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
-
   setRouteData: (data) =>
     set((state) => ({
       currentRoute: state.currentRoute
@@ -92,14 +87,13 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       encodedPolyline: data.encodedPolyline, routeSteps: data.steps,
       currentLegs: data.legs, isCalculatingRoute: false, routeError: null, isDirty: true,
     })),
-
   saveCurrentRoute: () => {
     const state = get();
     if (!state.currentRoute) return;
     const saved = toSavedRoute(
       state.currentRoute, state.routeName, state.encodedPolyline,
       state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
-      state.mapWidth, state.mapHeight,
+      state.mapWidth, state.mapHeight, state.currentLabelIds,
     );
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
     saved.thumbnailUrl = generateRouteThumbnailUrl(saved, apiKey);
@@ -119,7 +113,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       currentRoute: toRoute(saved), routeName: saved.name,
       encodedPolyline: saved.encodedPolyline || null, currentLegs: saved.legs ?? [],
       isDirty: false, mapCenter: saved.mapCenter ?? null, mapZoom: saved.mapZoom ?? null,
-      skipNextCalculation: true,
+      currentLabelIds: saved.labelIds ?? [], skipNextCalculation: true,
     });
     logService.info("ROUTE", "ルート読み込み", { id, name: saved.name });
   },
@@ -132,18 +126,21 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     logService.info("ROUTE", "ルート削除", { id });
   },
 
+  setCurrentLabelIds: (currentLabelIds) => set({ currentLabelIds, isDirty: true }),
+
   loadSavedRoutes: () => {
     const raw = localStorageService.getRoutes();
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
     const { routes, changed } = migrateThumbnails(raw, apiKey);
-    if (changed) routes.forEach((r) => localStorageService.saveRoute(r));
+    const labelMigrated = migrateLabelIds(routes);
+    if (changed || labelMigrated) routes.forEach((r) => localStorageService.saveRoute(r));
     set({ savedRoutes: routes });
   },
 
   setSkipNextCalculation: (skipNextCalculation) => set({ skipNextCalculation }),
   newRoute: () => set({
     currentRoute: createNewRoute(get().travelMode), routeName: "",
-    encodedPolyline: null, routeSteps: [], currentLegs: [],
+    encodedPolyline: null, routeSteps: [], currentLegs: [], currentLabelIds: [],
     isDirty: false, routeError: null, mapCenter: null, mapZoom: null,
     mapWidth: null, mapHeight: null, skipNextCalculation: false,
   }),

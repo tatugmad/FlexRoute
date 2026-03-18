@@ -1,6 +1,7 @@
 import { MapPin, Trash2 } from "lucide-react";
 import { useLabelStore } from "@/stores/labelStore";
 import { usePlaceCache } from "@/hooks/usePlaceCache";
+import { LabelChip } from "@/components/ui/LabelChip";
 import type { SavedPlace } from "@/types";
 
 type PlaceCardProps = {
@@ -88,11 +89,3 @@ export function PlaceRow({ place, onClick, onDelete }: PlaceCardProps) {
   );
 }
 
-function LabelChip({ name, color }: { name: string; color: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full">
-      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      {name}
-    </span>
-  );
-}

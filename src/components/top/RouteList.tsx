@@ -5,6 +5,7 @@ import { RouteCard } from "@/components/top/RouteCard";
 import { ViewToggle } from "@/components/ui/ViewToggle";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { useRouteStore } from "@/stores/routeStore";
+import { useLabelStore } from "@/stores/labelStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useNewRoute } from "@/hooks/useNewRoute";
 import { matchesQuery } from "@/utils/searchFilter";
@@ -18,6 +19,7 @@ export function RouteList() {
   const setRouteViewMode = useUiStore((s) => s.setRouteViewMode);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
+  const labels = useLabelStore((s) => s.labels);
   const createNewRoute = useNewRoute();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -64,6 +66,7 @@ export function RouteList() {
           matchesQuery(searchQuery, [
             route.name,
             ...route.waypoints.map((wp) => wp.label),
+            ...(route.labelIds ?? []).map((id) => labels.find((l) => l.id === id)?.name).filter(Boolean) as string[],
           ])
         );
         return filteredRoutes.length === 0 ? (
