@@ -60,4 +60,5 @@ export type SavedRoute = {
   mapHeight: number | null;
   thumbnailUrl: string | null;
   thumbnailUrlSmall: string | null;
+  labelIds: string[];
 };

@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { ArrowLeft } from "lucide-react";
 import { WaypointList } from "@/components/route/WaypointList";
 import { RouteSummary } from "@/components/route/RouteSummary";
+import { RouteLabelSelector } from "@/components/route/RouteLabelSelector";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useAutoSave, canSaveRoute } from "@/hooks/useAutoSave";
@@ -54,6 +55,9 @@ export function RouteEditor() {
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="mb-3">
+          <RouteLabelSelector />
+        </div>
         <WaypointList />
         <RouteSummary />
       </div>
