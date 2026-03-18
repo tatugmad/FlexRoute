@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { userActionTracker } from "@/services/userActionTracker";
-import type { MapViewport, Panel, RouteViewMode, TopTab, ViewMode } from "@/types";
+import type { MapViewport, Panel, RouteSortKey, RouteViewMode, TopTab, ViewMode } from "@/types";
 
 type ConfirmDialog = {
   isOpen: boolean;
@@ -20,6 +20,7 @@ type UiState = {
   routeViewMode: RouteViewMode;
   labelViewMode: RouteViewMode;
   placesViewMode: RouteViewMode;
+  routeSortKey: RouteSortKey;
   searchModalOpen: boolean;
   insertIndex: number | null;
   confirmDialog: ConfirmDialog;
@@ -38,6 +39,7 @@ type UiActions = {
   setRouteViewMode: (mode: RouteViewMode) => void;
   setLabelViewMode: (mode: RouteViewMode) => void;
   setPlacesViewMode: (mode: RouteViewMode) => void;
+  setRouteSortKey: (key: RouteSortKey) => void;
   setSearchModalOpen: (open: boolean) => void;
   setInsertIndex: (index: number | null) => void;
   openConfirmDialog: (message: string, onConfirm: () => void) => void;
@@ -59,6 +61,7 @@ const initialState: UiState = {
   routeViewMode: "tile",
   labelViewMode: "tile",
   placesViewMode: "tile",
+  routeSortKey: "updatedAt",
   searchModalOpen: false,
   insertIndex: null,
   confirmDialog: { isOpen: false, message: "", onConfirm: null },
@@ -94,6 +97,7 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
   setRouteViewMode: (routeViewMode) => set({ routeViewMode }),
   setLabelViewMode: (labelViewMode) => set({ labelViewMode }),
   setPlacesViewMode: (placesViewMode) => set({ placesViewMode }),
+  setRouteSortKey: (routeSortKey) => set({ routeSortKey }),
   setSearchModalOpen: (searchModalOpen) => set({ searchModalOpen }),
   setInsertIndex: (insertIndex) => set({ insertIndex }),
   openConfirmDialog: (message, onConfirm) =>

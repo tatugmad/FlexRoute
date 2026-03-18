@@ -3,12 +3,14 @@ import { Plus } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { RouteCard } from "@/components/top/RouteCard";
 import { ViewToggle } from "@/components/ui/ViewToggle";
+import { SortSelector } from "@/components/ui/SortSelector";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { useRouteStore } from "@/stores/routeStore";
 import { useLabelStore } from "@/stores/labelStore";
 import { useUiStore } from "@/stores/uiStore";
 import { useNewRoute } from "@/hooks/useNewRoute";
 import { matchesQuery } from "@/utils/searchFilter";
+import { sortRoutes } from "@/utils/routeSort";
 
 export function RouteList() {
   const savedRoutes = useRouteStore((s) => s.savedRoutes);
@@ -17,6 +19,8 @@ export function RouteList() {
   const loadSavedRoutes = useRouteStore((s) => s.loadSavedRoutes);
   const routeViewMode = useUiStore((s) => s.routeViewMode);
   const setRouteViewMode = useUiStore((s) => s.setRouteViewMode);
+  const routeSortKey = useUiStore((s) => s.routeSortKey);
+  const setRouteSortKey = useUiStore((s) => s.setRouteSortKey);
   const setViewMode = useUiStore((s) => s.setViewMode);
   const openConfirmDialog = useUiStore((s) => s.openConfirmDialog);
   const labels = useLabelStore((s) => s.labels);
@@ -45,6 +49,7 @@ export function RouteList() {
     <div className="p-4">
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <ViewToggle current={routeViewMode} onChange={setRouteViewMode} />
+        <SortSelector value={routeSortKey} onChange={setRouteSortKey} />
         <div className="w-full order-last sm:order-none sm:w-auto sm:flex-1 min-w-0">
           <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="ルートを検索..." />
         </div>
@@ -62,12 +67,15 @@ export function RouteList() {
           <p className="text-sm">保存されたルートはありません</p>
         </div>
       ) : (() => {
-        const filteredRoutes = savedRoutes.filter((route) =>
-          matchesQuery(searchQuery, [
-            route.name,
-            ...route.waypoints.map((wp) => wp.label),
-            ...(route.labelIds ?? []).map((id) => labels.find((l) => l.id === id)?.name).filter(Boolean) as string[],
-          ])
+        const filteredRoutes = sortRoutes(
+          savedRoutes.filter((route) =>
+            matchesQuery(searchQuery, [
+              route.name,
+              ...route.waypoints.map((wp) => wp.label),
+              ...(route.labelIds ?? []).map((id) => labels.find((l) => l.id === id)?.name).filter(Boolean) as string[],
+            ])
+          ),
+          routeSortKey
         );
         return filteredRoutes.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-slate-500">

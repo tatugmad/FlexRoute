@@ -198,6 +198,7 @@ type PlaceModalData = {
 type ViewMode = "top" | "route";
 type TopTab = "routes" | "labels" | "places";
 type RouteViewMode = "tile" | "list";
+type RouteSortKey = "updatedAt" | "createdAt" | "name" | "distance";
 type Panel = "route" | "search" | "navigation" | "settings";
 
 type MapViewport = {
@@ -462,6 +463,7 @@ type SavedPlace = {
 | routeViewMode | `RouteViewMode` | `"tile"` | ルート一覧の表示形式 |
 | labelViewMode | `RouteViewMode` | `"tile"` | ラベル一覧の表示形式 |
 | placesViewMode | `RouteViewMode` | `"tile"` | 場所一覧の表示形式 |
+| routeSortKey | `RouteSortKey` | `"updatedAt"` | ルート一覧の並び順 |
 | searchModalOpen | `boolean` | `false` | 検索モーダル開閉 |
 | insertIndex | `number \| null` | `null` | 挿入位置（検索モーダル用） |
 | confirmDialog | `ConfirmDialog` | `{ isOpen: false, message: "", onConfirm: null }` | 確認ダイアログ |
@@ -491,6 +493,7 @@ type ConfirmDialog = {
 | setRouteViewMode | `(mode: RouteViewMode)` | ルート一覧表示形式を設定 |
 | setLabelViewMode | `(mode: RouteViewMode)` | ラベル一覧表示形式を設定 |
 | setPlacesViewMode | `(mode: RouteViewMode)` | 場所一覧表示形式を設定 |
+| setRouteSortKey | `(key: RouteSortKey)` | ルート一覧の並び順を設定 |
 | setSearchModalOpen | `(open: boolean)` | 検索モーダル開閉を設定 |
 | setInsertIndex | `(index: number \| null)` | 挿入位置を設定 |
 | openConfirmDialog | `(message: string, onConfirm: () => void)` | 確認ダイアログを開く |
