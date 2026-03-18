@@ -53,9 +53,9 @@ export function PlaceRow({ place, onClick, onDelete }: PlaceCardProps) {
   const { photoUrl, refetch } = usePlaceCache(place.placeId, place.id, place.photoUrl, place.originalName);
 
   return (
-    <button onClick={onClick} className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow pr-3 text-left flex items-center gap-3">
+    <button onClick={onClick} className="w-full bg-white rounded-2xl border border-slate-300 hover:shadow-xl transition-shadow pr-3 text-left flex items-stretch gap-3">
       {/* サムネイル */}
-      <div className="w-24 h-16 rounded-l-2xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="w-24 rounded-l-2xl bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
         {photoUrl ? (
           <img src={photoUrl} alt={place.name} className="w-full h-full object-cover" onError={() => refetch()} />
         ) : (
