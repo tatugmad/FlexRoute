@@ -293,75 +293,26 @@ JSX:
 ## 21. GPS アイコン（ナビヘッダー内）
 
 ナビヘッダーの「ナビゲーション中」テキスト右側に配置。
-64×64px の円形アイコン。背景色 + ボーダー + SVG で構成。
-
-### SVG 構造（共通テンプレート）
-
-viewBox="0 0 60 60"、width/height="58"。
-上半分: 衛星（左上） + GPSテキスト（右上）— 全ステータス固定、色のみ変化。
-下半分: 値テキスト（動的） + 下部ライン（ステータスごとに異なる）。
-
-#### 衛星パーツ（translate(15,11.5) rotate(-45) scale(0.383)）
-
-回転前座標系での構成:
-- 本体: ellipse cx="0" cy="0" rx="5" ry="8"（円筒正面図）
-- 左パネル接続棒: line x1="-5" y1="0" x2="-8" y2="0"
-- 左ソーラーパネル外枠: rect x="-26" y="-6" width="18" height="12" rx="0.5"
-- 左パネル2分割線: line x1="-17" y1="-6" x2="-17" y2="6"
-- 右パネル接続棒: line x1="5" y1="0" x2="8" y2="0"
-- 右ソーラーパネル外枠: rect x="8" y="-6" width="18" height="12" rx="0.5"
-- 右パネル2分割線: line x1="17" y1="-6" x2="17" y2="6"
-- アンテナ: line x1="0" y1="8" x2="0" y2="18"
-
-全パーツ stroke-width="1.5"、fill="none"（本体の ellipse 含む）。
-
-#### GPS テキスト
-
-x="37" y="14.5" text-anchor="middle" dominant-baseline="central"
-font-size="13" font-weight="500" font-family="sans-serif"
-
-#### 値テキスト
-
-x="30" y="34" text-anchor="middle" dominant-baseline="central"
-font-size="27" font-weight="500" font-family="sans-serif"
+円形背景（40×40px）+ SVG（36×36px, viewBox 0 0 60 60）で構成。
+タップでポップオーバー表示。
 
 ### 色マッピング
 
-| ステータス | stroke/fill | 円背景 | 円ボーダー |
-|-----------|-------------|--------|-----------|
+| ステータス | stroke/fill色 | 円背景 | 円ボーダー |
+|-----------|--------------|--------|-----------|
 | active | #059669 | rgba(16,185,129,0.12) | rgba(16,185,129,0.5) |
 | lost | #d97706 | rgba(245,158,11,0.12) | rgba(245,158,11,0.5) |
 | denied | #dc2626 | rgba(239,68,68,0.1) | rgba(239,68,68,0.45) |
 
-### 値テキストの内容
+### 値テキストのルール
 
-- active: 精度（m）。Math.round(accuracy)。99m 以下はそのまま表示、100m 以上は "99+"
-- lost: 経過秒数。lostSince からの秒数。99s 以下はそのまま表示、100s 以上は "99+"
-- denied: "拒否"（固定文字列）
-
-### 下部ライン
-
-#### active: 双方向矢印（←→）精度を示す
-
-- 横線: line x1="11" y1="51" x2="49" y2="51" stroke-width="1"
-- 左三角: path d="M10 51l3-2.5v5z" fill
-- 右三角: path d="M50 51l-3-2.5v5z" fill
-
-#### lost: 実線→破線フェードアウト→右矢印（経過時間を示す）
-
-- 実線: line x1="11" y1="51" x2="24" y2="51" stroke-width="1"
-- 破線1: line x1="27" y1="51" x2="31" y2="51"
-- 破線2: line x1="34" y1="51" x2="37" y2="51"
-- 破線3: line x1="39" y1="51" x2="41" y2="51"
-- 破線4: line x1="43" y1="51" x2="44.5" y2="51"
-- 破線5: line x1="46" y1="51" x2="47" y2="51"
-- 右三角: path d="M50 51l-3-2.5v5z" fill
-
-#### denied: ラインなし
+- active: 精度（m）。Math.round(accuracy)。99以下は `{n}m`、100以上は `99+`
+- lost: 経過秒数。lostSince からの秒数（Math.floor）。99以下は `{n}s`、100以上は `99+`
+- denied: `拒否`（固定）
 
 ### 点滅アニメーション
 
-lost と denied で点滅する。CSS animation で GPU 処理。
+lost と denied で値テキスト + 下部ラインが点滅する（CSS animation、GPU処理）。
 
 ```css
 @keyframes statusBlink {
@@ -370,13 +321,131 @@ lost と denied で点滅する。CSS animation で GPU 処理。
 }
 ```
 
-- lost: 値テキスト + 下部ライン全体を <g> でまとめ、animation: statusBlink 1s step-end infinite
-- denied: 値テキスト（"拒否"）に animation: statusBlink 1s step-end infinite
-- active: 点滅なし
+周期: 1秒、step-end、infinite。active は点滅しない。
+
+### active 状態の SVG
+
+```jsx
+<svg width="36" height="36" viewBox="0 0 60 60" fill="none">
+  {/* 衛星全体のグループ（位置調整） */}
+  <g transform="translate(15,11.5)">
+    {/* 衛星パーツ（-45°回転 + 0.383倍縮小） */}
+    <g transform="rotate(-45) scale(0.383)" stroke="#059669">
+      {/* 本体（円筒を正面から見た楕円） */}
+      <ellipse cx="0" cy="0" rx="5" ry="8" strokeWidth="1.5" fill="none"/>
+      {/* 左パネル接続棒 */}
+      <line x1="-5" y1="0" x2="-8" y2="0" strokeWidth="1.5"/>
+      {/* 左ソーラーパネル外枠 */}
+      <rect x="-26" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      {/* 左パネル2分割線 */}
+      <line x1="-17" y1="-6" x2="-17" y2="6" strokeWidth="1.5"/>
+      {/* 右パネル接続棒 */}
+      <line x1="5" y1="0" x2="8" y2="0" strokeWidth="1.5"/>
+      {/* 右ソーラーパネル外枠 */}
+      <rect x="8" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      {/* 右パネル2分割線 */}
+      <line x1="17" y1="-6" x2="17" y2="6" strokeWidth="1.5"/>
+      {/* アンテナ（本体中心から下方向への直線） */}
+      <line x1="0" y1="8" x2="0" y2="18" strokeWidth="1.5"/>
+    </g>
+  </g>
+  {/* GPSテキスト（衛星の右） */}
+  <text x="37" y="14.5" textAnchor="middle" dominantBaseline="central"
+    fill="#059669" fontSize="13" fontWeight="500" fontFamily="sans-serif">GPS</text>
+  {/* 精度値テキスト（動的: {accuracy}m / 99+） */}
+  <text x="30" y="34" textAnchor="middle" dominantBaseline="central"
+    fill="#059669" fontSize="27" fontWeight="500" fontFamily="sans-serif">5m</text>
+  {/* 精度矢印の横線 */}
+  <line x1="11" y1="51" x2="49" y2="51" stroke="#059669" strokeWidth="1"/>
+  {/* 精度矢印の左三角 */}
+  <path d="M10 51l3-2.5v5z" fill="#059669"/>
+  {/* 精度矢印の右三角 */}
+  <path d="M50 51l-3-2.5v5z" fill="#059669"/>
+</svg>
+```
+
+### lost 状態の SVG
+
+衛星・GPSテキストは active と同一構造で色を #d97706 に変更。
+値テキスト + 下部ラインを `<g>` でまとめ、点滅アニメーションを適用。
+下部ラインは「実線→破線フェードアウト→右矢印」で経過時間を表現。
+
+```jsx
+<svg width="36" height="36" viewBox="0 0 60 60" fill="none">
+  {/* 衛星（active と同一構造、色のみ変更） */}
+  <g transform="translate(15,11.5)">
+    <g transform="rotate(-45) scale(0.383)" stroke="#d97706">
+      <ellipse cx="0" cy="0" rx="5" ry="8" strokeWidth="1.5" fill="none"/>
+      <line x1="-5" y1="0" x2="-8" y2="0" strokeWidth="1.5"/>
+      <rect x="-26" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="-17" y1="-6" x2="-17" y2="6" strokeWidth="1.5"/>
+      <line x1="5" y1="0" x2="8" y2="0" strokeWidth="1.5"/>
+      <rect x="8" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="17" y1="-6" x2="17" y2="6" strokeWidth="1.5"/>
+      <line x1="0" y1="8" x2="0" y2="18" strokeWidth="1.5"/>
+    </g>
+  </g>
+  {/* GPSテキスト */}
+  <text x="37" y="14.5" textAnchor="middle" dominantBaseline="central"
+    fill="#d97706" fontSize="13" fontWeight="500" fontFamily="sans-serif">GPS</text>
+  {/* 点滅グループ: 値テキスト + 下部ライン */}
+  <g style={{ animation: 'statusBlink 1s step-end infinite' }}>
+    {/* 経過秒数テキスト（動的: {n}s / 99+） */}
+    <text x="30" y="34" textAnchor="middle" dominantBaseline="central"
+      fill="#d97706" fontSize="27" fontWeight="500" fontFamily="sans-serif">23s</text>
+    {/* 下部ライン: 実線→破線フェードアウト→右矢印 */}
+    <line x1="11" y1="51" x2="24" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="27" y1="51" x2="31" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="34" y1="51" x2="37" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="39" y1="51" x2="41" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="43" y1="51" x2="44.5" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="46" y1="51" x2="47" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <path d="M50 51l-3-2.5v5z" fill="#d97706"/>
+  </g>
+</svg>
+```
+
+### denied 状態の SVG
+
+衛星・GPSテキストは active と同一構造で色を #dc2626 に変更。
+値テキスト「拒否」に点滅アニメーションを適用。下部ラインなし。
+
+```jsx
+<svg width="36" height="36" viewBox="0 0 60 60" fill="none">
+  {/* 衛星（active と同一構造、色のみ変更） */}
+  <g transform="translate(15,11.5)">
+    <g transform="rotate(-45) scale(0.383)" stroke="#dc2626">
+      <ellipse cx="0" cy="0" rx="5" ry="8" strokeWidth="1.5" fill="none"/>
+      <line x1="-5" y1="0" x2="-8" y2="0" strokeWidth="1.5"/>
+      <rect x="-26" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="-17" y1="-6" x2="-17" y2="6" strokeWidth="1.5"/>
+      <line x1="5" y1="0" x2="8" y2="0" strokeWidth="1.5"/>
+      <rect x="8" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="17" y1="-6" x2="17" y2="6" strokeWidth="1.5"/>
+      <line x1="0" y1="8" x2="0" y2="18" strokeWidth="1.5"/>
+    </g>
+  </g>
+  {/* GPSテキスト */}
+  <text x="37" y="14.5" textAnchor="middle" dominantBaseline="central"
+    fill="#dc2626" fontSize="13" fontWeight="500" fontFamily="sans-serif">GPS</text>
+  {/* 点滅グループ: 値テキストのみ（下部ラインなし） */}
+  <g style={{ animation: 'statusBlink 1s step-end infinite' }}>
+    {/* 「拒否」テキスト（固定） */}
+    <text x="30" y="34" textAnchor="middle" dominantBaseline="central"
+      fill="#dc2626" fontSize="27" fontWeight="500" fontFamily="sans-serif">拒否</text>
+  </g>
+</svg>
+```
 
 ### ポップオーバー
 
-タップで説明テキストを表示（既存仕様を維持）:
+タップで説明テキストを表示:
 - lost: "GPS信号を受信できません（{n}秒経過）"
 - denied: "位置情報の使用が許可されていません。ブラウザの設定から位置情報を許可し、ナビを再開始してください"
 - active: ポップオーバーなし
+
+### 重要: SVG 座標の厳守
+
+このSVGデザインは1px単位で微調整を重ねて確定したものである。
+上記コードブロック内の全座標値を変更してはならない。
+実装時はこのコードブロックをそのままコピーし、色を動的に差し替えるだけにすること。
