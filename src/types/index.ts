@@ -78,7 +78,12 @@ export type PlaceResult = {
 };
 
 // ── UI 状態 ──
-export type ViewMode = "top" | "route";
+export type ViewMode = "top" | "route" | "navigation";
+
+// ── ナビ制御 ──
+export type FollowMode = 'auto' | 'free';
+export type ZoomMode = 'autoZoom' | 'lockedZoom';
+export type HeadingMode = 'headingUp' | 'northUp';
 
 export type TopTab = "routes" | "labels" | "places";
 

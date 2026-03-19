@@ -1,11 +1,17 @@
 import { Navigation } from "lucide-react";
 import { useRouteStore } from "@/stores/routeStore";
+import { useNavigationStore } from "@/stores/navigationStore";
+import { useUiStore } from "@/stores/uiStore";
 import { formatDistance, formatDuration } from "@/utils/formatters";
 
 export function RouteSummary() {
   const route = useRouteStore((s) => s.currentRoute);
   const isCalculating = useRouteStore((s) => s.isCalculatingRoute);
   const routeError = useRouteStore((s) => s.routeError);
+  const encodedPolyline = useRouteStore((s) => s.encodedPolyline);
+  const startNavigation = useNavigationStore((s) => s.startNavigation);
+  const setRemaining = useNavigationStore((s) => s.setRemaining);
+  const setViewMode = useUiStore((s) => s.setViewMode);
 
   if (isCalculating) {
     return (
@@ -28,6 +34,16 @@ export function RouteSummary() {
 
   if (!route || route.totalDistanceMeters === 0) return null;
 
+  const waypointCount = route.waypoints.length;
+  const canStartNav = waypointCount >= 2 && !!encodedPolyline;
+
+  const handleStartNav = () => {
+    if (!canStartNav) return;
+    setRemaining(route.totalDistanceMeters, route.totalDurationSeconds);
+    startNavigation();
+    setViewMode("navigation");
+  };
+
   return (
     <div className="mt-4 bg-indigo-700/50 rounded-xl p-4 backdrop-blur-sm border border-indigo-500/30">
       <p className="text-xs text-indigo-300 font-medium mb-2">ルート概要</p>
@@ -39,7 +55,15 @@ export function RouteSummary() {
           {formatDuration(Number(route.totalDurationSeconds) || 0)}
         </span>
       </div>
-      <button className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl py-3 font-medium transition-colors text-sm">
+      <button
+        onClick={handleStartNav}
+        disabled={!canStartNav}
+        className={`w-full flex items-center justify-center gap-2 text-white rounded-xl py-3 font-medium transition-colors text-sm ${
+          canStartNav
+            ? "bg-emerald-500 hover:bg-emerald-600"
+            : "bg-slate-500/50 text-slate-300 cursor-not-allowed"
+        }`}
+      >
         <Navigation className="w-4 h-4" />
         ナビ開始
       </button>

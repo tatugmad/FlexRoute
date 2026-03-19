@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { LatLng, NavigationStatus, PositionQuality } from "@/types";
+import type { LatLng, NavigationStatus, PositionQuality, FollowMode, ZoomMode, HeadingMode } from "@/types";
 
 type NavigationStoreState = {
   status: NavigationStatus;
@@ -11,6 +11,9 @@ type NavigationStoreState = {
   positionQuality: PositionQuality;
   remainingDistanceMeters: number;
   remainingDurationSeconds: number;
+  followMode: FollowMode;
+  zoomMode: ZoomMode;
+  headingMode: HeadingMode;
 };
 
 type NavigationActions = {
@@ -28,6 +31,9 @@ type NavigationActions = {
   ) => void;
   setCurrentLeg: (index: number) => void;
   setRemaining: (distance: number, duration: number) => void;
+  setFollowMode: (mode: FollowMode) => void;
+  setZoomMode: (mode: ZoomMode) => void;
+  setHeadingMode: (mode: HeadingMode) => void;
 };
 
 const initialState: NavigationStoreState = {
@@ -40,6 +46,9 @@ const initialState: NavigationStoreState = {
   positionQuality: "lost",
   remainingDistanceMeters: 0,
   remainingDurationSeconds: 0,
+  followMode: "auto",
+  zoomMode: "autoZoom",
+  headingMode: "northUp",
 };
 
 export const useNavigationStore = create<
@@ -67,4 +76,8 @@ export const useNavigationStore = create<
       remainingDistanceMeters: distance,
       remainingDurationSeconds: duration,
     }),
+
+  setFollowMode: (followMode) => set({ followMode }),
+  setZoomMode: (zoomMode) => set({ zoomMode }),
+  setHeadingMode: (headingMode) => set({ headingMode }),
 }));

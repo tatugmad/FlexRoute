@@ -8,6 +8,7 @@ import { RouteEditor } from "@/components/route/RouteEditor";
 import { SearchModal } from "@/components/places/SearchModal";
 import { PlaceActionModal } from "@/components/places/PlaceActionModal";
 import { TopView } from "@/components/top/TopView";
+import { NavigationScreen } from "@/components/navigation/NavigationScreen";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { DebugPanel } from "@/components/ui/DebugPanel";
@@ -35,6 +36,10 @@ function AppRouter() {
 
   if (viewMode === "top") {
     return <TopView />;
+  }
+
+  if (viewMode === "navigation") {
+    return <NavigationScreen />;
   }
 
   return <RouteScreen />;
