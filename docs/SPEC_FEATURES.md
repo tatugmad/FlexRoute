@@ -1,6 +1,6 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-17
+> 最終更新: 2026-03-19
 
 ## 機能一覧
 
@@ -941,6 +941,7 @@ Google Maps API 依存部分の方針:
 | ~~ルートロード時にポリラインの一部が画面からはみ出す（fitBoundsのpadding不足）~~ | 1-5 | F-ROUTE-LOAD, MapInitialView | ✅ サイドバー幅を考慮した左右非対称padding（1-5）で解決済み |
 | ~~ルート削除後のカード再表示にスライドアニメーションがない（ぱっと消えると削除できたか分かりにくい）~~ | 1-5 | F-ROUTE-DELETE, RouteCard | ✅ AnimatePresence + motion.div（1-5）で解決済み |
 | ~~ウェイポイント追加時にGoogleデフォルトのポップアップが表示される~~ | 1-5 | F-WP-ADD | ✅ PlaceActionModal（1-5）で解決済み |
+| 林道・峠道でRoutes APIが直進と判断した分岐では案内指示が生成されず、ターン接近ズームが発動しない（D-025） | 1-6設計 | F-NAV | 未対策（課題記録済み） |
 
 ## MD反映待ちドラフト
 
