@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useRouteSnap } from "@/hooks/useRouteSnap";
@@ -10,11 +11,28 @@ function getPointerColor(quality: PositionQuality): string {
 }
 
 function getPointerExtra(quality: PositionQuality): string {
-  if (quality === "lost") return "animate-pulse";
+  if (quality === "lost") return "pointer-lost-blink";
   return "";
 }
 
 export function NavCurrentLocationMarker() {
+  useEffect(() => {
+    if (!document.getElementById("pointer-blink-style")) {
+      const style = document.createElement("style");
+      style.id = "pointer-blink-style";
+      style.textContent = `
+        @keyframes pointerBlink {
+          0%, 49.9% { opacity: 1; }
+          50%, 100% { opacity: 0.3; }
+        }
+        .pointer-lost-blink {
+          animation: pointerBlink 0.5s step-end infinite;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   const position = useNavigationStore((s) => s.currentPosition);
   const heading = useNavigationStore((s) => s.heading);
   const positionQuality = useNavigationStore((s) => s.positionQuality);
