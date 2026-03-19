@@ -1,6 +1,6 @@
 # FlexRoute デザインリファレンス
 
-> 最終更新: 2026-03-16
+> 最終更新: 2026-03-19
 
 ## 1. 現在地マーカー（最重要）
 
@@ -289,3 +289,50 @@ JSX:
 ## 20. ローディングスピナー
 
 - `w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin`
+
+## 21. GPS アイコン（ナビヘッダー内）
+
+ナビヘッダーの「ナビゲーション中」テキスト右側に配置。
+
+### active 状態
+
+```jsx
+<div className="flex items-center gap-1 text-emerald-200 text-xs">
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 20h.01" />
+    <path d="M7 20v-4" />
+    <path d="M12 20v-8" />
+    <path d="M17 20V8" />
+  </svg>
+  <span className="font-mono">{accuracy}m</span>
+</div>
+```
+
+### lost 状態
+
+```jsx
+<div className="flex items-center gap-1 text-amber-300 text-xs animate-pulse">
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 20h.01" />
+    <path d="M7 20v-4" />
+    <line x1="17" y1="8" x2="12" y2="13" />
+    <line x1="12" y1="8" x2="17" y2="13" />
+  </svg>
+  <span className="font-mono">{lostSeconds}s</span>
+</div>
+```
+
+### denied 状態
+
+```jsx
+<div className="flex items-center gap-1 text-rose-300 text-xs">
+  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 20h.01" />
+    <path d="M7 20v-4" />
+    <line x1="22" y1="2" x2="2" y2="22" />
+  </svg>
+  <span>拒否</span>
+</div>
+```
+
+ナビヘッダーのデザイン（セクション5）の速度表示の右側に配置。

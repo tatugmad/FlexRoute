@@ -114,9 +114,37 @@
 
 ## D-019: accuracy値ベースの位置精度管理（2系統並走の廃止）
 
-- **決定**: 2系統並走（startDualWatch）を廃止し、coords.accuracy（メートル）の値のみで位置精度を管理する。PositionQuality は 'active' | 'lost' の2値に変更
+- **決定（改訂）**: PositionQuality を 'active' | 'lost' | 'denied' の3状態で管理する。2系統並走は廃止済み（変更なし）。watchPosition 1本（enableHighAccuracy: true）で運用し、accuracy 値で精度を表示する
+- **3状態の定義**:
+  - active: watchPosition から位置情報を受信中
+  - lost: 適応的閾値（後述）の時間 watchPosition から結果なし
+  - denied: ブラウザが位置情報の権限を拒否（GeolocationPositionError.PERMISSION_DENIED）
+- **適応的 lost 閾値（D-028 参照）**: 固定15秒ではなく、直近の更新間隔実績から動的に算出する
+- **旧版からの変更点**: stale / acquiring の中間状態を廃止。3状態に統一
 - **理由**: ブラウザ Geolocation API は enableHighAccuracy をヒントとして受け取るだけで、実際の測位手段（GPS / Wifi / IP）をアプリに通知しない。enableHighAccuracy: true でも Wifi/IP ベースの値が返る場合があり、2系統並走で測位手段を判別する設計前提が崩れた。accuracy の値で精度を管理すれば十分
 - **却下**: 2系統維持し positionQuality を highAccuracy/lowAccuracy に読み替え → 測位手段が判別できない以上、2本の watchPosition を維持する複雑さに見合うメリットがない
+
+## D-027: 道路スナップ方式（暫定）
+
+- **決定**: Phase 1 では保存済みルートポリライン上の最近点にスナップする。Google Roads API（Snap to Roads）は使用しない
+- **理由**: Roads API の Snap to Roads（SKU: Roads - Route Traveled, Pro カテゴリ）はリアルタイムスナップで月間 24,000 回（1点/3秒 × 20時間/月）に達し、無料枠 5,000 回の 480% を消費する。10点バッチなら無料枠内だが 10 秒間スナップが遅延しリアルタイムナビとして不自然
+- **暫定仕様の制約**: ルートから大きく離れている場合（逸脱判定閾値 50m 超）はスナップしない。逸脱中は生の GPS 座標をそのまま表示する
+- **ステータス**: 暫定仕様。Phase 2（ネイティブアプリ化で GPS 精度向上）で再検討
+- **再検討条件**: ネイティブアプリの GPS 精度でスナップの必要性が低下する可能性、Roads API の価格改定、バッチ方式の UX 評価
+
+## D-028: 適応的 lost 閾値
+
+- **決定**: lost 判定の閾値を固定値ではなく、直近の watchPosition 更新間隔の実績から動的に算出する
+- **アルゴリズム**:
+  - 直近10回の更新間隔をリングバッファに記録
+  - 中央値（median）を算出
+  - lost 閾値 = median × 3
+  - 下限: 10秒（スマホで GPS が安定していても短すぎる判定を防ぐ）
+  - 上限: 120秒（PC で更新間隔が極端に長い場合の歯止め）
+  - 初回（データ不足時）: デフォルト 15秒で開始。10回分のデータが溜まったら適応値に切り替え
+  - ナビ開始時にリングバッファをクリア
+- **理由**: デスクトップPC の Wifi/IP 測位は更新間隔が30秒〜数分で、固定15秒では active/lost が繰り返される（D-020 で発見された問題と同構造）。スマホ GPS は1〜3秒間隔。デバイス差を吸収するには固定値では不可能
+- **却下**: maximumAge を緩める → 同じ位置を繰り返し返すだけで本質的解決にならない。デバイス判定（maxTouchPoints）→ タブレットや外部モニタで誤判定のリスク
 
 ## D-020: ルート編集画面からGPSを完全除去
 
