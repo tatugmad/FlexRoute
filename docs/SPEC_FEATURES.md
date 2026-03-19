@@ -572,13 +572,13 @@ navigationStore が管理する:
   - loadPlaces を useEffect で呼び出し
   - labelIds から実ラベルを解決して表示
 
-#### Session 2: 保存フロー（未実装）
+#### Session 2: 保存フロー（実装済み）
 
 - PlaceActionModal に2段階UI（actions → save）
 - ラベル選択 + メモ入力 → SavedPlace 保存
 - 保存済み判定（isSaved）
 
-#### Session 3: 一覧 + 詳細 + 写真再取得（未実装）
+#### Session 3: 一覧 + 詳細 + 写真再取得（実装済み）
 
 - usePlaceCache フック（photoUrl / originalName 再取得）
 - PlaceDetailModal（メモblur保存、ラベル即時編集、削除）
