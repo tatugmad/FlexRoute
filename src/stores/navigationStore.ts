@@ -9,6 +9,7 @@ type NavigationStoreState = {
   speed: number;
   accuracy: number | null;
   positionQuality: PositionQuality;
+  lostSince: string | null;
   remainingDistanceMeters: number;
   remainingDurationSeconds: number;
   followMode: FollowMode;
@@ -44,6 +45,7 @@ const initialState: NavigationStoreState = {
   speed: 0,
   accuracy: null,
   positionQuality: "lost",
+  lostSince: null,
   remainingDistanceMeters: 0,
   remainingDurationSeconds: 0,
   followMode: "auto",

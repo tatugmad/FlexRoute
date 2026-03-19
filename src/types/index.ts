@@ -140,7 +140,7 @@ export type SavedPlace = {
 };
 
 // ── 測位品質 ──
-export type PositionQuality = 'active' | 'lost';
+export type PositionQuality = 'active' | 'lost' | 'denied';
 
 // ── Routes API v2 ──
 export type {
