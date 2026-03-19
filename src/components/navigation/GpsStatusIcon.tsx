@@ -31,7 +31,7 @@ export function GpsStatusIcon() {
       style.textContent = `
         @keyframes statusBlink {
           0%, 49.9% { opacity: 1; }
-          50%, 100% { opacity: 0.3; }
+          50%, 100% { opacity: 0.55; }
         }
       `;
       document.head.appendChild(style);
@@ -44,15 +44,15 @@ export function GpsStatusIcon() {
     ? (lostSeconds > 99 ? "99+" : `${lostSeconds}s`)
     : "拒否";
 
-  const color = quality === "active" ? "#059669"
+  const color = quality === "active" ? "#2563eb"
     : quality === "lost" ? "#d97706"
     : "#dc2626";
-  const bgColor = quality === "active" ? "rgba(16,185,129,0.12)"
-    : quality === "lost" ? "rgba(245,158,11,0.12)"
-    : "rgba(239,68,68,0.1)";
-  const borderColor = quality === "active" ? "rgba(16,185,129,0.5)"
-    : quality === "lost" ? "rgba(245,158,11,0.5)"
-    : "rgba(239,68,68,0.45)";
+  const bgColor = quality === "active" ? "#dbeafe"
+    : quality === "lost" ? "#fef3c7"
+    : "#fee2e2";
+  const borderColor = quality === "active" ? "#93c5fd"
+    : quality === "lost" ? "#fbbf24"
+    : "#fca5a5";
 
   const shouldBlink = quality === "lost" || quality === "denied";
 
