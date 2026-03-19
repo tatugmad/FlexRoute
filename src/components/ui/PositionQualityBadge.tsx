@@ -4,11 +4,13 @@ import type { PositionQuality } from "@/types";
 const BADGE_STYLES: Record<PositionQuality, string> = {
   active: "bg-emerald-500 text-white",
   lost: "bg-rose-500 text-white",
+  denied: "bg-red-600 text-white",
 };
 
 const BADGE_LABELS: Record<PositionQuality, string> = {
   active: "Active",
   lost: "LOST",
+  denied: "DENIED",
 };
 
 export function PositionQualityBadge() {

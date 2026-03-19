@@ -2,6 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useUiStore } from "@/stores/uiStore";
 import { formatDistance, formatDuration } from "@/utils/formatters";
+import { GpsStatusIcon } from "@/components/navigation/GpsStatusIcon";
 
 export function NavHeader() {
   const remainingDistance = useNavigationStore((s) => s.remainingDistanceMeters);
@@ -32,6 +33,7 @@ export function NavHeader() {
         <div className="flex flex-col">
           <div className="flex items-center mb-1">
             <span className="font-bold text-lg tracking-tight">ナビゲーション中</span>
+            <GpsStatusIcon />
           </div>
           <div className="flex gap-6 text-emerald-50">
             <div>
