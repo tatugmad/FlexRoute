@@ -28,14 +28,8 @@ export function NavCurrentLocationMarker() {
 
   return (
     <>
-      {/* Accuracy circle at raw GPS position */}
-      <AdvancedMarker position={position} zIndex={99}>
-        <div className="relative flex items-center justify-center">
-          <AccuracyCircle />
-        </div>
-      </AdvancedMarker>
+      <AccuracyCircle />
 
-      {/* Pointer at snapped (or raw) position */}
       <AdvancedMarker position={markerPosition} zIndex={100}>
         <div className="relative flex items-center justify-center">
           <div

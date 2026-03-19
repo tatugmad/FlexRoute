@@ -1,39 +1,56 @@
+import { useEffect, useRef } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
-
-function computeMetersPerPixel(lat: number, zoom: number): number {
-  return (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
-}
 
 export function AccuracyCircle() {
   const map = useMap();
   const accuracy = useNavigationStore((s) => s.accuracy);
   const position = useNavigationStore((s) => s.currentPosition);
+  const circleRef = useRef<google.maps.Circle | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  if (!accuracy || !position || !map) return null;
+  useEffect(() => {
+    if (!map) return;
 
-  const zoom = map.getZoom();
-  if (zoom == null) return null;
+    const circle = new google.maps.Circle({
+      map,
+      fillColor: "#ffffff",
+      fillOpacity: 0.3,
+      strokeColor: "#ffffff",
+      strokeOpacity: 0.5,
+      strokeWeight: 1,
+      clickable: false,
+      zIndex: 98,
+      visible: false,
+    });
+    circleRef.current = circle;
 
-  const mpp = computeMetersPerPixel(position.lat, zoom);
-  if (mpp <= 0) return null;
+    let bright = false;
+    intervalRef.current = setInterval(() => {
+      bright = !bright;
+      circle.setOptions({ fillOpacity: bright ? 0.35 : 0.15 });
+    }, 2000);
 
-  const diameter = Math.round((accuracy / mpp) * 2);
-  if (diameter < 4) return null;
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      circle.setMap(null);
+      circleRef.current = null;
+    };
+  }, [map]);
 
-  return (
-    <div
-      className="bg-blue-400/20 border border-blue-400/40 rounded-full"
-      style={{
-        width: diameter,
-        height: diameter,
-        marginLeft: -diameter / 2,
-        marginTop: -diameter / 2,
-        position: "absolute",
-        left: "50%",
-        top: "50%",
-        pointerEvents: "none",
-      }}
-    />
-  );
+  useEffect(() => {
+    const circle = circleRef.current;
+    if (!circle) return;
+
+    if (!position || accuracy == null) {
+      circle.setVisible(false);
+      return;
+    }
+
+    circle.setCenter({ lat: position.lat, lng: position.lng });
+    circle.setRadius(accuracy);
+    circle.setVisible(true);
+  }, [position, accuracy]);
+
+  return null;
 }
