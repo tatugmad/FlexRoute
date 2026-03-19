@@ -49,7 +49,7 @@ export function NavCurrentLocationMarker() {
       <AccuracyCircle />
 
       <AdvancedMarker position={markerPosition} zIndex={100}>
-        <div className="relative flex items-center justify-center" style={{ transform: 'translateY(-50%)' }}>
+        <div className="relative flex items-center justify-center" style={{ transform: 'translateY(50%)' }}>
           <div
             className={`w-8 h-8 ${colorClass} ${extraClass} relative z-10`}
             style={{
