@@ -28,7 +28,7 @@ export function HeadingButton() {
           >
             <svg viewBox="0 0 100 100" className="w-full h-full">
               <path d="M 50 8 L 65 48 L 35 48 Z" fill="#ef4444" />
-              <path d="M 50 92 L 35 52 L 65 52 Z" fill="#cbd5e1" />
+              <path d="M 50 92 L 35 52 L 65 52 Z" fill="#a8b4c4" />
             </svg>
           </div>
         </div>
