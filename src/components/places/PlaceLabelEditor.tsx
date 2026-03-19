@@ -9,6 +9,7 @@ type Props = {
 
 export function PlaceLabelEditor({ place }: Props) {
   const labels = useLabelStore((s) => s.labels);
+  const placeLabels = labels.filter((l) => l.forPlace);
   const updatePlace = usePlaceStore((s) => s.updatePlace);
 
   const toggleLabel = (labelId: string) => {
@@ -18,7 +19,7 @@ export function PlaceLabelEditor({ place }: Props) {
     updatePlace(place.id, { labelIds: newLabelIds });
   };
 
-  if (labels.length === 0) {
+  if (placeLabels.length === 0) {
     return (
       <p className="text-sm text-slate-400">
         ラベルなし（場所タブから追加できます）
@@ -28,7 +29,7 @@ export function PlaceLabelEditor({ place }: Props) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {labels.map((label) => {
+      {placeLabels.map((label) => {
         const selected = place.labelIds.includes(label.id);
         return (
           <button

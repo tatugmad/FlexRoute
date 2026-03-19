@@ -12,6 +12,7 @@ type Props = {
 
 export function PlaceSaveStep({ data, onBack, onSaved }: Props) {
   const labels = useLabelStore((s) => s.labels);
+  const placeLabels = labels.filter((l) => l.forPlace);
   const openLabelModal = useLabelStore((s) => s.openLabelModal);
   const savePlace = usePlaceStore((s) => s.savePlace);
   const [name, setName] = useState(data.name);
@@ -56,7 +57,7 @@ export function PlaceSaveStep({ data, onBack, onSaved }: Props) {
 
       <div className="mb-4">
         <p className="text-sm font-medium text-slate-600 mb-2">ラベル</p>
-        {labels.length === 0 ? (
+        {placeLabels.length === 0 ? (
           <div>
             <p className="text-sm text-slate-400 mb-2">ラベルなし</p>
             <button
@@ -70,7 +71,7 @@ export function PlaceSaveStep({ data, onBack, onSaved }: Props) {
         ) : (
           <div>
             <div className="flex flex-wrap gap-2">
-              {labels.map((label) => (
+              {placeLabels.map((label) => (
                 <button
                   key={label.id}
                   onClick={() => toggleLabel(label.id)}
