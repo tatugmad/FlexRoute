@@ -293,46 +293,159 @@ JSX:
 ## 21. GPS アイコン（ナビヘッダー内）
 
 ナビヘッダーの「ナビゲーション中」テキスト右側に配置。
+円形背景（40×40px）+ SVG（36×36px, viewBox 0 0 60 60）で構成。
+タップでポップオーバー表示。
 
-### active 状態
+### 色マッピング
 
-```jsx
-<div className="flex items-center gap-1 text-emerald-200 text-xs">
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 20h.01" />
-    <path d="M7 20v-4" />
-    <path d="M12 20v-8" />
-    <path d="M17 20V8" />
-  </svg>
-  <span className="font-mono">{accuracy}m</span>
-</div>
+| ステータス | stroke/fill色 | 円背景 | 円ボーダー |
+|-----------|--------------|--------|-----------|
+| active | #059669 | rgba(16,185,129,0.12) | rgba(16,185,129,0.5) |
+| lost | #d97706 | rgba(245,158,11,0.12) | rgba(245,158,11,0.5) |
+| denied | #dc2626 | rgba(239,68,68,0.1) | rgba(239,68,68,0.45) |
+
+### 値テキストのルール
+
+- active: 精度（m）。Math.round(accuracy)。99以下は `{n}m`、100以上は `99+`
+- lost: 経過秒数。lostSince からの秒数（Math.floor）。99以下は `{n}s`、100以上は `99+`
+- denied: `拒否`（固定）
+
+### 点滅アニメーション
+
+lost と denied で値テキスト + 下部ラインが点滅する（CSS animation、GPU処理）。
+
+```css
+@keyframes statusBlink {
+  0%, 49.9% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
 ```
 
-### lost 状態
+周期: 1秒、step-end、infinite。active は点滅しない。
+
+### active 状態の SVG
 
 ```jsx
-<div className="flex items-center gap-1 text-amber-300 text-xs animate-pulse">
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 20h.01" />
-    <path d="M7 20v-4" />
-    <line x1="17" y1="8" x2="12" y2="13" />
-    <line x1="12" y1="8" x2="17" y2="13" />
-  </svg>
-  <span className="font-mono">{lostSeconds}s</span>
-</div>
+<svg width="36" height="36" viewBox="0 0 60 60" fill="none">
+  {/* 衛星全体のグループ（位置調整） */}
+  <g transform="translate(15,11.5)">
+    {/* 衛星パーツ（-45°回転 + 0.383倍縮小） */}
+    <g transform="rotate(-45) scale(0.383)" stroke="#059669">
+      {/* 本体（円筒を正面から見た楕円） */}
+      <ellipse cx="0" cy="0" rx="5" ry="8" strokeWidth="1.5" fill="none"/>
+      {/* 左パネル接続棒 */}
+      <line x1="-5" y1="0" x2="-8" y2="0" strokeWidth="1.5"/>
+      {/* 左ソーラーパネル外枠 */}
+      <rect x="-26" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      {/* 左パネル2分割線 */}
+      <line x1="-17" y1="-6" x2="-17" y2="6" strokeWidth="1.5"/>
+      {/* 右パネル接続棒 */}
+      <line x1="5" y1="0" x2="8" y2="0" strokeWidth="1.5"/>
+      {/* 右ソーラーパネル外枠 */}
+      <rect x="8" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      {/* 右パネル2分割線 */}
+      <line x1="17" y1="-6" x2="17" y2="6" strokeWidth="1.5"/>
+      {/* アンテナ（本体中心から下方向への直線） */}
+      <line x1="0" y1="8" x2="0" y2="18" strokeWidth="1.5"/>
+    </g>
+  </g>
+  {/* GPSテキスト（衛星の右） */}
+  <text x="37" y="14.5" textAnchor="middle" dominantBaseline="central"
+    fill="#059669" fontSize="13" fontWeight="500" fontFamily="sans-serif">GPS</text>
+  {/* 精度値テキスト（動的: {accuracy}m / 99+） */}
+  <text x="30" y="34" textAnchor="middle" dominantBaseline="central"
+    fill="#059669" fontSize="27" fontWeight="500" fontFamily="sans-serif">5m</text>
+  {/* 精度矢印の横線 */}
+  <line x1="11" y1="51" x2="49" y2="51" stroke="#059669" strokeWidth="1"/>
+  {/* 精度矢印の左三角 */}
+  <path d="M10 51l3-2.5v5z" fill="#059669"/>
+  {/* 精度矢印の右三角 */}
+  <path d="M50 51l-3-2.5v5z" fill="#059669"/>
+</svg>
 ```
 
-### denied 状態
+### lost 状態の SVG
+
+衛星・GPSテキストは active と同一構造で色を #d97706 に変更。
+値テキスト + 下部ラインを `<g>` でまとめ、点滅アニメーションを適用。
+下部ラインは「実線→破線フェードアウト→右矢印」で経過時間を表現。
 
 ```jsx
-<div className="flex items-center gap-1 text-rose-300 text-xs">
-  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M2 20h.01" />
-    <path d="M7 20v-4" />
-    <line x1="22" y1="2" x2="2" y2="22" />
-  </svg>
-  <span>拒否</span>
-</div>
+<svg width="36" height="36" viewBox="0 0 60 60" fill="none">
+  {/* 衛星（active と同一構造、色のみ変更） */}
+  <g transform="translate(15,11.5)">
+    <g transform="rotate(-45) scale(0.383)" stroke="#d97706">
+      <ellipse cx="0" cy="0" rx="5" ry="8" strokeWidth="1.5" fill="none"/>
+      <line x1="-5" y1="0" x2="-8" y2="0" strokeWidth="1.5"/>
+      <rect x="-26" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="-17" y1="-6" x2="-17" y2="6" strokeWidth="1.5"/>
+      <line x1="5" y1="0" x2="8" y2="0" strokeWidth="1.5"/>
+      <rect x="8" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="17" y1="-6" x2="17" y2="6" strokeWidth="1.5"/>
+      <line x1="0" y1="8" x2="0" y2="18" strokeWidth="1.5"/>
+    </g>
+  </g>
+  {/* GPSテキスト */}
+  <text x="37" y="14.5" textAnchor="middle" dominantBaseline="central"
+    fill="#d97706" fontSize="13" fontWeight="500" fontFamily="sans-serif">GPS</text>
+  {/* 点滅グループ: 値テキスト + 下部ライン */}
+  <g style={{ animation: 'statusBlink 1s step-end infinite' }}>
+    {/* 経過秒数テキスト（動的: {n}s / 99+） */}
+    <text x="30" y="34" textAnchor="middle" dominantBaseline="central"
+      fill="#d97706" fontSize="27" fontWeight="500" fontFamily="sans-serif">23s</text>
+    {/* 下部ライン: 実線→破線フェードアウト→右矢印 */}
+    <line x1="11" y1="51" x2="24" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="27" y1="51" x2="31" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="34" y1="51" x2="37" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="39" y1="51" x2="41" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="43" y1="51" x2="44.5" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <line x1="46" y1="51" x2="47" y2="51" stroke="#d97706" strokeWidth="1"/>
+    <path d="M50 51l-3-2.5v5z" fill="#d97706"/>
+  </g>
+</svg>
 ```
 
-ナビヘッダーのデザイン（セクション5）の速度表示の右側に配置。
+### denied 状態の SVG
+
+衛星・GPSテキストは active と同一構造で色を #dc2626 に変更。
+値テキスト「拒否」に点滅アニメーションを適用。下部ラインなし。
+
+```jsx
+<svg width="36" height="36" viewBox="0 0 60 60" fill="none">
+  {/* 衛星（active と同一構造、色のみ変更） */}
+  <g transform="translate(15,11.5)">
+    <g transform="rotate(-45) scale(0.383)" stroke="#dc2626">
+      <ellipse cx="0" cy="0" rx="5" ry="8" strokeWidth="1.5" fill="none"/>
+      <line x1="-5" y1="0" x2="-8" y2="0" strokeWidth="1.5"/>
+      <rect x="-26" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="-17" y1="-6" x2="-17" y2="6" strokeWidth="1.5"/>
+      <line x1="5" y1="0" x2="8" y2="0" strokeWidth="1.5"/>
+      <rect x="8" y="-6" width="18" height="12" rx="0.5" strokeWidth="1.5" fill="none"/>
+      <line x1="17" y1="-6" x2="17" y2="6" strokeWidth="1.5"/>
+      <line x1="0" y1="8" x2="0" y2="18" strokeWidth="1.5"/>
+    </g>
+  </g>
+  {/* GPSテキスト */}
+  <text x="37" y="14.5" textAnchor="middle" dominantBaseline="central"
+    fill="#dc2626" fontSize="13" fontWeight="500" fontFamily="sans-serif">GPS</text>
+  {/* 点滅グループ: 値テキストのみ（下部ラインなし） */}
+  <g style={{ animation: 'statusBlink 1s step-end infinite' }}>
+    {/* 「拒否」テキスト（固定） */}
+    <text x="30" y="34" textAnchor="middle" dominantBaseline="central"
+      fill="#dc2626" fontSize="27" fontWeight="500" fontFamily="sans-serif">拒否</text>
+  </g>
+</svg>
+```
+
+### ポップオーバー
+
+タップで説明テキストを表示:
+- lost: "GPS信号を受信できません（{n}秒経過）"
+- denied: "位置情報の使用が許可されていません。ブラウザの設定から位置情報を許可し、ナビを再開始してください"
+- active: ポップオーバーなし
+
+### 重要: SVG 座標の厳守
+
+このSVGデザインは1px単位で微調整を重ねて確定したものである。
+上記コードブロック内の全座標値を変更してはならない。
+実装時はこのコードブロックをそのままコピーし、色を動的に差し替えるだけにすること。
