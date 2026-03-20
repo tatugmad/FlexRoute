@@ -1,16 +1,43 @@
-import { useSensorStore } from "@/stores/sensorStore";
+import { useRef } from 'react';
+import { useSensorStore } from '@/stores/sensorStore';
+import { openSimChannel, closeSimChannel } from '@/services/simChannel';
 
 const BTN = "bg-slate-500/15 rounded-full shadow-lg border border-slate-400/50 hover:bg-white/20 transition-all active:scale-95 pointer-events-auto flex items-center justify-center w-14 h-14";
 
 export function SimButton() {
   const debugEnabled = useSensorStore((s) => s.debugEnabled);
+  const popupRef = useRef<Window | null>(null);
 
   if (!debugEnabled) return null;
 
   const handleClick = () => {
-    // Session 2 でポップアップ表示を実装する。
-    // 現時点では console.log で動作確認のみ。
-    console.log('[SensorBridge] SIM button clicked — popup will be implemented in Session 2');
+    // 既に開いている場合はフォーカス
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.focus();
+      return;
+    }
+
+    openSimChannel();
+
+    // base path を考慮した URL
+    const basePath = import.meta.env.BASE_URL ?? '/';
+    const url = `${basePath}sim-remote.html`;
+
+    popupRef.current = window.open(
+      url,
+      'flexroute-sim-remote',
+      'width=380,height=620,resizable=yes,scrollbars=yes',
+    );
+
+    // ポップアップが閉じられたら cleanup
+    const checkClosed = setInterval(() => {
+      if (popupRef.current && popupRef.current.closed) {
+        clearInterval(checkClosed);
+        popupRef.current = null;
+        useSensorStore.getState().resetAllToReal();
+        closeSimChannel();
+      }
+    }, 500);
   };
 
   return (

@@ -1,0 +1,80 @@
+import { useSensorStore } from '@/stores/sensorStore';
+import type { SensorMode, SensorChannelModes } from '@/types';
+
+const CHANNEL_NAME = 'flexroute-sensor-bridge';
+let channel: BroadcastChannel | null = null;
+
+/** ポップアップとの通信チャンネルを開く */
+export function openSimChannel(): void {
+  if (channel) return;
+  channel = new BroadcastChannel(CHANNEL_NAME);
+
+  channel.onmessage = (event) => {
+    const msg = event.data;
+    if (!msg || typeof msg.type !== 'string') return;
+
+    const store = useSensorStore.getState();
+
+    switch (msg.type) {
+      case 'remote-ready':
+        // ポップアップが準備完了 → 現在の state を送信
+        syncStateToRemote();
+        break;
+
+      case 'set-channel-mode':
+        if (msg.channel && msg.mode) {
+          store.setChannelMode(
+            msg.channel as keyof SensorChannelModes,
+            msg.mode as SensorMode,
+          );
+          syncStateToRemote();
+        }
+        break;
+
+      case 'set-sim-position':
+        if (msg.lat != null && msg.lng != null) {
+          store.setSimPosition(msg.lat, msg.lng);
+        }
+        break;
+
+      case 'set-sim-heading':
+        if (msg.value != null) store.setSimHeading(msg.value);
+        break;
+
+      case 'set-sim-speed':
+        if (msg.value != null) store.setSimSpeed(msg.value);
+        break;
+
+      case 'set-sim-accuracy':
+        if (msg.value != null) store.setSimAccuracy(msg.value);
+        break;
+
+      case 'set-sim-quality':
+        if (msg.value) store.setSimPositionQuality(msg.value);
+        break;
+
+      case 'remote-close':
+        store.resetAllToReal();
+        break;
+    }
+  };
+}
+
+/** 現在の sensorStore 状態をポップアップに送信 */
+export function syncStateToRemote(): void {
+  if (!channel) return;
+  const { channelModes, simValues } = useSensorStore.getState();
+  channel.postMessage({
+    type: 'state-sync',
+    channelModes,
+    simValues,
+  });
+}
+
+/** 通信チャンネルを閉じる */
+export function closeSimChannel(): void {
+  if (channel) {
+    channel.close();
+    channel = null;
+  }
+}
