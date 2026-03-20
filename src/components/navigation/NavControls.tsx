@@ -1,6 +1,7 @@
 import { HeadingButton } from "@/components/navigation/HeadingButton";
 import { ZoomButton } from "@/components/navigation/ZoomButton";
 import { FollowButton } from "@/components/navigation/FollowButton";
+import { SimButton } from "@/components/navigation/SimButton";
 
 export function NavControls() {
   return (
@@ -8,6 +9,9 @@ export function NavControls() {
       <HeadingButton />
       <ZoomButton />
       <FollowButton />
+      <div className="mt-3">
+        <SimButton />
+      </div>
     </div>
   );
 }
