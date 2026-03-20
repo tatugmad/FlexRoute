@@ -150,3 +150,6 @@ export type {
   RoutesApiStep,
   ComputeRoutesResponse,
 } from "@/types/routesApi";
+
+// ── センサー ──
+export type { SensorMode, SensorChannelModes, SimValues } from "./sensor";
