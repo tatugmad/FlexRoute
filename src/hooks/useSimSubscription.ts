@@ -24,17 +24,18 @@ export function useSimSubscription(
     const state = useSensorStore.getState();
     if (!state.debugEnabled) return;
 
-    const hasSimChannel =
-      state.channelModes.position === 'sim' ||
-      state.channelModes.heading === 'sim' ||
-      state.channelModes.speed === 'sim';
-    if (!hasSimChannel) return;
-
     const unsubscribe = useSensorStore.subscribe((newState, prevState) => {
       if (
         newState.simValues === prevState.simValues &&
         newState.channelModes === prevState.channelModes
       ) return;
+
+      // sim チャンネルが1つもなければスキップ
+      const hasSimChannel =
+        newState.channelModes.position === 'sim' ||
+        newState.channelModes.heading === 'sim' ||
+        newState.channelModes.speed === 'sim';
+      if (!hasSimChannel) return;
 
       const realValues = {
         position: lastPositionRef.current,
