@@ -5,7 +5,7 @@ type SensorStoreState = {
   debugEnabled: boolean;
   channelModes: SensorChannelModes;
   simValues: SimValues;
-  setChannelMode: (channel: keyof SensorChannelModes, mode: SensorMode) => void;
+  setChannelMode: (channel: keyof SensorChannelModes, mode: SensorMode, initialPosition?: { lat: number; lng: number } | null) => void;
   setSimPosition: (lat: number, lng: number) => void;
   setSimHeading: (heading: number) => void;
   setSimSpeed: (speed: number) => void;
@@ -37,9 +37,13 @@ export const useSensorStore = create<SensorStoreState>((set) => ({
   channelModes: { ...DEFAULT_CHANNEL_MODES },
   simValues: { ...DEFAULT_SIM_VALUES },
 
-  setChannelMode: (channel, mode) =>
+  setChannelMode: (channel, mode, initialPosition) =>
     set((state) => ({
       channelModes: { ...state.channelModes, [channel]: mode },
+      simValues:
+        channel === 'position' && mode === 'sim' && initialPosition
+          ? { ...state.simValues, position: initialPosition, positionQuality: 'active' }
+          : state.simValues,
     })),
 
   setSimPosition: (lat, lng) =>

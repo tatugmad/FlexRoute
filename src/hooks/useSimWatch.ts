@@ -75,10 +75,7 @@ export function useSimSubscription(
 
       // --- 責務B: sim 値変更時に即座に反映 ---
       if (!isSimActive) return;
-      if (
-        newState.simValues === prevState.simValues &&
-        newState.channelModes === prevState.channelModes
-      ) {
+      if (newState.simValues === prevState.simValues) {
         return;
       }
 
@@ -97,10 +94,11 @@ export function useSimSubscription(
       }
 
       // active → handlePosition を偽データで呼ぶ
+      if (!sim.position) return;
       const fakePos = {
         coords: {
-          latitude: sim.position?.lat ?? 35.6812,
-          longitude: sim.position?.lng ?? 139.7671,
+          latitude: sim.position.lat,
+          longitude: sim.position.lng,
           heading: sim.heading,
           speed: sim.speed,
           accuracy: sim.accuracy,
