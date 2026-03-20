@@ -1,5 +1,6 @@
 import { useSensorStore } from '@/stores/sensorStore';
 import { useNavigationStore } from '@/stores/navigationStore';
+import { getLastKnownPosition } from '@/services/geolocation';
 import type { SensorMode, SensorChannelModes } from '@/types';
 
 const CHANNEL_NAME = 'flexroute-sensor-bridge';
@@ -34,9 +35,15 @@ export function openSimChannel(): void {
             const currentPos = navState.currentPosition;
             if (currentPos) {
               store.setSimPosition(currentPos.lat, currentPos.lng);
-            } else if (!store.simValues.position) {
-              // real の位置もなく sim の位置も未設定の場合のみデフォルト
-              store.setSimPosition(35.6812, 139.7671);
+            } else {
+              // GPS 未受信の場合、lastKnownPosition をフォールバック
+              const lastKnown = getLastKnownPosition();
+              if (lastKnown) {
+                store.setSimPosition(lastKnown.lat, lastKnown.lng);
+              } else if (!store.simValues.position) {
+                // lastKnownPosition も無い場合のみ東京駅
+                store.setSimPosition(35.6812, 139.7671);
+              }
             }
             store.setSimPositionQuality('active');
           }

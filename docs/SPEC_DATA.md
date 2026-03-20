@@ -649,7 +649,7 @@ X-Goog-FieldMask: routes.duration,routes.distanceMeters,routes.polyline.encodedP
 | 変数名 | 説明 |
 |---|---|
 | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps Platform API Key |
-| `VITE_GOOGLE_MAPS_MAP_ID` | Cloud-based Map ID（AdvancedMarker用、未設定なら `"DEMO_MAP_ID"`） |
+| `VITE_GOOGLE_MAPS_MAP_ID` | Cloud-based Map ID（ベクターマップ + AdvancedMarker用）。FlexRoute 管理。ユーザー設定不要。未設定なら `"DEMO_MAP_ID"` にフォールバック |
 
 ### Google Cloud Console で有効にすべきAPI
 
