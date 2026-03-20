@@ -11,7 +11,7 @@ function getPointerColor(quality: PositionQuality): string {
 }
 
 function getPointerExtra(quality: PositionQuality): string {
-  if (quality === "lost") return "pointer-lost-blink";
+  if (quality === "lost" || quality === "denied") return "pointer-lost-blink";
   return "";
 }
 
@@ -35,6 +35,7 @@ export function NavCurrentLocationMarker() {
 
   const position = useNavigationStore((s) => s.currentPosition);
   const heading = useNavigationStore((s) => s.heading);
+  const headingMode = useNavigationStore((s) => s.headingMode);
   const positionQuality = useNavigationStore((s) => s.positionQuality);
   const snappedPosition = useRouteSnap(position);
   const markerPosition = snappedPosition ?? position;
@@ -53,7 +54,7 @@ export function NavCurrentLocationMarker() {
           <div
             className={`w-8 h-8 ${colorClass} ${extraClass} relative z-10`}
             style={{
-              transform: `rotate(${heading}deg)`,
+              transform: `rotate(${headingMode === "northUp" ? heading : 0}deg)`,
               transition: "transform 0.3s ease-out",
             }}
           >
