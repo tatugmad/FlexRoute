@@ -222,6 +222,9 @@ FlexRoute のカウンタ + Cloud Monitoring 同期で十分だが、
 
 ## Google Cloud APIキー発行の全手順（参考）
 
+> **注意: Map ID はユーザーの設定不要。** Map ID は FlexRoute が管理するベクターマップ設定であり、
+> アプリに組み込まれている。ユーザーが発行・設定する必要があるのは API キーのみ。
+
 Google アカウントのみの状態からの手順:
 
 1. Google Cloud Console にアクセス（https://console.cloud.google.com/）→ ログイン → 利用規約同意
