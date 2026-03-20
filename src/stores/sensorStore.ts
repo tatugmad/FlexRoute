@@ -33,7 +33,7 @@ const DEFAULT_SIM_VALUES: SimValues = {
 };
 
 export const useSensorStore = create<SensorStoreState>((set) => ({
-  debugEnabled: import.meta.env.DEV,
+  debugEnabled: new URLSearchParams(window.location.search).has('debug'),
   channelModes: { ...DEFAULT_CHANNEL_MODES },
   simValues: { ...DEFAULT_SIM_VALUES },
 
