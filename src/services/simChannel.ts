@@ -1,4 +1,5 @@
 import { useSensorStore } from '@/stores/sensorStore';
+import { useNavigationStore } from '@/stores/navigationStore';
 import type { SensorMode, SensorChannelModes } from '@/types';
 
 const CHANNEL_NAME = 'flexroute-sensor-bridge';
@@ -27,6 +28,18 @@ export function openSimChannel(): void {
             msg.channel as keyof SensorChannelModes,
             msg.mode as SensorMode,
           );
+          // position を sim に切り替えた時の初期化
+          if (msg.channel === 'position' && msg.mode === 'sim') {
+            const navState = useNavigationStore.getState();
+            const currentPos = navState.currentPosition;
+            if (currentPos) {
+              store.setSimPosition(currentPos.lat, currentPos.lng);
+            } else if (!store.simValues.position) {
+              // real の位置もなく sim の位置も未設定の場合のみデフォルト
+              store.setSimPosition(35.6812, 139.7671);
+            }
+            store.setSimPositionQuality('active');
+          }
           syncStateToRemote();
         }
         break;
