@@ -25,30 +25,21 @@ export function openSimChannel(): void {
 
       case 'set-channel-mode':
         if (msg.channel && msg.mode) {
-          store.setChannelMode(
-            msg.channel as keyof SensorChannelModes,
-            msg.mode as SensorMode,
-          );
-          // position を sim に切り替えた時の初期化
-          if (msg.channel === 'position' && msg.mode === 'sim') {
-            const navState = useNavigationStore.getState();
-            const currentPos = navState.currentPosition;
-            if (currentPos) {
-              store.setSimPosition(currentPos.lat, currentPos.lng);
-            } else {
-              // GPS 未受信の場合、lastKnownPosition をフォールバック
-              const lastKnown = getLastKnownPosition();
-              if (lastKnown) {
-                store.setSimPosition(lastKnown.lat, lastKnown.lng);
-              } else if (!store.simValues.position) {
-                // lastKnownPosition も無い場合のみ東京駅
-                store.setSimPosition(35.6812, 139.7671);
-              }
-            }
-            store.setSimPositionQuality('active');
+          const ch = msg.channel as keyof SensorChannelModes;
+          const mode = msg.mode as SensorMode;
+          if (ch === 'position' && mode === 'sim') {
+            // 初期位置: real 現在地 → lastKnown → 東京駅（最終手段）
+            const currentPos = useNavigationStore.getState().currentPosition;
+            const initialPosition = currentPos
+              ?? getLastKnownPosition()
+              ?? { lat: 35.6812, lng: 139.7671 };
+            store.setChannelMode(ch, mode, initialPosition);
+          } else {
+            store.setChannelMode(ch, mode);
           }
           // position を real に戻した時: GPS 状態をリセット
-          if (msg.channel === 'position' && msg.mode === 'real') {
+          // TODO: Phase 2 で simGeolocation パッチ方式に移行し、この直接書き込みを除去する
+          if (ch === 'position' && mode === 'real') {
             useNavigationStore.setState({
               positionQuality: 'lost',
               lostSince: new Date().toISOString(),
