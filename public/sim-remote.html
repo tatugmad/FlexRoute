@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=340">
+<title>SensorBridge Remote</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f8f9fa;
+    color: #1e293b;
+    font-size: 13px;
+    padding: 0;
+  }
+
+  /* Title bar */
+  .title-bar {
+    background: #334155;
+    color: #fff;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 400;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+  }
+  .status-dot.connected { background: #22c55e; }
+  .status-dot.disconnected { background: #ef4444; }
+  .status-dot.connecting { background: #f59e0b; }
+
+  /* Sections */
+  .section {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 12px;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .section-label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Toggle buttons */
+  .toggle-group {
+    display: flex;
+    gap: 2px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .toggle-btn {
+    padding: 3px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.15s;
+  }
+  .toggle-btn.active-real {
+    background: #ffffff;
+    color: #334155;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+  .toggle-btn.active-sim {
+    background: #fef3c7;
+    color: #92400e;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  }
+
+  /* Controls */
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+  .control-row input[type="range"] {
+    flex: 1;
+    accent-color: #6366f1;
+    height: 18px;
+  }
+  .control-row input[type="range"]:disabled {
+    opacity: 0.3;
+  }
+  .value-display {
+    min-width: 55px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: #334155;
+    font-weight: 600;
+  }
+
+  /* D-pad */
+  .dpad {
+    display: grid;
+    grid-template-columns: 40px 40px 40px;
+    grid-template-rows: 40px 40px 40px;
+    gap: 3px;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .dpad-btn {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f1f5f9;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.1s;
+    color: #475569;
+  }
+  .dpad-btn:hover { background: #e2e8f0; }
+  .dpad-btn:active { background: #cbd5e1; }
+  .dpad-btn:disabled { opacity: 0.3; cursor: default; }
+  .dpad-center {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #94a3b8;
+  }
+
+  .coord-display {
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Quality buttons */
+  .quality-group {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .quality-btn {
+    flex: 1;
+    padding: 6px 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f1f5f9;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    transition: all 0.15s;
+  }
+  .quality-btn:disabled { opacity: 0.3; cursor: default; }
+  .quality-btn.sel-active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+  .quality-btn.sel-lost { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+  .quality-btn.sel-denied { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+</style>
+</head>
+<body>
+
+<!-- Title bar -->
+<div class="title-bar">
+  <span>SensorBridge Remote</span>
+  <div class="status">
+    <div class="status-dot connecting" id="statusDot"></div>
+    <span id="statusText">connecting...</span>
+  </div>
+</div>
+
+<!-- Position -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Position</span>
+    <div class="toggle-group">
+      <button class="toggle-btn active-real" id="pos-real" onclick="setMode('position','real')">real</button>
+      <button class="toggle-btn" id="pos-sim" onclick="setMode('position','sim')">sim</button>
+    </div>
+  </div>
+  <div class="dpad" id="dpad">
+    <div></div>
+    <button class="dpad-btn" disabled id="dpad-n" onclick="movePos('n')">▲</button>
+    <div></div>
+    <button class="dpad-btn" disabled id="dpad-w" onclick="movePos('w')">◀</button>
+    <div class="dpad-center">10m</div>
+    <button class="dpad-btn" disabled id="dpad-e" onclick="movePos('e')">▶</button>
+    <div></div>
+    <button class="dpad-btn" disabled id="dpad-s" onclick="movePos('s')">▼</button>
+    <div></div>
+  </div>
+  <div class="coord-display" id="coordDisplay">—</div>
+</div>
+
+<!-- Heading -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Heading</span>
+    <div class="toggle-group">
+      <button class="toggle-btn active-real" id="hdg-real" onclick="setMode('heading','real')">real</button>
+      <button class="toggle-btn" id="hdg-sim" onclick="setMode('heading','sim')">sim</button>
+    </div>
+  </div>
+  <div class="control-row">
+    <input type="range" min="0" max="360" step="1" value="0" disabled id="headingSlider" oninput="onHeading(this.value)">
+    <span class="value-display" id="headingVal">0°</span>
+  </div>
+</div>
+
+<!-- Speed -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Speed</span>
+    <div class="toggle-group">
+      <button class="toggle-btn active-real" id="spd-real" onclick="setMode('speed','real')">real</button>
+      <button class="toggle-btn" id="spd-sim" onclick="setMode('speed','sim')">sim</button>
+    </div>
+  </div>
+  <div class="control-row">
+    <input type="range" min="0" max="150" step="1" value="0" disabled id="speedSlider" oninput="onSpeed(this.value)">
+    <span class="value-display" id="speedVal">0 km/h</span>
+  </div>
+</div>
+
+<!-- Accuracy -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Accuracy</span>
+    <span style="font-size:10px;color:#94a3b8;">(position連動)</span>
+  </div>
+  <div class="control-row">
+    <input type="range" min="5" max="500" step="5" value="10" disabled id="accSlider" oninput="onAccuracy(this.value)">
+    <span class="value-display" id="accVal">10 m</span>
+  </div>
+</div>
+
+<!-- Quality -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Quality</span>
+    <span style="font-size:10px;color:#94a3b8;">(position連動)</span>
+  </div>
+  <div class="quality-group" id="qualityGroup">
+    <button class="quality-btn sel-active" disabled id="q-active" onclick="onQuality('active')">active</button>
+    <button class="quality-btn" disabled id="q-lost" onclick="onQuality('lost')">lost</button>
+    <button class="quality-btn" disabled id="q-denied" onclick="onQuality('denied')">denied</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  var CHANNEL_NAME = 'flexroute-sensor-bridge';
+  var channel = new BroadcastChannel(CHANNEL_NAME);
+
+  // Local state
+  var state = {
+    channelModes: { position: 'real', heading: 'real', speed: 'real' },
+    simValues: {
+      position: null,
+      heading: 0,
+      speed: 0,
+      accuracy: 10,
+      positionQuality: 'active'
+    }
+  };
+
+  var connected = false;
+
+  // Connection timeout
+  var connectTimer = setTimeout(function() {
+    if (!connected) setConnectionStatus('disconnected');
+  }, 3000);
+
+  // Send ready
+  channel.postMessage({ type: 'remote-ready' });
+
+  // Receive state sync
+  channel.onmessage = function(event) {
+    var msg = event.data;
+    if (!msg || msg.type !== 'state-sync') return;
+
+    if (!connected) {
+      connected = true;
+      clearTimeout(connectTimer);
+      setConnectionStatus('connected');
+    }
+
+    state.channelModes = msg.channelModes;
+    state.simValues = msg.simValues;
+    updateUI();
+  };
+
+  // Cleanup on close
+  window.addEventListener('beforeunload', function() {
+    channel.postMessage({ type: 'remote-close' });
+  });
+
+  // --- UI Update ---
+  function updateUI() {
+    // Toggles
+    updateToggle('position', state.channelModes.position);
+    updateToggle('heading', state.channelModes.heading);
+    updateToggle('speed', state.channelModes.speed);
+
+    var posIsSim = state.channelModes.position === 'sim';
+    var hdgIsSim = state.channelModes.heading === 'sim';
+    var spdIsSim = state.channelModes.speed === 'sim';
+
+    // D-pad
+    var dpadBtns = ['dpad-n', 'dpad-s', 'dpad-e', 'dpad-w'];
+    for (var i = 0; i < dpadBtns.length; i++) {
+      document.getElementById(dpadBtns[i]).disabled = !posIsSim;
+    }
+
+    // Coord display
+    var pos = state.simValues.position;
+    if (pos) {
+      document.getElementById('coordDisplay').textContent =
+        pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4);
+    } else {
+      document.getElementById('coordDisplay').textContent = '—';
+    }
+
+    // Heading slider
+    var hs = document.getElementById('headingSlider');
+    hs.disabled = !hdgIsSim;
+    hs.value = String(state.simValues.heading);
+    document.getElementById('headingVal').textContent = state.simValues.heading + '°';
+
+    // Speed slider (m/s → km/h)
+    var kmh = Math.round(state.simValues.speed * 3.6);
+    var ss = document.getElementById('speedSlider');
+    ss.disabled = !spdIsSim;
+    ss.value = String(kmh);
+    document.getElementById('speedVal').textContent = kmh + ' km/h';
+
+    // Accuracy slider
+    var as = document.getElementById('accSlider');
+    as.disabled = !posIsSim;
+    as.value = String(state.simValues.accuracy);
+    document.getElementById('accVal').textContent = state.simValues.accuracy + ' m';
+
+    // Quality buttons
+    var quals = ['active', 'lost', 'denied'];
+    for (var j = 0; j < quals.length; j++) {
+      var btn = document.getElementById('q-' + quals[j]);
+      btn.disabled = !posIsSim;
+      btn.className = 'quality-btn';
+      if (quals[j] === state.simValues.positionQuality) {
+        btn.className += ' sel-' + quals[j];
+      }
+    }
+  }
+
+  function updateToggle(ch, mode) {
+    var prefixes = { position: 'pos', heading: 'hdg', speed: 'spd' };
+    var prefix = prefixes[ch];
+    var realBtn = document.getElementById(prefix + '-real');
+    var simBtn = document.getElementById(prefix + '-sim');
+
+    realBtn.className = 'toggle-btn' + (mode === 'real' ? ' active-real' : '');
+    simBtn.className = 'toggle-btn' + (mode === 'sim' ? ' active-sim' : '');
+  }
+
+  function setConnectionStatus(s) {
+    var dot = document.getElementById('statusDot');
+    var txt = document.getElementById('statusText');
+    dot.className = 'status-dot ' + s;
+    txt.textContent = s === 'connected' ? 'connected' : s === 'disconnected' ? 'disconnected' : 'connecting...';
+  }
+
+  // --- Actions ---
+  window.setMode = function(ch, mode) {
+    state.channelModes[ch] = mode;
+    channel.postMessage({ type: 'set-channel-mode', channel: ch, mode: mode });
+    updateUI();
+  };
+
+  window.movePos = function(dir) {
+    var pos = state.simValues.position;
+    if (!pos) {
+      // Default: Tokyo Station
+      pos = { lat: 35.6812, lng: 139.7671 };
+    }
+    var lat = pos.lat;
+    var lng = pos.lng;
+
+    switch (dir) {
+      case 'n': lat += 0.00009; break;
+      case 's': lat -= 0.00009; break;
+      case 'e': lng += 0.00011; break;
+      case 'w': lng -= 0.00011; break;
+    }
+
+    state.simValues.position = { lat: lat, lng: lng };
+    channel.postMessage({ type: 'set-sim-position', lat: lat, lng: lng });
+    updateUI();
+  };
+
+  window.onHeading = function(val) {
+    var v = parseInt(val, 10);
+    state.simValues.heading = v;
+    channel.postMessage({ type: 'set-sim-heading', value: v });
+    document.getElementById('headingVal').textContent = v + '°';
+  };
+
+  window.onSpeed = function(val) {
+    var kmh = parseInt(val, 10);
+    var ms = kmh / 3.6;
+    state.simValues.speed = ms;
+    channel.postMessage({ type: 'set-sim-speed', value: ms });
+    document.getElementById('speedVal').textContent = kmh + ' km/h';
+  };
+
+  window.onAccuracy = function(val) {
+    var v = parseInt(val, 10);
+    state.simValues.accuracy = v;
+    channel.postMessage({ type: 'set-sim-accuracy', value: v });
+    document.getElementById('accVal').textContent = v + ' m';
+  };
+
+  window.onQuality = function(val) {
+    state.simValues.positionQuality = val;
+    channel.postMessage({ type: 'set-sim-quality', value: val });
+    updateUI();
+  };
+
+  // Initial UI
+  updateUI();
+})();
+</script>
+</body>
+</html>
