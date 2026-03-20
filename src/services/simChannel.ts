@@ -40,6 +40,13 @@ export function openSimChannel(): void {
             }
             store.setSimPositionQuality('active');
           }
+          // position を real に戻した時: GPS 状態をリセット
+          if (msg.channel === 'position' && msg.mode === 'real') {
+            useNavigationStore.setState({
+              positionQuality: 'lost',
+              lostSince: new Date().toISOString(),
+            });
+          }
           syncStateToRemote();
         }
         break;

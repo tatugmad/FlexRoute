@@ -1,8 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useNavigationStore } from "@/stores/navigationStore";
-import { resolveValues } from "@/services/sensorBridge";
 import { useLostTimer } from "@/hooks/useLostTimer";
-import { useSimSubscription } from "@/hooks/useSimSubscription";
+import { createWrapperCallback, useSimSubscription } from "@/hooks/useSimWatch";
 
 const DENIED_RETRY_MS = 5000;
 const LAST_POSITION_KEY = "flexroute:lastKnownPosition";
@@ -12,6 +11,8 @@ export function useNavGeolocation() {
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const deniedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const handlePositionRef = useRef<((pos: GeolocationPosition) => void) | null>(null);
+
   const {
     setLost,
     setActive,
@@ -21,41 +22,72 @@ export function useNavGeolocation() {
     resetIntervals,
   } = useLostTimer();
 
+  const startWatchReal = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (pos) => handlePositionRef.current?.(pos),
+      handleErrorRef.current!,
+      { enableHighAccuracy: true, maximumAge: 0 },
+    );
+  }, []);
+
+  const startWatchSim = useCallback(() => {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+    const wrapper = createWrapperCallback((pos) => handlePositionRef.current?.(pos));
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      wrapper,
+      handleErrorRef.current!,
+      { enableHighAccuracy: true, maximumAge: 0 },
+    );
+  }, []);
+
+  const handleErrorRef = useRef<((error: GeolocationPositionError) => void) | null>(null);
+
+  useSimSubscription(handlePositionRef, startWatchReal, startWatchSim, setLost);
+
   useEffect(() => {
     if (!navigator.geolocation) return;
 
     resetIntervals();
 
     const handlePosition = (pos: GeolocationPosition) => {
-      const realValues = {
-        position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-        heading: pos.coords.heading ?? 0,
-        speed: pos.coords.speed ?? 0,
-        accuracy: pos.coords.accuracy ?? null,
-      };
-
-      const resolved = resolveValues(realValues);
-      if (!resolved.position) return;
-
-      lastPositionRef.current = resolved.position;
+      const position = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const heading = pos.coords.heading ?? 0;
+      const speed = pos.coords.speed ?? 0;
+      const accuracy = pos.coords.accuracy ?? null;
+      lastPositionRef.current = position;
       recordInterval();
+      setCurrentPosition(position, heading, speed, "active", accuracy);
+      setActive();
+      resetLostTimer();
+    };
 
-      const quality = resolved.positionQuality ?? "active";
-      setCurrentPosition(resolved.position, resolved.heading, resolved.speed, quality, resolved.accuracy);
+    handlePositionRef.current = handlePosition;
 
-      if (resolved.positionQuality === null) {
-        setActive();
-        resetLostTimer();
-      } else if (resolved.positionQuality === "active") {
-        setActive();
-        clearLostTimer();
-      } else if (resolved.positionQuality === "lost") {
-        setLost();
-        clearLostTimer();
-      } else if (resolved.positionQuality === "denied") {
-        useNavigationStore.setState({ positionQuality: "denied", lostSince: null });
-        clearLostTimer();
-      }
+    const startDeniedRetry = () => {
+      if (deniedIntervalRef.current) return;
+      deniedIntervalRef.current = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            if (deniedIntervalRef.current) {
+              clearInterval(deniedIntervalRef.current);
+              deniedIntervalRef.current = null;
+            }
+            handlePosition(pos);
+            startWatchReal();
+          },
+          (err) => {
+            if (err.code !== err.PERMISSION_DENIED) {
+              // Non-permission error: keep retrying
+            }
+          },
+          { enableHighAccuracy: true, maximumAge: 0 },
+        );
+      }, DENIED_RETRY_MS);
     };
 
     const handleError = (error: GeolocationPositionError) => {
@@ -72,37 +104,10 @@ export function useNavGeolocation() {
       }
     };
 
-    const startWatch = () => {
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        handlePosition,
-        handleError,
-        { enableHighAccuracy: true, maximumAge: 0 },
-      );
-    };
+    handleErrorRef.current = handleError;
 
-    const startDeniedRetry = () => {
-      if (deniedIntervalRef.current) return;
-      deniedIntervalRef.current = setInterval(() => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            if (deniedIntervalRef.current) {
-              clearInterval(deniedIntervalRef.current);
-              deniedIntervalRef.current = null;
-            }
-            handlePosition(pos);
-            startWatch();
-          },
-          (err) => {
-            if (err.code !== err.PERMISSION_DENIED) {
-              // Non-permission error: keep retrying
-            }
-          },
-          { enableHighAccuracy: true, maximumAge: 0 },
-        );
-      }, DENIED_RETRY_MS);
-    };
-
-    startWatch();
+    // 初期起動: 常に real で開始
+    startWatchReal();
     resetLostTimer();
 
     return () => {
@@ -128,6 +133,4 @@ export function useNavGeolocation() {
       }
     };
   }, [setCurrentPosition]);
-
-  useSimSubscription(lastPositionRef, setCurrentPosition, setActive, setLost, clearLostTimer);
 }
