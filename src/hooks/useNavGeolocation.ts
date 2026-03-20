@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useLostTimer } from "@/hooks/useLostTimer";
-import { createWrapperCallback, useSimSubscription } from "@/hooks/useSimWatch";
 
 const DENIED_RETRY_MS = 5000;
 const LAST_POSITION_KEY = "flexroute:lastKnownPosition";
@@ -11,7 +10,6 @@ export function useNavGeolocation() {
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const deniedIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const handlePositionRef = useRef<((pos: GeolocationPosition) => void) | null>(null);
 
   const {
     setLost,
@@ -21,33 +19,6 @@ export function useNavGeolocation() {
     clearLostTimer,
     resetIntervals,
   } = useLostTimer();
-
-  const startWatchReal = useCallback(() => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-    }
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => handlePositionRef.current?.(pos),
-      handleErrorRef.current!,
-      { enableHighAccuracy: true, maximumAge: 0 },
-    );
-  }, []);
-
-  const startWatchSim = useCallback(() => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-    }
-    const wrapper = createWrapperCallback((pos) => handlePositionRef.current?.(pos));
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      wrapper,
-      handleErrorRef.current!,
-      { enableHighAccuracy: true, maximumAge: 0 },
-    );
-  }, []);
-
-  const handleErrorRef = useRef<((error: GeolocationPositionError) => void) | null>(null);
-
-  useSimSubscription(handlePositionRef, startWatchReal, startWatchSim, setLost);
 
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -66,7 +37,16 @@ export function useNavGeolocation() {
       resetLostTimer();
     };
 
-    handlePositionRef.current = handlePosition;
+    const startWatch = () => {
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        handlePosition,
+        handleError,
+        { enableHighAccuracy: true, maximumAge: 0 },
+      );
+    };
 
     const startDeniedRetry = () => {
       if (deniedIntervalRef.current) return;
@@ -78,7 +58,7 @@ export function useNavGeolocation() {
               deniedIntervalRef.current = null;
             }
             handlePosition(pos);
-            startWatchReal();
+            startWatch();
           },
           (err) => {
             if (err.code !== err.PERMISSION_DENIED) {
@@ -92,7 +72,10 @@ export function useNavGeolocation() {
 
     const handleError = (error: GeolocationPositionError) => {
       if (error.code === error.PERMISSION_DENIED) {
-        useNavigationStore.setState({ positionQuality: "denied", lostSince: null });
+        useNavigationStore.setState({
+          positionQuality: "denied",
+          lostSince: null,
+        });
         clearLostTimer();
         if (watchIdRef.current !== null) {
           navigator.geolocation.clearWatch(watchIdRef.current);
@@ -104,10 +87,7 @@ export function useNavGeolocation() {
       }
     };
 
-    handleErrorRef.current = handleError;
-
-    // 初期起動: 常に real で開始
-    startWatchReal();
+    startWatch();
     resetLostTimer();
 
     return () => {
@@ -129,7 +109,9 @@ export function useNavGeolocation() {
               updatedAt: new Date().toISOString(),
             }),
           );
-        } catch { /* ignore quota errors */ }
+        } catch {
+          /* ignore quota errors */
+        }
       }
     };
   }, [setCurrentPosition]);

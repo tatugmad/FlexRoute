@@ -37,14 +37,6 @@ export function openSimChannel(): void {
           } else {
             store.setChannelMode(ch, mode);
           }
-          // position を real に戻した時: GPS 状態をリセット
-          // TODO: Phase 2 で simGeolocation パッチ方式に移行し、この直接書き込みを除去する
-          if (ch === 'position' && mode === 'real') {
-            useNavigationStore.setState({
-              positionQuality: 'lost',
-              lostSince: new Date().toISOString(),
-            });
-          }
           syncStateToRemote();
         }
         break;
