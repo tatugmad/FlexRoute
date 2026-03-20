@@ -17,7 +17,9 @@ export function NavMapController() {
   const heading = useNavigationStore((s) => s.heading);
   const speed = useNavigationStore((s) => s.speed);
   const setFollowMode = useNavigationStore((s) => s.setFollowMode);
+  const setZoomMode = useNavigationStore((s) => s.setZoomMode);
   const isDraggingRef = useRef(false);
+  const isAutoZoomingRef = useRef(false);
 
   // Detect user drag → switch to free mode
   useEffect(() => {
@@ -30,6 +32,21 @@ export function NavMapController() {
     });
     return () => google.maps.event.removeListener(listener);
   }, [map, setFollowMode]);
+
+  // Detect user zoom → switch to lockedZoom
+  useEffect(() => {
+    if (!map) return;
+    const listener = map.addListener("zoom_changed", () => {
+      if (isAutoZoomingRef.current) {
+        isAutoZoomingRef.current = false;
+        return;
+      }
+      if (useNavigationStore.getState().zoomMode === "autoZoom") {
+        setZoomMode("lockedZoom");
+      }
+    });
+    return () => google.maps.event.removeListener(listener);
+  }, [map, setZoomMode]);
 
   // Auto-follow: pan to position + heading + auto-zoom
   useEffect(() => {
@@ -46,6 +63,7 @@ export function NavMapController() {
       const targetZoom = getAutoZoom(speedKmh);
       const currentZoom = map.getZoom() ?? 15;
       if (Math.abs(currentZoom - targetZoom) >= 1) {
+        isAutoZoomingRef.current = true;
         map.setZoom(targetZoom);
       }
     }
