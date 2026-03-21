@@ -13,7 +13,6 @@
     font-size: 13px;
     padding: 0;
   }
-
   /* Title bar */
   .title-bar {
     background: #334155;
@@ -41,7 +40,6 @@
   .status-dot.connected { background: #22c55e; }
   .status-dot.disconnected { background: #ef4444; }
   .status-dot.connecting { background: #f59e0b; }
-
   /* Sections */
   .section {
     background: #ffffff;
@@ -61,7 +59,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
-
   /* Toggle buttons */
   .toggle-group {
     display: flex;
@@ -91,7 +88,6 @@
     color: #92400e;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   }
-
   /* Controls */
   .control-row {
     display: flex;
@@ -115,7 +111,6 @@
     color: #334155;
     font-weight: 600;
   }
-
   /* D-pad */
   .dpad {
     display: grid;
@@ -151,7 +146,6 @@
     font-size: 10px;
     color: #94a3b8;
   }
-
   .coord-display {
     text-align: center;
     font-size: 11px;
@@ -159,16 +153,15 @@
     margin-top: 4px;
     font-variant-numeric: tabular-nums;
   }
-
-  /* Quality buttons */
-  .quality-group {
+  /* Denied toggle */
+  .denied-toggle {
     display: flex;
-    gap: 6px;
+    align-items: center;
+    gap: 10px;
     margin-top: 6px;
   }
-  .quality-btn {
-    flex: 1;
-    padding: 6px 0;
+  .denied-toggle-btn {
+    padding: 6px 16px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     background: #f1f5f9;
@@ -178,14 +171,15 @@
     color: #64748b;
     transition: all 0.15s;
   }
-  .quality-btn:disabled { opacity: 0.3; cursor: default; }
-  .quality-btn.sel-active { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
-  .quality-btn.sel-lost { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-  .quality-btn.sel-denied { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+  .denied-toggle-btn:disabled { opacity: 0.3; cursor: default; }
+  .denied-toggle-btn.active {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fca5a5;
+  }
 </style>
 </head>
 <body>
-
 <!-- Title bar -->
 <div class="title-bar">
   <span>SensorBridge Remote</span>
@@ -194,7 +188,6 @@
     <span id="statusText">connecting...</span>
   </div>
 </div>
-
 <!-- Position -->
 <div class="section">
   <div class="section-header">
@@ -206,18 +199,38 @@
   </div>
   <div class="dpad" id="dpad">
     <div></div>
-    <button class="dpad-btn" disabled id="dpad-n" onclick="movePos('n')">▲</button>
+    <button class="dpad-btn" disabled id="dpad-n" onclick="movePos('n')">&#9650;</button>
     <div></div>
-    <button class="dpad-btn" disabled id="dpad-w" onclick="movePos('w')">◀</button>
+    <button class="dpad-btn" disabled id="dpad-w" onclick="movePos('w')">&#9664;</button>
     <div class="dpad-center">10m</div>
-    <button class="dpad-btn" disabled id="dpad-e" onclick="movePos('e')">▶</button>
+    <button class="dpad-btn" disabled id="dpad-e" onclick="movePos('e')">&#9654;</button>
     <div></div>
-    <button class="dpad-btn" disabled id="dpad-s" onclick="movePos('s')">▼</button>
+    <button class="dpad-btn" disabled id="dpad-s" onclick="movePos('s')">&#9660;</button>
     <div></div>
   </div>
-  <div class="coord-display" id="coordDisplay">—</div>
+  <div class="coord-display" id="coordDisplay">&mdash;</div>
 </div>
-
+<!-- Callback Interval -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Callback Interval</span>
+    <span style="font-size:10px;color:#94a3b8;">(position連動)</span>
+  </div>
+  <div class="control-row">
+    <input type="range" min="500" max="30000" step="500" value="1000" disabled id="intervalSlider" oninput="onInterval(this.value)">
+    <span class="value-display" id="intervalVal">1.0 s</span>
+  </div>
+</div>
+<!-- Denied -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-label">Denied</span>
+    <span style="font-size:10px;color:#94a3b8;">(position連動)</span>
+  </div>
+  <div class="denied-toggle">
+    <button class="denied-toggle-btn" disabled id="deniedBtn" onclick="toggleDenied()">OFF</button>
+  </div>
+</div>
 <!-- Heading -->
 <div class="section">
   <div class="section-header">
@@ -229,10 +242,9 @@
   </div>
   <div class="control-row">
     <input type="range" min="0" max="360" step="1" value="0" disabled id="headingSlider" oninput="onHeading(this.value)">
-    <span class="value-display" id="headingVal">0°</span>
+    <span class="value-display" id="headingVal">0&deg;</span>
   </div>
 </div>
-
 <!-- Speed -->
 <div class="section">
   <div class="section-header">
@@ -247,7 +259,6 @@
     <span class="value-display" id="speedVal">0 km/h</span>
   </div>
 </div>
-
 <!-- Accuracy -->
 <div class="section">
   <div class="section-header">
@@ -259,26 +270,11 @@
     <span class="value-display" id="accVal">10 m</span>
   </div>
 </div>
-
-<!-- Quality -->
-<div class="section">
-  <div class="section-header">
-    <span class="section-label">Quality</span>
-    <span style="font-size:10px;color:#94a3b8;">(position連動)</span>
-  </div>
-  <div class="quality-group" id="qualityGroup">
-    <button class="quality-btn sel-active" disabled id="q-active" onclick="onQuality('active')">active</button>
-    <button class="quality-btn" disabled id="q-lost" onclick="onQuality('lost')">lost</button>
-    <button class="quality-btn" disabled id="q-denied" onclick="onQuality('denied')">denied</button>
-  </div>
-</div>
-
 <script>
 (function() {
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
 
-  // Local state
   var state = {
     channelModes: { position: 'real', heading: 'real', speed: 'real' },
     simValues: {
@@ -286,21 +282,18 @@
       heading: 0,
       speed: 0,
       accuracy: 10,
-      positionQuality: 'active'
+      callbackIntervalMs: 1000,
+      denied: false
     }
   };
 
   var connected = false;
-
-  // Connection timeout
   var connectTimer = setTimeout(function() {
     if (!connected) setConnectionStatus('disconnected');
   }, 3000);
 
-  // Send ready
   channel.postMessage({ type: 'remote-ready' });
 
-  // Receive state sync
   channel.onmessage = function(event) {
     var msg = event.data;
     if (!msg || msg.type !== 'state-sync') return;
@@ -316,14 +309,11 @@
     updateUI();
   };
 
-  // Cleanup on close
   window.addEventListener('beforeunload', function() {
     channel.postMessage({ type: 'remote-close' });
   });
 
-  // --- UI Update ---
   function updateUI() {
-    // Toggles
     updateToggle('position', state.channelModes.position);
     updateToggle('heading', state.channelModes.heading);
     updateToggle('speed', state.channelModes.speed);
@@ -344,16 +334,34 @@
       document.getElementById('coordDisplay').textContent =
         pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4);
     } else {
-      document.getElementById('coordDisplay').textContent = '—';
+      document.getElementById('coordDisplay').textContent = '\u2014';
+    }
+
+    // Interval slider
+    var is = document.getElementById('intervalSlider');
+    is.disabled = !posIsSim;
+    is.value = String(state.simValues.callbackIntervalMs);
+    var sec = (state.simValues.callbackIntervalMs / 1000).toFixed(1);
+    document.getElementById('intervalVal').textContent = sec + ' s';
+
+    // Denied button
+    var db = document.getElementById('deniedBtn');
+    db.disabled = !posIsSim;
+    if (state.simValues.denied) {
+      db.textContent = 'ON';
+      db.className = 'denied-toggle-btn active';
+    } else {
+      db.textContent = 'OFF';
+      db.className = 'denied-toggle-btn';
     }
 
     // Heading slider
     var hs = document.getElementById('headingSlider');
     hs.disabled = !hdgIsSim;
     hs.value = String(state.simValues.heading);
-    document.getElementById('headingVal').textContent = state.simValues.heading + '°';
+    document.getElementById('headingVal').textContent = state.simValues.heading + '\u00B0';
 
-    // Speed slider (m/s → km/h)
+    // Speed slider (m/s -> km/h)
     var kmh = Math.round(state.simValues.speed * 3.6);
     var ss = document.getElementById('speedSlider');
     ss.disabled = !spdIsSim;
@@ -361,21 +369,10 @@
     document.getElementById('speedVal').textContent = kmh + ' km/h';
 
     // Accuracy slider
-    var as = document.getElementById('accSlider');
-    as.disabled = !posIsSim;
-    as.value = String(state.simValues.accuracy);
+    var as2 = document.getElementById('accSlider');
+    as2.disabled = !posIsSim;
+    as2.value = String(state.simValues.accuracy);
     document.getElementById('accVal').textContent = state.simValues.accuracy + ' m';
-
-    // Quality buttons
-    var quals = ['active', 'lost', 'denied'];
-    for (var j = 0; j < quals.length; j++) {
-      var btn = document.getElementById('q-' + quals[j]);
-      btn.disabled = !posIsSim;
-      btn.className = 'quality-btn';
-      if (quals[j] === state.simValues.positionQuality) {
-        btn.className += ' sel-' + quals[j];
-      }
-    }
   }
 
   function updateToggle(ch, mode) {
@@ -383,7 +380,6 @@
     var prefix = prefixes[ch];
     var realBtn = document.getElementById(prefix + '-real');
     var simBtn = document.getElementById(prefix + '-sim');
-
     realBtn.className = 'toggle-btn' + (mode === 'real' ? ' active-real' : '');
     simBtn.className = 'toggle-btn' + (mode === 'sim' ? ' active-sim' : '');
   }
@@ -404,20 +400,15 @@
 
   window.movePos = function(dir) {
     var pos = state.simValues.position;
-    if (!pos) {
-      // Default: Tokyo Station
-      pos = { lat: 35.6812, lng: 139.7671 };
-    }
+    if (!pos) return;
     var lat = pos.lat;
     var lng = pos.lng;
-
     switch (dir) {
       case 'n': lat += 0.00009; break;
       case 's': lat -= 0.00009; break;
       case 'e': lng += 0.00011; break;
       case 'w': lng -= 0.00011; break;
     }
-
     state.simValues.position = { lat: lat, lng: lng };
     channel.postMessage({ type: 'set-sim-position', lat: lat, lng: lng });
     updateUI();
@@ -427,7 +418,7 @@
     var v = parseInt(val, 10);
     state.simValues.heading = v;
     channel.postMessage({ type: 'set-sim-heading', value: v });
-    document.getElementById('headingVal').textContent = v + '°';
+    document.getElementById('headingVal').textContent = v + '\u00B0';
   };
 
   window.onSpeed = function(val) {
@@ -445,13 +436,21 @@
     document.getElementById('accVal').textContent = v + ' m';
   };
 
-  window.onQuality = function(val) {
-    state.simValues.positionQuality = val;
-    channel.postMessage({ type: 'set-sim-quality', value: val });
+  window.onInterval = function(val) {
+    var v = parseInt(val, 10);
+    state.simValues.callbackIntervalMs = v;
+    channel.postMessage({ type: 'set-sim-interval', value: v });
+    var sec = (v / 1000).toFixed(1);
+    document.getElementById('intervalVal').textContent = sec + ' s';
+  };
+
+  window.toggleDenied = function() {
+    var next = !state.simValues.denied;
+    state.simValues.denied = next;
+    channel.postMessage({ type: 'set-sim-denied', value: next });
     updateUI();
   };
 
-  // Initial UI
   updateUI();
 })();
 </script>

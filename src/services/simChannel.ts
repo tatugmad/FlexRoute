@@ -19,7 +19,6 @@ export function openSimChannel(): void {
 
     switch (msg.type) {
       case 'remote-ready':
-        // ポップアップが準備完了 → 現在の state を送信
         syncStateToRemote();
         break;
 
@@ -28,7 +27,6 @@ export function openSimChannel(): void {
           const ch = msg.channel as keyof SensorChannelModes;
           const mode = msg.mode as SensorMode;
           if (ch === 'position' && mode === 'sim') {
-            // 初期位置: real 現在地 → lastKnown → 東京駅（最終手段）
             const currentPos = useNavigationStore.getState().currentPosition;
             const initialPosition = currentPos
               ?? getLastKnownPosition()
@@ -59,8 +57,12 @@ export function openSimChannel(): void {
         if (msg.value != null) store.setSimAccuracy(msg.value);
         break;
 
-      case 'set-sim-quality':
-        if (msg.value) store.setSimPositionQuality(msg.value);
+      case 'set-sim-interval':
+        if (msg.value != null) store.setSimCallbackInterval(msg.value);
+        break;
+
+      case 'set-sim-denied':
+        if (typeof msg.value === 'boolean') store.setSimDenied(msg.value);
         break;
 
       case 'remote-close':

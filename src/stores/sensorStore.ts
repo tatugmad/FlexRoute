@@ -10,7 +10,8 @@ type SensorStoreState = {
   setSimHeading: (heading: number) => void;
   setSimSpeed: (speed: number) => void;
   setSimAccuracy: (accuracy: number) => void;
-  setSimPositionQuality: (quality: 'active' | 'lost' | 'denied') => void;
+  setSimCallbackInterval: (ms: number) => void;
+  setSimDenied: (denied: boolean) => void;
   setDebugEnabled: (enabled: boolean) => void;
   resetAllToReal: () => void;
 };
@@ -29,7 +30,8 @@ const DEFAULT_SIM_VALUES: SimValues = {
   heading: 0,
   speed: 0,
   accuracy: 10,
-  positionQuality: 'active',
+  callbackIntervalMs: 1000,
+  denied: false,
 };
 
 export const useSensorStore = create<SensorStoreState>((set) => ({
@@ -42,7 +44,7 @@ export const useSensorStore = create<SensorStoreState>((set) => ({
       channelModes: { ...state.channelModes, [channel]: mode },
       simValues:
         channel === 'position' && mode === 'sim' && initialPosition
-          ? { ...state.simValues, position: initialPosition, positionQuality: 'active' }
+          ? { ...state.simValues, position: initialPosition, denied: false }
           : state.simValues,
     })),
 
@@ -66,9 +68,14 @@ export const useSensorStore = create<SensorStoreState>((set) => ({
       simValues: { ...state.simValues, accuracy },
     })),
 
-  setSimPositionQuality: (quality) =>
+  setSimCallbackInterval: (ms) =>
     set((state) => ({
-      simValues: { ...state.simValues, positionQuality: quality },
+      simValues: { ...state.simValues, callbackIntervalMs: ms },
+    })),
+
+  setSimDenied: (denied) =>
+    set((state) => ({
+      simValues: { ...state.simValues, denied },
     })),
 
   setDebugEnabled: (enabled) => set({ debugEnabled: enabled }),
