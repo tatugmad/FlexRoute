@@ -21,9 +21,15 @@ const DEFAULT_CHANNEL_MODES: SensorChannelModes = {
   position: 'real',
   heading: 'real',
   speed: 'real',
+  magneticHeading: 'real',
   network: 'real',
   battery: 'real',
-  orientation: 'real',
+  screenOrientation: 'real',
+  wakeLock: 'real',
+  visibility: 'real',
+  deviceMotion: 'real',
+  vibration: 'real',
+  ambientLight: 'real',
 };
 const DEFAULT_SIM_VALUES: SimValues = {
   position: null,

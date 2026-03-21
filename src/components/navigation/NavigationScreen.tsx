@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useRouteStore } from "@/stores/routeStore";
 import { useNavigationStore } from "@/stores/navigationStore";
@@ -8,6 +8,7 @@ import { NavHeader } from "@/components/navigation/NavHeader";
 import { NavControls } from "@/components/navigation/NavControls";
 import { NavRoutePolyline } from "@/components/navigation/NavRoutePolyline";
 import { NavMapController } from "@/components/navigation/NavMapController";
+import { shortestDelta } from "@/utils/headingUtils";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 const mapId = (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string) || "DEMO_MAP_ID";
@@ -33,7 +34,11 @@ function NavMap() {
 
   const heading = useNavigationStore((s) => s.heading);
   const headingMode = useNavigationStore((s) => s.headingMode);
-  const mapHeading = headingMode === "headingUp" ? heading : 0;
+  const prevHeadingRef = useRef(0);
+  const rawHeading = headingMode === "headingUp" ? heading : 0;
+  const delta = shortestDelta(prevHeadingRef.current, rawHeading);
+  prevHeadingRef.current += delta;
+  const mapHeading = prevHeadingRef.current;
 
   return (
     <Map

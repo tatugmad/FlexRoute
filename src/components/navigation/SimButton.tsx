@@ -4,6 +4,35 @@ import { openSimChannel, closeSimChannel } from '@/services/simChannel';
 
 const BTN = "bg-slate-500/15 rounded-full shadow-lg border border-slate-400/50 hover:bg-white/20 transition-all active:scale-95 pointer-events-auto flex items-center justify-center w-14 h-14";
 
+const POPUP_STORAGE_KEY = 'flexroute:simPopupBounds';
+const DEFAULT_WIDTH = 380;
+const DEFAULT_HEIGHT = 620;
+
+function loadPopupBounds(): string {
+  try {
+    const raw = localStorage.getItem(POPUP_STORAGE_KEY);
+    if (!raw) return `width=${DEFAULT_WIDTH},height=${DEFAULT_HEIGHT},resizable=yes,scrollbars=yes`;
+    const b = JSON.parse(raw);
+    return `width=${b.width},height=${b.height},left=${b.left},top=${b.top},resizable=yes,scrollbars=yes`;
+  } catch {
+    return `width=${DEFAULT_WIDTH},height=${DEFAULT_HEIGHT},resizable=yes,scrollbars=yes`;
+  }
+}
+
+function savePopupBounds(popup: Window): void {
+  try {
+    const bounds = {
+      width: popup.outerWidth,
+      height: popup.outerHeight,
+      left: popup.screenX,
+      top: popup.screenY,
+    };
+    localStorage.setItem(POPUP_STORAGE_KEY, JSON.stringify(bounds));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
 export function SimButton() {
   const debugEnabled = useSensorStore((s) => s.debugEnabled);
   const popupRef = useRef<Window | null>(null);
@@ -29,7 +58,6 @@ export function SimButton() {
     listenersAttached.current = false;
   }, [focusPopup]);
 
-  // cleanup on unmount
   useEffect(() => {
     return () => detachFocusListeners();
   }, [detachFocusListeners]);
@@ -46,14 +74,24 @@ export function SimButton() {
 
     const basePath = import.meta.env.BASE_URL ?? '/';
     const url = `${basePath}sim-remote.html`;
+    const features = loadPopupBounds();
 
     popupRef.current = window.open(
       url,
       'flexroute-sim-remote',
-      'width=380,height=620,resizable=yes,scrollbars=yes',
+      features,
     );
 
     attachFocusListeners();
+
+    // ポップアップが閉じる直前にサイズ/位置を保存
+    const onBeforeUnload = () => {
+      if (popupRef.current) savePopupBounds(popupRef.current);
+    };
+
+    if (popupRef.current) {
+      popupRef.current.addEventListener('beforeunload', onBeforeUnload);
+    }
 
     const checkClosed = setInterval(() => {
       if (popupRef.current && popupRef.current.closed) {
