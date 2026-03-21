@@ -66,18 +66,23 @@ export function NavMapController() {
   }, [map, followMode, currentPosition, zoomMode, speed]);
 
   // followMode=auto 時: ホイールズームの center ずれを防止 (D-035)
-  // Google Maps のホイールズームはマウスカーソル位置をピボットにするため
-  // center がずれる。followMode=auto 時は preventDefault で止め、
-  // zoom だけ変更する（center は現在地のまま動かない）
+  // scrollwheel: false で Google Maps の内部 wheel ハンドラを止め、
+  // 自前の wheel リスナーで zoom だけ変更する（center は動かない）
   useEffect(() => {
     if (!map) return;
+    // followMode=auto のとき Google Maps のネイティブ wheel ズームを停止
+    // （一時比較用: __zoomMode === "native" の場合は停止しない）
+    const shouldDisable = followMode === "auto"
+      && (window as unknown as Record<string, unknown>).__zoomMode !== "native";
+    (map as google.maps.Map).setOptions({ scrollwheel: !shouldDisable });
     const div = (map as google.maps.Map).getDiv();
     if (!div) return;
     const handleWheel = (e: WheelEvent) => {
-      // 一時的: googlezoom 比較用
-      if ((window as unknown as Record<string, unknown>).__googleZoomNative) return;
+      // 動的チェック: followMode と __zoomMode は呼び出し時に評価
       const state = useNavigationStore.getState();
       if (state.followMode !== "auto") return;
+      const zoomMode = (window as unknown as Record<string, unknown>).__zoomMode;
+      if (zoomMode === "native") return;
       e.preventDefault();
       const currentZoom = map.getZoom() ?? 15;
       const delta = e.deltaY < 0 ? 1 : -1;
@@ -87,8 +92,12 @@ export function NavMapController() {
       }
     };
     div.addEventListener("wheel", handleWheel, { passive: false });
-    return () => div.removeEventListener("wheel", handleWheel);
-  }, [map]);
+    return () => {
+      div.removeEventListener("wheel", handleWheel);
+      // クリーンアップ時に scrollwheel を復元
+      (map as google.maps.Map).setOptions({ scrollwheel: true });
+    };
+  }, [map, followMode]);
 
   return null;
 }
