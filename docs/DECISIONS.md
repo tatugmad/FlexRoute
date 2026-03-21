@@ -245,3 +245,139 @@
 - **理由**: @vis.gl/react-google-maps ライブラリは heading を含むカメラパラメータを React props で管理する設計。命令的な map.setHeading() はライブラリの内部状態管理と衝突し、値が上書きされて反映されない問題が発生した
 - **副次効果**: heading 制御が followMode（auto/free）に依存しなくなった。headingUp モードでは地図を手動操作中でも地図が回転する
 - **0°/360° 境界問題**: CSS transition が最短回転方向を選べないため、shortestDelta() で連続値に変換。NavigationScreen、HeadingButton、CurrentLocationMarker の3箇所に適用
+
+## D-033: F-LOG v2 — フライトレコーダー方式
+
+- **決定**: ログ基盤を「常時全レベル構造化記録 + 参照時フィルタ」のフライトレコーダー方式に再設計する。トラブルシュートは「記録した入力を sim に流して再現し、再現時に詳細トレースを出力する」3層構造で行う
+
+### 検討経緯
+
+#### 問題の発見
+
+v1.6.43 時点の精査で以下が判明:
+
+- ナビゲーション / sim 関連コード（useNavGeolocation, useLostTimer, useRouteSnap, simGeolocation, simChannel, navigationStore, sensorStore の7ファイル）に logService の呼び出しがゼロ。最も複雑なコードが完全に無言
+- DebugPanel は import.meta.env.DEV でガードされており、本番ビルド（GitHub Pages）ではログを閲覧する手段がない
+- フィールドテスト（スマホでの走行テスト）でログを回収する仕組みがない。ページリロードでメモリ上のリングバッファが消失する
+
+#### ログレベルの役割に関する考察
+
+「常にバグレポートのために詳細な情報を記録しておくべきではないか」という問いが出発点。ログレベルを「記録時のフィルタ（何を書くか）」ではなく「参照時のフィルタ（何を見るか）」として扱う方が合理的ではないか。
+
+ただし、全ての分岐経路をトレースレベルで常時記録すると、コードの半分がログ呼び出しになる（コード汚染問題）。性能問題ではなくメンテナンス問題が支配的。
+
+#### 実測による定量分析
+
+3つの記録方式のコストを10万エントリで実測:
+
+- (A) 文字列 + new Date().toISOString(): 583ms — ボトルネックは文字列構築と Date
+- (B) 構造化数値 + performance.now(): 46ms — 文字列を作らなければ 12.6x 高速
+- (C) レベルゲートで全スキップ: 0.9ms
+
+FlexRoute の実際のデータ発生レートは GPS 1Hz + 散発的状態遷移で秒あたり約 1-2 エントリ。構造化記録 (B) の場合、1エントリ 0.46µs に対し 60fps のフレーム予算は 16,670µs。CPU 占有率 0.003%。メモリは 10,000 エントリで 730KB。**常時全記録が事実上ゼロコスト**であることが実測で確認された。
+
+GPS 1回受信で走る処理チェーン全体を if 分岐レベルでトレースすると約 29 trace points/sec（将来の Step 2-5 追加で 50-80 に膨張）。CPU コストは依然として無視できるが、150行ルールの中で半分がログコードになる**コード汚染**が持続不可能。
+
+#### 業界の定石: クライアントサイドのトラブルシュート
+
+大量のコンシューマ向けクライアントサイドアプリケーション（スマホアプリ、ブラウザアプリ）では、全分岐トレースを常時記録しているプロダクトは存在しない:
+
+- **Sentry Breadcrumbs**: 主要イベント+状態変更のみ構造化記録。クラッシュ時にダンプ
+- **Android Logcat**: カーネルリングバッファに常時記録、logcat でレベルフィルタ
+- **Java Flight Recorder (JFR)**: 1%未満のオーバーヘッドで構造化イベントを常時記録
+- **iOS Crashlytics**: 入力イベント + 状態スナップショット
+- 共通原則: **構造化 data in → フォーマット text out（遅延評価）**
+
+航空業界のフライトレコーダー（ブラックボックス）も同じ思想: 記録するのは操縦入力・エンジンパラメータ・気象データ（外部入力と計器値）。油圧バルブの個々の開閉状態（内部分岐）は記録しない。事故調査では記録データをシミュレーターに流し込んで再現し、そこで初めて内部状態を追う。
+
+#### FlexRoute の sim がリプレイデバイスになる
+
+D-029 の3原則（PG は sim を知らない / sim は API パッチ / sim は callback パターンを再現）により、sim 経由で GPS 座標列を流し込めば、useNavGeolocation → useLostTimer → navigationStore → useRouteSnap という処理チェーンが本番と同一のコードパスを走ることが保証されている。
+
+これにより「Bug レポートの GPS 座標列を sim replay で再生し、?log=trace で全分岐を追う」というトラブルシュート手法が成立する。sim は開発テスト用に構築したものだが、事実上のリプレイデバイスとして機能する。
+
+### 確定した方針
+
+#### 3層構造
+
+| 層 | 稼働タイミング | 対象者 | 役割 |
+|---|---|---|---|
+| Layer 1: FlightRecorder | 常時（全ユーザー） | 自動 | 外部入力・状態遷移結果・判定結果を構造化記録 |
+| Layer 2: sim 再現 | 事後（開発者） | 手動 | Bug レポートの GPS 座標列を sim に流して処理チェーンを再現 |
+| Layer 3: 詳細トレース | sim 再現時のみ | 開発者 | ?log=trace + DevTools で全分岐・変数値を追跡 |
+
+#### FlightRecorder（Layer 1）の記録対象
+
+記録するもの（〜6 entries/sec）:
+
+- **外部入力**: GPS {lat, lng, heading, speed, accuracy} — 1Hz
+- **状態遷移の結果**: positionQuality の遷移（active→lost 等）、followMode/zoomMode/headingMode の変更
+- **判定結果**: snap 距離と成否、lost 閾値算出値、ステップ通過判定、逸脱距離、オートズーム算出値（Step 2-5 で追加されるものも含む）
+- **ユーザー操作**: ボタンタップ、地図ドラッグ、モード切替
+- **warn/error**: API 失敗、permission denied、例外
+
+記録しないもの:
+
+- 個々の if 文の分岐経路
+- ループ内の中間値
+- React render の詳細
+
+#### 記録フォーマット
+
+- **記録時**: 構造化データ（数値 + enum 番号）。文字列を生成しない。タイムスタンプは performance.now()
+- **参照時**（DebugPanel 表示 / Bug レポートダンプ時）: enum→文字列、performance.now()→ISO時刻 に変換
+
+#### ログレベルの役割
+
+- 5段階: trace(0), debug(1), info(2), warn(3), error(4)
+- **記録**: 全レベルを常時記録。レベルによる記録フィルタなし
+- **参照**: ?log パラメータで「コンソールに表示するレベル」を制御
+  - ?log なし → コンソール出力なし（記録は継続）
+  - ?log=warn → warn + error のみコンソール出力
+  - ?log=info / ?log=debug / ?log=trace → 指定レベル以上をコンソール出力
+
+#### バッファ設計
+
+- 循環バッファ（O(1) push、shift() 不使用）
+- サイズ: 10,000 エントリ（730KB、6 entries/sec で約28分保持）
+- logService / userActionTracker / performanceMonitor を統合した単一バッファ（時系列の一本化で因果分析が容易）
+
+#### DebugPanel の表示条件
+
+- ?log または ?debug パラメータ指定時に表示（本番ビルドでも可）
+- import.meta.env.DEV 限定を廃止
+- レベルフィルタ付き
+
+#### sim replay（Layer 2）
+
+- Bug レポートの GPS 座標列を sim に流し込む再現ツール
+- 実装タイミング: 必要になった段階（現時点では未実装）
+- sim の callback モード（sync/interval/lost）と denied 状態も再現可能
+
+#### 将来の 60Hz センサー到達時
+
+magneticHeading, deviceMotion 等の 60Hz センサーが実装された段階で、Float64Array ベースの専用高速バッファを別途設計する。メインの FlightRecorder とは独立。Bug レポート時にマージ。
+
+- **却下案1**: 全分岐トレース常時記録 → CPUは問題ないがコード汚染が持続不可能。150行中75行がログになる
+- **却下案2**: 入力のみ記録 + 完全な決定論的再現 → タイマー発火タイミング、React renderサイクル、GCスパイク等の非決定的要素を全て記録することは非現実的
+- **却下案3**: ログレベルによる記録フィルタ（従来方式）→ バグ発生時に必要なレベルが記録されていない事態が発生する。FlexRoute のデータ発生レートでは常時全記録のコストが事実上ゼロであり、記録フィルタを入れる理由がない
+
+## D-034: バグレポート（Bug ボタン）
+
+- **決定**: ナビゲーション画面に Bug ボタン（FAB）を常時表示し、押下時にスクリーンショット + FlightRecorder ダンプ + メタ情報をバンドルして回収する
+- **Phase 1（実装済み）**: JSON 単一ファイルとしてダウンロード。screenshot は base64 data URL として JSON に埋め込み。JSZip ライブラリの追加を避けリスクを最小化
+- **Phase 2**: zip 形式に拡張（JSZip 導入で screenshot.png を分離）、またはサーバアップロード（presigned URL → S3）
+- **スクリーンショット**: html2canvas を動的 import（通常のバンドルサイズに影響なし）
+- **バンドル内容**: flexroute-bug-{timestamp}.json に screenshot(base64), entries(全エントリ), meta を1ファイルに集約
+- **ダンプのフォーマット**: ダンプ時に初めて enum→文字列、performance.now()→ISO 時刻に変換。記録時のゼロコスト原則を維持
+- **表示条件**: ナビゲーション画面で常時表示。小さい FAB で走行の邪魔にならないデザイン。?log や ?debug の有無に関係なく使用可能
+- **理由**: フライトレコーダーが常時記録しているため、?log パラメータなしで走行テストしていても、Bug ボタンを押せば過去約28分の詳細データが回収できる
+- **却下**: sessionStorage 永続化 → Bug ボタンの運用で代替可能。リロード前に Bug ボタンさえ押せばログは回収できる
+
+## D-035: followMode=auto 時のホイールズーム制御
+
+- **決定**: followMode=auto 時にマウスホイールのデフォルトズーム動作を無効化し、現在地を中心に zoom だけ変更する。followMode=free 時は Google Maps のデフォルト動作（マウスカーソル位置をピボットにズーム）を維持する
+- **理由**: Google Maps のホイールズームはマウスカーソル位置をピボット（固定点）としてズームするため、カーソルが現在地マーカーからずれていると center が移動し、followMode=auto にもかかわらず現在地マーカーが画面中央から外れる。次の GPS tick で panTo が走り center が戻るが、その間ちらつきが発生する
+- **実装**: NavMapController に wheel イベントリスナーを追加。followMode=auto 時は event.preventDefault() でデフォルト動作を止め、deltaY の方向からズームイン/アウトを判定し、map.setZoom(newZoom) のみ呼ぶ（center は動かさない）
+- **却下案1**: zoom_changed 内で即座に panTo → ズームアニメーション中の panTo 競合リスク。D-032 の教訓（命令的API と宣言的管理の衝突）
+- **却下案2**: ホイールズームで followMode=free に切り替え → 「自由なZOOM率のまま現在地マーカーを中心に維持する」というFlexRouteの売りが失われる

@@ -245,33 +245,47 @@ type SimValues = {
 };
 ```
 
-### ログ関連型
+### ログ関連型（F-LOG v2）
+
+ログ関連の型は `src/types/log.ts` に定義。
 
 ```ts
-type LogLevel = "debug" | "info" | "warn" | "error";
+/** ログレベル */
+const LOG_LEVELS = {
+  trace: 0, debug: 1, info: 2, warn: 3, error: 4,
+} as const;
+type LogLevelName = keyof typeof LOG_LEVELS;
 
-type LogEntry = {
-  timestamp: string;
-  level: LogLevel;
-  category: string;
-  message: string;
+/** ログカテゴリ */
+const LOG_CATEGORIES = {
+  NAV: 0, GPS: 1, SIM: 2, SNAP: 3, ROUTE: 4,
+  STORAGE: 5, LABEL_STORE: 6, LABEL_STORAGE: 7,
+  PLACE_STORE: 8, PLACE_STORAGE: 9, PLACE_DETAILS: 10,
+  API: 11, UI: 12, PERF: 13, USER_ACTION: 14, ERROR: 15,
+} as const;
+type LogCategoryName = keyof typeof LOG_CATEGORIES;
+
+/** FlightRecorder の1エントリ（構造化データのみ、文字列なし） */
+type FlightRecorderEntry = {
+  t: number;           // performance.now() タイムスタンプ
+  level: number;       // LogLevel 数値
+  cat: number;         // LogCategory 数値
+  tag: string;         // イベントタグ（例: "gps.position"）
+  data?: unknown;      // 構造化データ
+};
+
+/** dump 時のフォーマット済みエントリ */
+type FormattedLogEntry = {
+  timestamp: string;   // ISO 8601
+  level: LogLevelName;
+  category: LogCategoryName;
+  tag: string;
   data?: unknown;
-  component?: string;
-};
-
-type UserAction = {
-  timestamp: string;
-  action: string;
-  detail?: unknown;
-};
-
-type PerformanceMetric = {
-  count: number;
-  avg: number;
-  min: number;
-  max: number;
 };
 ```
+
+注: 旧型（LogLevel, LogEntry, UserAction, PerformanceMetric）は
+v1.6.49 で旧サービスとともに削除済み。
 
 ### Routes API v2 型（src/types/routesApi.ts）
 
@@ -799,7 +813,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 - **責務**: ウェイポイント変更を検知し、Routes API v2 でルートを自動計算する。レスポンスからlegs/stepsを解析し道路種別を判定してstoreに反映
 - **依存store**: routeStore（currentRoute.waypoints, travelMode, setRouteData, setRouteError, setIsCalculatingRoute）
-- **依存service**: routeApi（computeRoutes）、logService
+- **依存service**: routeApi（computeRoutes）、flightRecorder
 - **依存utils**: roadType（classifyRoadType）
 - **呼び出し元**: RoutePolyline.tsx
 
@@ -807,7 +821,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 - **責務**: 地図タップ時にウェイポイントを追加する。Placeアイコンタップ（経路A）と地図面タップ（経路B）を分離し、経路AではPlaces APIでPlace名を取得、経路Bでは座標のみでウェイポイントを作成する
 - **依存store**: routeStore（addWaypoint）、uiStore（viewMode）
-- **依存service**: userActionTracker
+- **依存service**: flightRecorder
 - **呼び出し元**: App.tsx
 
 ### useMapInitialView（src/hooks/useMapInitialView.ts）
@@ -919,35 +933,51 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `sendToRemote(message)` — リモコンにメッセージを送信
 - **使用箇所**: SimButton.tsx（initSimChannel の呼び出し）
 
-### logService.ts（src/services/logService.ts）
+### flightRecorder.ts（src/services/flightRecorder.ts）
 
-- **責務**: アプリケーション統合ログ基盤。カテゴリ別・レベル別のログ記録とリングバッファによるメモリ保持。開発時はコンソール出力、本番はwarn/errorのみ保持
+- **責務**: フライトレコーダー方式の常時構造化記録基盤（D-033）。旧 logService / userActionTracker / performanceMonitor を統合
 - **公開関数**:
-  - `logService.debug(category, message, data?)` — デバッグログ（本番では破棄）
-  - `logService.info(category, message, data?)` — 情報ログ（本番では破棄）
-  - `logService.warn(category, message, data?)` — 警告ログ（常に保持）
-  - `logService.error(category, message, data?)` — エラーログ（常に保持）
-  - `logService.getRecentLogs(count)` — 直近のログを取得（デフォルト50件）
-  - `logService.exportLogs()` — 全ログをJSON文字列で出力
-  - `logService.clear()` — ログをクリア
-  - `logService.send(entries)` — 外部ログサービスへの送信スタブ（フェーズ2用）
-- **内部クラス**: RingBuffer — 最大500件のリングバッファ
+  - `flightRecorder.trace(cat, tag, data?)` — trace レベル記録
+  - `flightRecorder.debug(cat, tag, data?)` — debug レベル記録
+  - `flightRecorder.info(cat, tag, data?)` — info レベル記録
+  - `flightRecorder.warn(cat, tag, data?)` — warn レベル記録
+  - `flightRecorder.error(cat, tag, data?)` — error レベル記録
+  - `flightRecorder.dump()` — 全エントリをフォーマット済み配列で出力
+  - `flightRecorder.getRecent(count)` — 直近 count 件を取得
+  - `flightRecorder.clear()` — バッファクリア
+  - `flightRecorder.setConsoleLevel(level)` — コンソール出力レベルを変更
+- **内部構造**: CircularBuffer（10,000 エントリ、O(1) push）
+- **使用箇所**: 全 hooks / services / stores / components
 
-### userActionTracker.ts（src/services/userActionTracker.ts）
+### logFormatters.ts（src/services/logFormatters.ts）
 
-- **責務**: ユーザー操作（地図タップ、ウェイポイント追加/削除等）の追跡記録。最大200件をリングバッファで保持し、logServiceにも転送
+- **責務**: レベル・カテゴリの数値→文字列変換、コンソール出力ヘルパー
 - **公開関数**:
-  - `userActionTracker.track(action, detail?)` — 操作を記録（例: "ADD_WAYPOINT", "MAP_CLICK_PLACE_ADD_WAYPOINT"）
-  - `userActionTracker.getRecentActions(count)` — 直近の操作を取得（デフォルト50件）
-  - `userActionTracker.exportActions()` — 全操作をJSON文字列で出力
+  - `toLevelName(n)` — 数値をレベル名に変換
+  - `toCategoryName(n)` — 数値をカテゴリ名に変換
+  - `formatWallClock(perfNow, startWall)` — performance.now() を壁時計文字列に変換
 
-### performanceMonitor.ts（src/services/performanceMonitor.ts）
+### flightRecorderDevTools.ts（src/services/flightRecorderDevTools.ts）
 
-- **責務**: API呼び出し等のパフォーマンス計測。タイマー制御と統計情報（平均/最小/最大/回数）を管理。5秒超の操作をwarnレベルで記録
+- **責務**: window.__fr に検証コマンドを公開（verify, dump, clear, level）
 - **公開関数**:
-  - `performanceMonitor.startTimer(label)` — 計測開始
-  - `performanceMonitor.endTimer(label)` — 計測終了し経過時間を返す。閾値超えはwarn出力
-  - `performanceMonitor.getMetrics()` — 全計測ラベルの統計情報（count, avg, min, max）を返す
+  - `installDevTools()` — window.__fr をセットアップ
+- **使用箇所**: main.tsx
+
+### logConfig.ts（src/services/logConfig.ts）
+
+- **責務**: ログ参照レベルの設定を抽象化。URL ?log パラメータから読み取り
+- **公開関数**:
+  - `createLogConfig()` — URL パラメータからログレベルを読み取り LogConfig を返す
+- **使用箇所**: main.tsx, DebugPanel.tsx
+
+### bugReportService.ts（src/services/bugReportService.ts）
+
+- **責務**: Bug ボタン押下時にスクリーンショット + FlightRecorder ダンプ + メタ情報をバンドル（D-034）
+- **公開関数**:
+  - `captureBugReport()` — スクリーンショット撮影 → ダンプ収集 → JSON ダウンロード
+- **依存**: flightRecorder, html2canvas（動的 import）, APP_VERSION
+- **使用箇所**: BugReportButton.tsx
 
 ## Utils 責務一覧
 
@@ -1057,9 +1087,9 @@ useRouteCalculation でもルート計算前にフィルタ:
 | 定数 | 定義場所 | 値 |
 |------|---------|-----|
 | `STORAGE_KEY` | services/storage.ts | `"flexroute:routes"` |
-| `MAX_ENTRIES` | services/logService.ts | `500` |
-| `MAX_ACTIONS` | services/userActionTracker.ts | `200` |
-| `SLOW_THRESHOLD_MS` | services/performanceMonitor.ts | `5000` |
+| `BUFFER_SIZE` | services/logFormatters.ts | `10000` |
+| `LOG_LEVELS` | types/log.ts | `{ trace: 0, debug: 1, info: 2, warn: 3, error: 4 }` |
+| `LOG_CATEGORIES` | types/log.ts | `{ NAV: 0, GPS: 1, SIM: 2, ... ERROR: 15 }` |
 | `ROUTES_API_URL` | services/routeApi.ts | `"https://routes.googleapis.com/directions/v2:computeRoutes"` |
 | `FIELD_MASK` | services/routeApi.ts | routes.duration, distanceMeters, polyline 等のフィールドマスク |
 | `HIGH_ACCURACY_OPTIONS` | services/geolocation.ts | `{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }` |
@@ -1073,7 +1103,6 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `NATIONAL_KEYWORDS` | utils/roadType.ts | `["国道"]` |
 | `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |
 | `ROAD_COLORS` | utils/roadType.ts | highway=#ec4899, national=#eab308, prefectural=#22c55e, local=#4f46e5 |
-| `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
 | `CARD_WIDTH` | constants/cardLayout.ts | `280` |
 | `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
 | `APP_VERSION` | constants/appVersion.ts | 現在のバージョン番号（CLAUDE.md のバージョン運用ルール参照） |

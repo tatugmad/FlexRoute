@@ -65,5 +65,28 @@ export function NavMapController() {
     }
   }, [map, followMode, currentPosition, zoomMode, speed]);
 
+  // followMode=auto 時: ホイールズームの center ずれを防止 (D-035)
+  // Google Maps のホイールズームはマウスカーソル位置をピボットにするため
+  // center がずれる。followMode=auto 時は preventDefault で止め、
+  // zoom だけ変更する（center は現在地のまま動かない）
+  useEffect(() => {
+    if (!map) return;
+    const div = (map as google.maps.Map).getDiv();
+    if (!div) return;
+    const handleWheel = (e: WheelEvent) => {
+      const state = useNavigationStore.getState();
+      if (state.followMode !== "auto") return;
+      e.preventDefault();
+      const currentZoom = map.getZoom() ?? 15;
+      const delta = e.deltaY < 0 ? 1 : -1;
+      const newZoom = Math.max(1, Math.min(22, currentZoom + delta));
+      if (newZoom !== currentZoom) {
+        map.setZoom(newZoom);
+      }
+    };
+    div.addEventListener("wheel", handleWheel, { passive: false });
+    return () => div.removeEventListener("wheel", handleWheel);
+  }, [map]);
+
   return null;
 }

@@ -23,7 +23,8 @@
 | F-TOP | TOP画面（タブ切替） | ✅ | 1-4 |
 | F-CONFIRM | 確認ダイアログ | ✅ | 1-4 |
 | F-ERROR | ErrorBoundary（開発/本番切替） | ✅ | - |
-| F-LOG | LogService/UserActionTracker/PerformanceMonitor | ✅ | - |
+| F-LOG | FlightRecorder（常時構造化記録 + 参照時フィルタ） | ✅ | 1-6 |
+| F-BUGREPORT | バグレポート（スクリーンショット + ログダンプ） | ✅ | 1-6 |
 | F-SOURCEMAP | Source Map（本番ビルドでもデバッグ可能） | ✅ | - |
 | F-CACHE | キャッシュ対策（F5リロード） | ✅ | - |
 | F-PLACE-MODAL | PlaceActionModal（施設写真・ラベル・ナビ開始） | ✅ | 1-5 |
@@ -466,31 +467,105 @@ navigationStore が管理する:
 
 ---
 
-### F-LOG: LogService / UserActionTracker / PerformanceMonitor
+### F-LOG: FlightRecorder（v2 実装済み）
 
-概要: アプリケーションログ、ユーザー操作ログ、パフォーマンス計測を統合管理する。
+概要: フライトレコーダー方式による常時構造化記録 + 参照時フィルタ。トラブルシュートの基盤（D-033）。
 
-動作フロー:
-- logService: カテゴリ別ログ出力（debug/info/warn/error）
-- userActionTracker: ユーザー操作の追跡（ADD_WAYPOINT, REMOVE_WAYPOINT, SET_VIEW_MODE 等）
-- performanceMonitor: API 応答時間、レンダリング時間の計測
-- 全ログは LogEntry 型で統一。開発時はコンソール出力
+原則: **常に全レベルを構造化記録する。ログレベルは参照時のフィルタであり、記録時のフィルタではない。**
 
-### LogService のレベル制御
-- 開発モード: 全レベル（debug, info, warn, error）を console に出力 + メモリに保持
-- 本番モード: warn と error のみメモリに保持。debug と info は破棄
-- メモリ上のリングバッファ: 最大500件
-- PerformanceMonitor: 閾値超え（例: API呼び出し5秒以上）は warn レベルで記録
+#### ログレベル（5段階）
 
-### Source Map
-- vite.config.ts で build.sourcemap: true を設定済み
-- 本番ビルドでもブラウザの Sources タブで元の TypeScript ソースが表示される
-- ブレークポイント設置、Watch パネルでの変数監視が可能
+| レベル | 数値 | 用途 | 例 |
+|---|---|---|---|
+| trace | 0 | 高頻度センサーデータ | GPS座標、heading値、snap距離、callback tick |
+| debug | 1 | 状態遷移・内部判定 | lost→active遷移、閾値算出結果、モード切替 |
+| info | 2 | 業務イベント | ナビ開始/終了、ルート保存、Place保存 |
+| warn | 3 | 劣化・閾値超過 | GPS精度悪化、API 5秒超、lost検知 |
+| error | 4 | 障害 | API失敗、permission denied |
 
-入力: 各サービス・コンポーネントからの呼び出し
-出力: コンソールログ出力
+#### 記録フォーマット
+
+- 記録時: 構造化データ（数値 + enum 番号）。文字列を生成しない。タイムスタンプは performance.now()
+- 参照時（DebugPanel 表示・Bug レポートダンプ時）に初めて enum→文字列、performance.now()→ISO時刻に変換
+
+#### ?log パラメータ（参照制御）
+
+| パラメータ | コンソール出力 | DebugPanel | 記録 |
+|---|---|---|---|
+| なし（デフォルト） | なし | 非表示 | 全レベル常時記録 |
+| ?log=warn | warn + error | 表示 | 同上 |
+| ?log=info | info 以上 | 表示 | 同上 |
+| ?log=debug | debug 以上 | 表示 | 同上 |
+| ?log=trace | 全レベル | 表示 | 同上 |
+
+?debug=1（sim 用）とは独立。?debug=1&log=trace で sim + 全ログ出力。
+
+#### バッファ
+
+- 単一の循環バッファ（旧 logService + userActionTracker + performanceMonitor を統合）
+- O(1) push（shift() 方式を廃止）
+- 10,000 エントリ / 730KB / 6 entries/sec で約28分保持
+
+#### DebugPanel
+
+- ?log または ?debug パラメータ指定時に表示（本番ビルドでも可）
+- レベルフィルタ付き統合ビュー
+
+#### 検証コマンド（コンソール）
+
+- `__fr.verify()` — バッファ状態・カテゴリ別件数・重複検出・直近5件を出力
+- `__fr.dump()` — 全エントリをフォーマット済み配列で返す
+- `__fr.clear()` — バッファクリア
+- `__fr.level("trace")` — コンソール出力レベルを変更
+
+入力: 各 services / stores / hooks / components からの fr.trace/debug/info/warn/error 呼び出し
+出力: 循環バッファへの構造化エントリ蓄積。?log 指定時はコンソール出力。Bug レポートでダンプ
 エラー: —
-関連: F-ERROR
+関連: F-BUGREPORT, F-ERROR, F-SIM, D-033
+
+---
+
+### F-BUGREPORT: バグレポート（実装済み）
+
+概要: ナビゲーション画面の Bug ボタンで、スクリーンショット + FlightRecorder ダンプ + メタ情報をバンドルして回収する（D-034）。
+
+#### 動作フロー
+
+1. ユーザーが Bug ボタン（FAB）をタップ
+2. html2canvas で画面キャプチャ（動的 import でバンドルサイズに影響なし）
+3. FlightRecorder から全エントリをダンプ（ダンプ時にフォーマット変換）
+4. メタ情報を収集: 時刻、APP_VERSION、URL パラメータ、User-Agent、画面サイズ
+5. JSON 単一ファイルとしてダウンロード
+
+#### バンドル内容
+
+flexroute-bug-{timestamp}.json に以下を集約:
+
+- meta: 時刻, APP_VERSION, URL, User-Agent, 画面サイズ
+- screenshot: base64 data URL（html2canvas 失敗時は null）
+- entries: FlightRecorder 全エントリ（フォーマット済み）
+
+#### 出力方式
+
+| Phase | 方式 |
+|---|---|
+| Phase 1（実装済み） | JSON 単一ファイルとしてダウンロード（screenshot は base64 埋め込み） |
+| Phase 2 | zip 分離（JSZip）またはサーバアップロード（presigned URL → S3） |
+
+#### Bug ボタンの表示
+
+- ナビゲーション画面の左下に常時表示
+- 小さい FAB（bg-rose-500/80, w-10 h-10）
+- ?log や ?debug の有無に関係なく使用可能
+
+#### 既知の制約
+
+- html2canvas が Google Maps のタイル画像（CORS 制約）を canvas に描画できず、screenshot が null になる場合がある。ログデータは正常に回収できる
+
+入力: Bug ボタンタップ
+出力: flexroute-bug-{timestamp}.json ダウンロード
+エラー: html2canvas 失敗 → screenshot=null でログのみバンドル
+関連: F-LOG, F-NAV, D-034
 
 ---
 
@@ -1036,6 +1111,8 @@ Google Maps API 依存部分の方針:
 | ~~ウェイポイント追加時にGoogleデフォルトのポップアップが表示される~~ | 1-5 | F-WP-ADD | ✅ PlaceActionModal（1-5）で解決済み |
 | 林道・峠道でRoutes APIが直進と判断した分岐では案内指示が生成されず、ターン接近ズームが発動しない（D-025） | 1-6設計 | F-NAV | 未対策（課題記録済み） |
 | ~~デスクトップPCでナビ開始時にGPSロストアイコン（赤い丸）が常時表示される（固定15秒閾値がWifi/IP更新間隔より短い）~~ | 1-6 Step1 | F-LOC, F-NAV | ✅ D-028: 適応的lost閾値で解決 |
+| routeStore.ts が 177 行で 150 行ルール超過（F-LOG v2 のログ追加によるブロック化が原因。整理セッションで分割予定） | 1-6 | F-LOG | 未対処 |
+| html2canvas が Google Maps タイル（CORS）でスクリーンショット取得に失敗する（ログデータは正常回収） | 1-6 | F-BUGREPORT | 既知の制約（D-034） |
 
 ## MD反映待ちドラフト
 

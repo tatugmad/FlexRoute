@@ -538,3 +538,5 @@ RouteSnapshot {
 | 都道府県走破率・統計 | フェーズ2 |
 | 個人APIキー設定（F-APIKEY） | フェーズ2 |
 | APIコスト監視・無料枠超過停止（ローカルカウンタ + Cloud Monitoring同期） | フェーズ2 |
+| F-LOG v2（FlightRecorder） | 1-6 |
+| F-BUGREPORT（Bug ボタン） | 1-6 |
