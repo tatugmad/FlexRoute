@@ -258,10 +258,6 @@ function onSensorChange(
     }
   }
 
-  // accuracy 変更 → 常に即時
-  if (sim.accuracy !== prevSim.accuracy) {
-    immediateForwardAndResetTimer();
-  }
 }
 
 // ---- internal real watch ----

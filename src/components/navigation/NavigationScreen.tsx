@@ -9,6 +9,7 @@ import { NavControls } from "@/components/navigation/NavControls";
 import { NavRoutePolyline } from "@/components/navigation/NavRoutePolyline";
 import { NavMapController } from "@/components/navigation/NavMapController";
 import { shortestDelta } from "@/utils/headingUtils";
+import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 const mapId = (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string) || "DEMO_MAP_ID";
@@ -55,6 +56,7 @@ function NavMap() {
       <NavRoutePolyline />
       <NavCurrentLocationMarker />
       <NavGeolocationRunner />
+      <SimPositionCross />
     </Map>
   );
 }
