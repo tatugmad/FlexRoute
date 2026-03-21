@@ -1,6 +1,6 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-19
+> 最終更新: 2026-03-21
 
 ## 機能一覧
 
@@ -48,6 +48,9 @@
 | F-I18N | 多言語対応（i18n） | 未実装 | Phase2 |
 | F-SECURITY | セキュリティ対策（OWASP Top 10準拠） | 未実装 | Phase2 |
 | F-TEST | テスト自動化（Vitest + Playwright） | 基盤のみ | 1-5 |
+| F-SIM | SensorBridge（センサーシミュレーション） | ✅ | 1-6 |
+| F-WAKELOCK | 画面消灯防止（Wake Lock API） | 未実装 | 1-6 |
+| F-DEVICE-ORIENT | 磁気センサー heading（DeviceOrientation） | 未実装 | 1-6 |
 
 ## 各機能の動作定義
 
@@ -839,6 +842,83 @@ navigationStore が管理する:
 - 旧コード（SmartNavi）の仕様書に含まれていたが、Google Places API の検索で十分な場面が多いため、必要性を見極めた上でフェーズ2で実装を検討する
 
 関連: F-WP-SEARCH
+
+---
+
+### F-SIM: SensorBridge（センサーシミュレーション）
+
+概要: ナビゲーション機能の開発・テスト用に、デバイスセンサーの値をシミュレートする。browser API をパッチし、PG のコードに痕跡を残さない設計（D-029）。
+
+実装状態: Geolocation API パッチ実装済み。他のセンサーは型定義のみ。
+
+#### 実装済み
+
+- simGeolocation.ts: navigator.geolocation の watchPosition / getCurrentPosition / clearWatch をパッチ
+- sensorStore: チャンネル別 real/sim モード管理 + sim 値保持
+- simChannel.ts: BroadcastChannel でリモコンポップアップと通信
+- sim-remote.html: リモコン UI（Position D-pad、Heading 円形ダイヤル、Speed/Accuracy/Interval スライダー、Denied チェック、Callback mode）
+- SimButton.tsx: ?debug=1 で SIM ボタン表示、ポップアップ open/close 管理
+- SimPositionCross.tsx: sim 座標の青十字マーカー（sensorStore 直接参照）
+
+#### sim チャンネル一覧
+
+| チャンネル | Browser API | パッチ型 | 実装状態 |
+|---|---|---|---|
+| position | Geolocation API | Watch | ✅ 実装済み |
+| heading (GPS) | Geolocation API | Watch | ✅ 実装済み |
+| speed | Geolocation API | Watch | ✅ 実装済み |
+| magneticHeading | DeviceOrientation API | Event | 型のみ（F-DEVICE-ORIENT） |
+| network | Network Information API | Event+Property | 型のみ |
+| battery | Battery Status API | Request | 型のみ |
+| screenOrientation | Screen Orientation API | Event | 型のみ |
+| wakeLock | Wake Lock API | Request | 型のみ（F-WAKELOCK） |
+| visibility | Page Visibility API | Event+Property | 型のみ |
+| deviceMotion | DeviceMotion API | Event | 型のみ |
+| vibration | Vibration API | Request | 型のみ |
+| ambientLight | Ambient Light Sensor | Event | 型のみ |
+
+#### 設計原則
+
+D-029 参照。sim は browser API パッチ方式。PG は sim の存在を知らない。
+
+関連: D-029, D-030, D-031, D-032, F-NAV, F-DEVICE-ORIENT, F-WAKELOCK
+
+---
+
+### F-WAKELOCK: 画面消灯防止（Wake Lock API）
+
+概要: ナビゲーション中にスマートフォンの画面が消灯しないようにする。バイク走行中に画面が消えるのを防止。
+
+実装状態: 未実装。sensor.ts に型定義のみ。
+
+仕様:
+- ナビゲーション開始時に navigator.wakeLock.request('screen') を呼び出し
+- ナビ終了時に release()
+- visibilitychange で復帰時に再取得（ブラウザがバックグラウンドで自動 release するため）
+- 低バッテリー等で OS が拒否した場合は警告表示
+- sim パッチ: simWakeLock.ts で request() の成否を制御（Request 型）
+
+実装タイミング: Step 2（ステップ通過判定）以降、ナビ画面の基本動作が安定した段階
+
+関連: F-NAV, F-SIM, D-029
+
+---
+
+### F-DEVICE-ORIENT: 磁気センサー heading（DeviceOrientation API）
+
+概要: DeviceOrientationEvent.alpha から磁気センサーの方位を取得し、GPS heading と融合する。静止中でも方位がわかるようにする。
+
+実装状態: 未実装。useHeadingFusion.ts にスケルトンと設計コメントのみ。sensor.ts に型定義のみ。
+
+仕様:
+- useHeadingFusion 内で DeviceOrientationEvent を addEventListener
+- GPS heading（移動中に正確）と磁気 heading（静止中も動作）を speed に応じて融合（D-031）
+- sim パッチ: simDeviceOrientation.ts で addEventListener をパッチし fake event を dispatch（Event 型）
+- リモコン UI: Heading セクションとは別に Magnetic Heading セクションを追加。リアルタイム反映
+
+実装タイミング: ナビの実走テストで静止時の方位が必要になった段階
+
+関連: F-NAV, F-SIM, D-029, D-031
 
 ---
 

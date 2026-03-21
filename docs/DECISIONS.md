@@ -1,6 +1,6 @@
 # FlexRoute 設計判断記録
 
-> 最終更新: 2026-03-19
+> 最終更新: 2026-03-21
 
 各判断について「決定」「理由」「却下した選択肢」「却下理由」を記載する。
 これにより、将来の開発者やAIが「なぜこうなっているのか」を理解でき、
@@ -199,3 +199,49 @@
 - **決定**: 全画面（TOP・ルート編集・ナビ）でバックグラウンドGPS記録を実行する。UIには現在地マーカーやGPSロスト表示は出さない。watchPositionはアプリ起動時に開始し、位置データはGpsLogに蓄積のみ行う
 - **D-020との整合性**: D-020の意図は「ルート編集画面にナビ用GPS UI（現在地マーカー・GPSロストアラート・追従モード）を出さない」であり、バックグラウンドのデータ記録は対象外。初回起動時のブラウザ位置情報許可ダイアログは許容する
 - **理由**: クモの巣走破地図（F-SPIDER）のデータ蓄積には、ナビ中だけでなく全移動記録が重要。ナビを使わない散策・ドライブでも走行記録が残る
+
+## D-029: SensorBridge アーキテクチャ — browser API パッチ方式
+
+- **決定**: sim（センサーシミュレーション）は browser API をパッチして PG に割り込む。PG のコードに sim の痕跡を残さない
+- **3原則**:
+  1. PG は browser API を直接呼ぶ。sim の存在を知らない
+  2. sim は browser API をパッチして割り込む。PG のコードに痕跡を残さない
+  3. sim は原因（callback パターン）を再現する。結果（PG の状態）を直接操作しない
+- **却下**: Provider 注入方式（PG が抽象インターフェース経由で API を呼ぶ）→ sim のための抽象を PG に強制する。sim が削除された後も抽象が残る
+- **却下**: SensorBridge resolve 方式（handlePosition 内で値をマージ）→ sim が PG の状態遷移マシンを間接的に操作する問題が解消できない
+- **パッチパターン分類**:
+  - Watch 型: callback 登録→定期呼び出し（例: geolocation）
+  - Event 型: addEventListener パッチ→fake event dispatch（例: deviceorientation）
+  - Request 型: 単発の Promise/戻り値差し替え（例: wakeLock）
+  - Property 型: getter パッチ→読み取り値差し替え（例: navigator.onLine）
+- **インストールタイミング**: main.tsx で React render 前に実行。?debug パラメータがある場合のみ
+- **根拠**: Playwright、Cypress 等のテストフレームワークが sensor を mock する時と同じ手法
+
+## D-030: sim の callback 配信方式 — タイマーベース
+
+- **決定**: position sim 中は simGeolocation が一定間隔のタイマーで PG の success callback を呼ぶ。interval / sync / lost の3モードを提供
+- **3モード**:
+  - sync: 操作のたびに即座に callback（操作の応答性優先）
+  - interval: タイマーの次の tick で配信（GPS の real 挙動に近い）
+  - lost: タイマーの tick を空振りさせ callback を送らない（PG の lostTimer が自然発火）
+- **理由**: 旧方式（positionQuality を直接操作）は「結果を操作する」設計であり、D-029 の原則3に違反していた。タイマーベースなら sim は callback の発生パターンのみを制御し、PG の状態判断は PG 自身に委ねられる
+- **denied 模擬**: error callback を PERMISSION_DENIED で呼ぶ。PG は自分で clearWatch + deniedRetry に入る。patchedGetCurrentPosition が denied 中は fake error を返し続ける
+- **heading / speed**: GPS の測位データの一部なので interval に従う。sync チェックボックスで即時反映も可能（操作の便宜）
+- **accuracy**: interval に委ねる（独立したセンサーではなく GPS 測位データの一部）
+
+## D-031: heading 融合アーキテクチャ（スケルトン定義、将来実装）
+
+- **決定**: PG が GPS heading と磁気 heading を統合する抽象化レイヤー（useHeadingFusion）を持つ。sim は browser API をパッチするだけで、抽象化レイヤーには触れない
+- **GPS heading**: GeolocationPosition.coords.heading。移動中のみ有効。約1Hz
+- **磁気 heading**: DeviceOrientationEvent.alpha。静止中も動作。約60Hz
+- **融合ロジック（将来実装）**: speed > 閾値 → GPS 優先、speed ≈ 0 → 磁気 heading、遷移区間 → ブレンド
+- **sim の対応**: geolocation sim の heading（interval ベース）と deviceOrientation sim の magneticHeading（リアルタイム）を独立に操作。リモコン UI も別セクション
+- **現状**: useHeadingFusion.ts はスケルトン（何もしない）。GPS heading がそのまま使われる
+- **却下**: 抽象化レイヤーをパッチする方式 → 融合ロジック自体のテストができない。PG の内部インターフェースに sim が依存する
+
+## D-032: 地図回転の heading 制御 — React props 方式
+
+- **決定**: 地図の heading は Map コンポーネントの heading prop で制御する。map.setHeading() の命令的呼び出しは使わない
+- **理由**: @vis.gl/react-google-maps ライブラリは heading を含むカメラパラメータを React props で管理する設計。命令的な map.setHeading() はライブラリの内部状態管理と衝突し、値が上書きされて反映されない問題が発生した
+- **副次効果**: heading 制御が followMode（auto/free）に依存しなくなった。headingUp モードでは地図を手動操作中でも地図が回転する
+- **0°/360° 境界問題**: CSS transition が最短回転方向を選べないため、shortestDelta() で連続値に変換。NavigationScreen、HeadingButton、CurrentLocationMarker の3箇所に適用
