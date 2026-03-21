@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { useSensorStore } from '@/stores/sensorStore';
 import { openSimChannel, closeSimChannel } from '@/services/simChannel';
 
@@ -7,16 +7,32 @@ const BTN = "bg-slate-500/15 rounded-full shadow-lg border border-slate-400/50 h
 export function SimButton() {
   const debugEnabled = useSensorStore((s) => s.debugEnabled);
   const popupRef = useRef<Window | null>(null);
+  const listenersAttached = useRef(false);
 
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && popupRef.current && !popupRef.current.closed) {
-        popupRef.current.focus();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+  const focusPopup = useCallback(() => {
+    if (popupRef.current && !popupRef.current.closed) {
+      popupRef.current.focus();
+    }
   }, []);
+
+  const attachFocusListeners = useCallback(() => {
+    if (listenersAttached.current) return;
+    window.addEventListener('focus', focusPopup);
+    document.addEventListener('pointerdown', focusPopup, true);
+    listenersAttached.current = true;
+  }, [focusPopup]);
+
+  const detachFocusListeners = useCallback(() => {
+    if (!listenersAttached.current) return;
+    window.removeEventListener('focus', focusPopup);
+    document.removeEventListener('pointerdown', focusPopup, true);
+    listenersAttached.current = false;
+  }, [focusPopup]);
+
+  // cleanup on unmount
+  useEffect(() => {
+    return () => detachFocusListeners();
+  }, [detachFocusListeners]);
 
   if (!debugEnabled) return null;
 
@@ -37,10 +53,13 @@ export function SimButton() {
       'width=380,height=620,resizable=yes,scrollbars=yes',
     );
 
+    attachFocusListeners();
+
     const checkClosed = setInterval(() => {
       if (popupRef.current && popupRef.current.closed) {
         clearInterval(checkClosed);
         popupRef.current = null;
+        detachFocusListeners();
         useSensorStore.getState().resetAllToReal();
         closeSimChannel();
       }
