@@ -1,4 +1,6 @@
 import { useSensorStore } from '@/stores/sensorStore';
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { SensorChannelModes, SimValues } from '@/types';
 
 let installed = false;
@@ -191,12 +193,14 @@ function onSensorChange(
 
   // sim がアクティブになった → タイマー開始
   if (nowSim && !wasSim && !sim.denied) {
+    fr.debug(C.SIM, "sim.activated", {});
     startSimTimer(sim.callbackIntervalMs);
     return;
   }
 
   // denied が ON → タイマー停止、PG に denied error
   if (sim.denied && !prevSim.denied) {
+    fr.debug(C.SIM, "sim.denied", {});
     stopSimTimer();
     sendDeniedToAllPG();
     return;
@@ -204,6 +208,7 @@ function onSensorChange(
 
   // denied が OFF
   if (!sim.denied && prevSim.denied) {
+    fr.debug(C.SIM, "sim.deniedOff", {});
     if (pgWatches.size > 0) {
       startSimTimer(sim.callbackIntervalMs);
       immediateForwardAndResetTimer();
@@ -342,6 +347,7 @@ function patchedClearWatch(id: number): void {
 export function installSimGeolocation(): void {
   if (installed) return;
   if (!navigator.geolocation) return;
+  fr.debug(C.SIM, "sim.installed", {});
 
   originalWatch = navigator.geolocation.watchPosition.bind(navigator.geolocation);
   originalGetCurrent = navigator.geolocation.getCurrentPosition.bind(navigator.geolocation);

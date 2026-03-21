@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { LatLng, NavigationStatus, PositionQuality, FollowMode, ZoomMode, HeadingMode } from "@/types";
 
 type NavigationStoreState = {
@@ -58,13 +60,25 @@ export const useNavigationStore = create<
 >()((set) => ({
   ...initialState,
 
-  startNavigation: () => set({ status: "navigating", currentLegIndex: 0 }),
+  startNavigation: () => {
+    fr.info(C.NAV, "nav.started", {});
+    set({ status: "navigating", currentLegIndex: 0 });
+  },
 
-  pauseNavigation: () => set({ status: "paused" }),
+  pauseNavigation: () => {
+    fr.info(C.NAV, "nav.paused", {});
+    set({ status: "paused" });
+  },
 
-  resumeNavigation: () => set({ status: "navigating" }),
+  resumeNavigation: () => {
+    fr.info(C.NAV, "nav.resumed", {});
+    set({ status: "navigating" });
+  },
 
-  stopNavigation: () => set(initialState),
+  stopNavigation: () => {
+    fr.info(C.NAV, "nav.stopped", {});
+    set(initialState);
+  },
 
   updatePosition: (position) => set({ currentPosition: position }),
 
@@ -79,7 +93,16 @@ export const useNavigationStore = create<
       remainingDurationSeconds: duration,
     }),
 
-  setFollowMode: (followMode) => set({ followMode }),
-  setZoomMode: (zoomMode) => set({ zoomMode }),
-  setHeadingMode: (headingMode) => set({ headingMode }),
+  setFollowMode: (followMode) => {
+    fr.debug(C.NAV, "nav.followMode", { followMode });
+    set({ followMode });
+  },
+  setZoomMode: (zoomMode) => {
+    fr.debug(C.NAV, "nav.zoomMode", { zoomMode });
+    set({ zoomMode });
+  },
+  setHeadingMode: (headingMode) => {
+    fr.debug(C.NAV, "nav.headingMode", { headingMode });
+    set({ headingMode });
+  },
 }));

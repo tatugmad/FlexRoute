@@ -1,6 +1,8 @@
 import { useSensorStore } from '@/stores/sensorStore';
 import { useNavigationStore } from '@/stores/navigationStore';
 import { getLastKnownPosition } from '@/services/geolocation';
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { SensorMode, SensorChannelModes } from '@/types';
 
 const CHANNEL_NAME = 'flexroute-sensor-bridge';
@@ -10,12 +12,14 @@ let channel: BroadcastChannel | null = null;
 export function openSimChannel(): void {
   if (channel) return;
   channel = new BroadcastChannel(CHANNEL_NAME);
+  fr.debug(C.SIM, "simChannel.opened", {});
 
   channel.onmessage = (event) => {
     const msg = event.data;
     if (!msg || typeof msg.type !== 'string') return;
 
     const store = useSensorStore.getState();
+    fr.trace(C.SIM, "simChannel.msg", { type: msg.type });
 
     switch (msg.type) {
       case 'remote-ready':
@@ -98,6 +102,7 @@ export function syncStateToRemote(): void {
 /** 通信チャンネルを閉じる */
 export function closeSimChannel(): void {
   if (channel) {
+    fr.debug(C.SIM, "simChannel.closed", {});
     channel.close();
     channel = null;
   }

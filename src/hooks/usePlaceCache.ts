@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { fetchPlaceDetails } from "@/services/placeDetailsService";
 import { usePlaceStore } from "@/stores/placeStore";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 type PlaceCacheResult = {
   photoUrl: string | null;
@@ -38,21 +40,29 @@ export function usePlaceCache(
       return;
     }
     setIsLoading(true);
-    const details = await fetchPlaceDetails(placeId);
-    const entry = {
-      photoUrl: details.photoUrl,
-      originalName: details.name,
-    };
-    memoryCache.set(placeId, entry);
-    setPhotoUrl(entry.photoUrl);
-    setOriginalName(entry.originalName);
+    try {
+      const details = await fetchPlaceDetails(placeId);
+      const entry = {
+        photoUrl: details.photoUrl,
+        originalName: details.name,
+      };
+      memoryCache.set(placeId, entry);
+      setPhotoUrl(entry.photoUrl);
+      setOriginalName(entry.originalName);
 
-    const updates: Partial<{ photoUrl: string; name: string }> = {};
-    if (entry.photoUrl) updates.photoUrl = entry.photoUrl;
-    if (Object.keys(updates).length > 0) {
-      updatePlace(savedPlaceId, updates);
+      const updates: Partial<{ photoUrl: string; name: string }> = {};
+      if (entry.photoUrl) updates.photoUrl = entry.photoUrl;
+      if (Object.keys(updates).length > 0) {
+        updatePlace(savedPlaceId, updates);
+      }
+      setIsLoading(false);
+    } catch (err) {
+      fr.warn(C.PLACE_DETAILS, "placeCache.fetchFailed", {
+        placeId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [placeId, savedPlaceId, updatePlace]);
 
   useEffect(() => {

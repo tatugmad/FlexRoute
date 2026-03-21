@@ -1,4 +1,6 @@
 import { useUiStore } from "@/stores/uiStore";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 export function ConfirmDialog() {
   const { isOpen, message, onConfirm } = useUiStore((s) => s.confirmDialog);
@@ -7,6 +9,7 @@ export function ConfirmDialog() {
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    fr.info(C.UI, "confirm.ok", { message });
     onConfirm?.();
     closeConfirmDialog();
   };
@@ -17,7 +20,10 @@ export function ConfirmDialog() {
         <p className="text-slate-800 text-sm font-medium mb-6">{message}</p>
         <div className="flex gap-3 justify-end">
           <button
-            onClick={closeConfirmDialog}
+            onClick={() => {
+              fr.info(C.UI, "confirm.cancel", { message });
+              closeConfirmDialog();
+            }}
             className="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors"
           >
             キャンセル

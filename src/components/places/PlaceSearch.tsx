@@ -3,7 +3,8 @@ import { Search } from "lucide-react";
 import { PlaceResultList } from "@/components/places/PlaceResultList";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
-import { userActionTracker } from "@/services/userActionTracker";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import { generateId } from "@/utils/generateId";
 import type { PlaceResult } from "@/types";
 
@@ -39,12 +40,13 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
       return;
     }
     setIsSearching(true);
-    userActionTracker.track("SEARCH_PLACE", { query: input });
+    fr.info(C.UI, "search.query", { query: input });
     serviceRef.current.getPlacePredictions(
       { input, componentRestrictions: { country: "jp" } },
       (predictions) => {
         setIsSearching(false);
         if (!predictions) {
+          fr.warn(C.PLACE_DETAILS, "search.noResults", { query: input });
           setResults([]);
           return;
         }
@@ -57,6 +59,9 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
             types: p.types ?? [],
           })),
         );
+        fr.debug(C.PLACE_DETAILS, "search.results", {
+          query: input, count: predictions.length,
+        });
       },
     );
   }, []);
@@ -73,10 +78,16 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
       { placeId: place.placeId, fields: ["geometry", "name"] },
       (detail) => {
         const loc = detail?.geometry?.location;
-        if (!loc) return;
-        userActionTracker.track("SELECT_PLACE", {
+        if (!loc) {
+          fr.warn(C.PLACE_DETAILS, "search.detailFailed", {
+            placeId: place.placeId,
+          });
+          return;
+        }
+        fr.info(C.UI, "search.selectPlace", {
           placeId: place.placeId,
           name: detail?.name ?? place.name,
+          position: { lat: loc.lat(), lng: loc.lng() },
         });
         addWaypoint(
           {
