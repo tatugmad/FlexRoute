@@ -12,20 +12,16 @@ export function NavMapController() {
   const map = useMap();
   const followMode = useNavigationStore((s) => s.followMode);
   const zoomMode = useNavigationStore((s) => s.zoomMode);
-  const headingMode = useNavigationStore((s) => s.headingMode);
   const currentPosition = useNavigationStore((s) => s.currentPosition);
-  const heading = useNavigationStore((s) => s.heading);
   const speed = useNavigationStore((s) => s.speed);
   const setFollowMode = useNavigationStore((s) => s.setFollowMode);
   const setZoomMode = useNavigationStore((s) => s.setZoomMode);
-  const isDraggingRef = useRef(false);
   const isAutoZoomingRef = useRef(false);
 
   // Detect user drag → switch to free mode
   useEffect(() => {
     if (!map) return;
     const listener = map.addListener("dragstart", () => {
-      isDraggingRef.current = true;
       if (useNavigationStore.getState().followMode === "auto") {
         setFollowMode("free");
       }
@@ -48,15 +44,11 @@ export function NavMapController() {
     return () => google.maps.event.removeListener(listener);
   }, [map, setZoomMode]);
 
-  // Auto-follow: pan to position + heading + auto-zoom
+  // Auto-follow: pan to position + auto-zoom
   useEffect(() => {
     if (!map || followMode !== "auto" || !currentPosition) return;
 
     map.panTo(currentPosition);
-
-    if (headingMode === "headingUp") {
-      map.setHeading(heading);
-    }
 
     if (zoomMode === "autoZoom") {
       const speedKmh = (speed ?? 0) * 3.6;
@@ -67,7 +59,7 @@ export function NavMapController() {
         map.setZoom(targetZoom);
       }
     }
-  }, [map, followMode, currentPosition, heading, headingMode, zoomMode, speed]);
+  }, [map, followMode, currentPosition, zoomMode, speed]);
 
   return null;
 }
