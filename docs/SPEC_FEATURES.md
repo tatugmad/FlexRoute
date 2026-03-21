@@ -582,7 +582,7 @@ navigationStore が管理する:
 - placeStorageService（src/services/placeStorage.ts）
   - localStorage CRUD + findByGooglePlaceId
   - キー: "flexroute:places"
-- placeStore 拡張（savedPlaces + loadPlaces/addPlace/updatePlace/deletePlace/isSaved）
+- placeStore 拡張（savedPlaces + loadPlaces/savePlace/updatePlace/deletePlace/isSaved）
 - PlaceList をダミーデータから実データ接続に変更
   - loadPlaces を useEffect で呼び出し
   - labelIds から実ラベルを解決して表示

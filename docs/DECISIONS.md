@@ -14,7 +14,7 @@
 
 ## D-002: Zustand の採用
 
-- **決定**: 状態管理に Zustand を採用し、4つのストア（route, navigation, place, ui）に分割
+- **決定**: 状態管理に Zustand を採用し、6つのストア（route, navigation, place, ui, label, sensor）に分割
 - **理由**: Reduxより軽量でストア分割が容易。各ストアが独立しているため不要な再レンダリングが発生しない
 - **却下**: Redux → ボイラープレート過剰。Context API → 再レンダリング最適化が困難
 

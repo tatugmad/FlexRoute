@@ -1,6 +1,6 @@
 # FlexRoute データ仕様書
 
-> 最終更新: 2026-03-17
+> 最終更新: 2026-03-21
 
 ## 型定義一覧
 
@@ -164,7 +164,7 @@ type NavigationState = {
 ### PositionQuality
 
 ```ts
-type PositionQuality = 'active' | 'lost';
+type PositionQuality = 'active' | 'lost' | 'denied';
 ```
 
 ### PlaceResult
@@ -195,7 +195,7 @@ type PlaceModalData = {
 ### UI 状態型
 
 ```ts
-type ViewMode = "top" | "route";
+type ViewMode = "top" | "route" | "navigation";
 type TopTab = "routes" | "labels" | "places";
 type RouteViewMode = "tile" | "list";
 type RouteSortKey = "updatedAt" | "createdAt" | "name" | "distance";
@@ -204,6 +204,44 @@ type Panel = "route" | "search" | "navigation" | "settings";
 type MapViewport = {
   center: LatLng;
   zoom: number;
+};
+
+type FollowMode = 'auto' | 'free';
+type ZoomMode = 'autoZoom' | 'lockedZoom';
+type HeadingMode = 'headingUp' | 'northUp';
+```
+
+### センサー型（src/types/sensor.ts）
+
+```ts
+type SensorMode = 'real' | 'sim';
+type PositionCallbackMode = 'sync' | 'interval' | 'lost';
+
+type SensorChannelModes = {
+  position: SensorMode;
+  heading: SensorMode;
+  speed: SensorMode;
+  magneticHeading: SensorMode;
+  network: SensorMode;
+  battery: SensorMode;
+  screenOrientation: SensorMode;
+  wakeLock: SensorMode;
+  visibility: SensorMode;
+  deviceMotion: SensorMode;
+  vibration: SensorMode;
+  ambientLight: SensorMode;
+};
+
+type SimValues = {
+  position: { lat: number; lng: number } | null;
+  heading: number;
+  speed: number;
+  accuracy: number;
+  callbackIntervalMs: number;
+  denied: boolean;
+  positionCallbackMode: PositionCallbackMode;
+  headingSync: boolean;
+  speedSync: boolean;
 };
 ```
 
@@ -375,6 +413,10 @@ type SavedPlace = {
 | speed | `number` | `0` | 速度 |
 | accuracy | `number \| null` | `null` | 位置精度（メートル） |
 | positionQuality | `PositionQuality` | `"lost"` | 測位品質 |
+| lostSince | `string \| null` | `null` | lost 状態になった時刻（ISO 8601） |
+| followMode | `FollowMode` | `"auto"` | 追従モード |
+| zoomMode | `ZoomMode` | `"autoZoom"` | ズーム制御モード |
+| headingMode | `HeadingMode` | `"northUp"` | ヘッディング制御モード |
 | remainingDistanceMeters | `number` | `0` | 残り距離 |
 | remainingDurationSeconds | `number` | `0` | 残り時間 |
 
@@ -390,6 +432,36 @@ type SavedPlace = {
 | setCurrentPosition | `(position: LatLng, heading: number, speed: number, quality: PositionQuality, accuracy: number \| null)` | 現在地・方向・速度・品質・精度を一括更新 |
 | setCurrentLeg | `(index: number)` | 現在leg番号を設定 |
 | setRemaining | `(distance: number, duration: number)` | 残り距離・時間を設定 |
+| setFollowMode | `(mode: FollowMode)` | 追従モードを設定 |
+| setZoomMode | `(mode: ZoomMode)` | ズーム制御モードを設定 |
+| setHeadingMode | `(mode: HeadingMode)` | ヘッディング制御モードを設定 |
+
+### sensorStore（src/stores/sensorStore.ts）
+
+#### 状態
+
+| プロパティ | 型 | 初期値 | 説明 |
+|---|---|---|---|
+| debugEnabled | `boolean` | URLに?debugがあればtrue | デバッグモード |
+| channelModes | `SensorChannelModes` | 全チャンネル 'real' | チャンネル別 real/sim モード |
+| simValues | `SimValues` | position=null, heading=0, speed=0, accuracy=10, callbackIntervalMs=1000, denied=false, positionCallbackMode='sync', headingSync=true, speedSync=true | sim モード時の値 |
+
+#### アクション
+
+| アクション | 引数 | 説明 |
+|---|---|---|
+| setChannelMode | `(channel, mode, initialPosition?)` | チャンネルのモードを切替。position+sim時はinitialPositionで初期座標をatomic設定 |
+| setSimPosition | `(lat, lng)` | sim 座標を設定 |
+| setSimHeading | `(heading)` | sim heading を設定 |
+| setSimSpeed | `(speed)` | sim speed を設定 |
+| setSimAccuracy | `(accuracy)` | sim accuracy を設定 |
+| setSimCallbackInterval | `(ms)` | callback 発火間隔を設定 |
+| setSimDenied | `(denied)` | denied 状態を設定 |
+| setPositionCallbackMode | `(mode)` | callback モード（sync/interval/lost）を設定 |
+| setHeadingSync | `(sync)` | heading の sync ON/OFF を設定 |
+| setSpeedSync | `(sync)` | speed の sync ON/OFF を設定 |
+| setDebugEnabled | `(enabled)` | デバッグモードを設定 |
+| resetAllToReal | `()` | 全チャンネルを real に戻す |
 
 ### labelStore（src/stores/labelStore.ts）
 
@@ -693,12 +765,35 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ## Hooks 責務一覧
 
-### useGeolocation（src/hooks/useGeolocation.ts）
+### useNavGeolocation（src/hooks/useNavGeolocation.ts）
 
-- **責務**: GPS位置を watchPosition で継続監視し、現在地・方向・速度をstoreに反映する
+- **責務**: ナビゲーション画面でGPS位置を watchPosition で継続監視する。sim の存在を知らない純粋なPGコード（D-029）。denied 状態の5秒リトライ、ナビ終了時の lastKnownPosition 保存を含む
 - **依存store**: navigationStore（setCurrentPosition）
-- **依存service**: geolocation（watchHighAccuracy, clearPositionWatch）、logService
-- **呼び出し元**: ナビ画面（1-6 で実装予定。現在はどこからも呼ばれていない）
+- **依存hooks**: useLostTimer
+- **呼び出し元**: NavigationScreen.tsx
+
+### useLostTimer（src/hooks/useLostTimer.ts）
+
+- **責務**: 適応的 lost 閾値（D-028）のタイマー管理。直近10回の更新間隔から中央値を算出し、lost 判定閾値を動的に決定する
+- **依存store**: navigationStore（setState で positionQuality, lostSince を直接更新）
+- **公開関数**: setLost, setActive, resetLostTimer, recordInterval, clearLostTimer, resetIntervals
+- **呼び出し元**: useNavGeolocation
+
+### useRouteSnap（src/hooks/useRouteSnap.ts）
+
+- **責務**: GPS座標をルートポリラインの最近点にスナップする（D-027）。逸脱判定閾値50m超の場合はスナップしない（null を返す）
+- **依存store**: routeStore（currentLegs）
+- **依存API**: google.maps.geometry（spherical, encoding）
+- **引数**: position: LatLng | null
+- **戻り値**: LatLng | null（スナップ後の座標、またはスナップ不要時はnull）
+- **呼び出し元**: CurrentLocationMarker.tsx（navigation/）
+
+### useHeadingFusion（src/hooks/useHeadingFusion.ts）
+
+- **責務**: GPS heading と磁気 heading を融合する抽象化レイヤー（D-031）。現在はスケルトン（何もしない）
+- **依存store**: なし
+- **呼び出し元**: なし（将来 NavigationScreen で使用予定）
+- **ステータス**: スケルトンのみ。sensor.ts に型定義あり
 
 ### useRouteCalculation（src/hooks/useRouteCalculation.ts）
 
@@ -807,6 +902,23 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `fetchPlaceDetails(placeId: string)` — placeId から施設情報を取得。戻り値: `{ name, address, rating, photoUrl }`（全て nullable）
 - **使用箇所**: useMapClickHandler, usePlaceCache
 
+### simGeolocation.ts（src/services/simGeolocation.ts）
+
+- **責務**: navigator.geolocation の watchPosition / getCurrentPosition / clearWatch をパッチし、sensorStore の sim 値に基づいて PG の callback を制御する（D-029, D-030）
+- **パッチパターン**: Watch 型
+- **公開関数**:
+  - `installSimGeolocation()` — main.tsx から React render 前に呼ばれる。?debug パラメータがある場合のみ
+- **内部動作**: sensorStore.subscribe で sim 値の変更を監視し、タイマーベースで PG の success/error callback を配信
+- **使用箇所**: main.tsx（installSimGeolocation の呼び出し）
+
+### simChannel.ts（src/services/simChannel.ts）
+
+- **責務**: BroadcastChannel でリモコンポップアップ（sim-remote.html）と通信し、受信したメッセージを sensorStore に反映する
+- **公開関数**:
+  - `initSimChannel()` — BroadcastChannel を開き、メッセージリスナーを登録
+  - `sendToRemote(message)` — リモコンにメッセージを送信
+- **使用箇所**: SimButton.tsx（initSimChannel の呼び出し）
+
 ### logService.ts（src/services/logService.ts）
 
 - **責務**: アプリケーション統合ログ基盤。カテゴリ別・レベル別のログ記録とリングバッファによるメモリ保持。開発時はコンソール出力、本番はwarn/errorのみ保持
@@ -900,6 +1012,20 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `generateRouteThumbnailUrlSmall(saved, apiKey)` — スモール版（150x86）サムネイルURLを生成（sm未満のカード用）
 - **使用箇所**: routeStore（saveCurrentRoute）
 
+### headingUtils.ts（src/utils/headingUtils.ts）
+
+- **責務**: 0度/360度 境界を跨ぐ回転で最短方向のデルタを計算する
+- **公開関数**:
+  - `shortestDelta(from, to)` — -180〜+180 の範囲でデルタを返す（D-032）
+- **使用箇所**: NavigationScreen, HeadingButton, CurrentLocationMarker
+
+### routeSort.ts（src/utils/routeSort.ts）
+
+- **責務**: ルート一覧のソート
+- **公開関数**:
+  - `sortRoutes(routes, sortKey)` — RouteSortKey に応じたソート。updatedAt/createdAt=降順、name=昇順（空名末尾）、distance=降順（legsなし末尾）
+- **使用箇所**: RouteList.tsx
+
 ### generateId.ts（src/utils/generateId.ts）
 
 - **責務**: UUID v4 形式のユニークID生成
@@ -917,9 +1043,15 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `CARD_WIDTH_SM` | `150` | スマホ用タイルカードの幅 (px) |
 | `CARD_THUMBNAIL_HEIGHT_SM` | `86` | スマホ用タイルカードのサムネイル/写真エリア高さ (px) |
 
+### src/constants/appConfig.ts
+
+| 定数 | 値 | 説明 |
+|---|---|---|
+| `APP_NAME` | `"FlexRoute"` | アプリケーション名 |
+
 ### src/constants/
 
-`appVersion.ts` と `cardLayout.ts` が存在する。
+`appVersion.ts`、`appConfig.ts`、`cardLayout.ts` が存在する。
 その他の定数はそれぞれのファイル内にローカル定義されている:
 
 | 定数 | 定義場所 | 値 |
@@ -932,8 +1064,6 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `FIELD_MASK` | services/routeApi.ts | routes.duration, distanceMeters, polyline 等のフィールドマスク |
 | `HIGH_ACCURACY_OPTIONS` | services/geolocation.ts | `{ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }` |
 | `LAST_KNOWN_POSITION_KEY` | services/geolocation.ts | `"flexroute:lastKnownPosition"` |
-| `LOST_THRESHOLD` | hooks/useGeolocation.ts | `15000` |
-| `CHECK_INTERVAL` | hooks/useGeolocation.ts | `1000` |
 | `STORAGE_KEY`（ラベル） | services/labelStorage.ts | `"flexroute:labels"` |
 | `STORAGE_KEY`（場所） | services/placeStorage.ts | `"flexroute:places"` |
 | `DEFAULT_ZOOM` | hooks/useMapInitialView.ts | `15` |
@@ -946,7 +1076,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `CONSOLE_STYLES` | services/logService.ts | debug=#9ca3af, info=#3b82f6, warn=#eab308, error=#ef4444 |
 | `CARD_WIDTH` | constants/cardLayout.ts | `280` |
 | `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
-| `APP_VERSION` | constants/appVersion.ts | `"1.5.6"` |
+| `APP_VERSION` | constants/appVersion.ts | 現在のバージョン番号（CLAUDE.md のバージョン運用ルール参照） |
 
 ## フォーマットユーティリティ
 
