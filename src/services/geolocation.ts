@@ -1,3 +1,6 @@
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
+
 export type GeolocationResult = {
   lat: number;
   lng: number;
@@ -36,10 +39,12 @@ export function getLastKnownPosition(): {
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (typeof data.lat !== "number" || typeof data.lng !== "number") {
+      fr.warn(C.GPS, "geo.lastKnownPosition.invalid", { data });
       return null;
     }
     return data;
-  } catch {
+  } catch (err) {
+    fr.error(C.GPS, "geo.lastKnownPosition.parseFailed", { err });
     return null;
   }
 }

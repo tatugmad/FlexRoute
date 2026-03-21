@@ -1,4 +1,5 @@
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 export type PlaceDetails = {
   name: string | null;
@@ -25,7 +26,12 @@ export async function fetchPlaceDetails(
       photoUrl = firstPhoto.getURI({ maxWidth: 400 });
     }
 
-    logService.debug("PLACE_DETAILS", "取得成功", { placeId });
+    fr.debug(C.PLACE_DETAILS, "placeDetails.fetched", {
+      placeId,
+      hasName: place.displayName != null,
+      hasRating: place.rating != null,
+      hasPhoto: firstPhoto != null,
+    });
     return {
       name: place.displayName ?? null,
       address: place.formattedAddress ?? null,
@@ -33,7 +39,10 @@ export async function fetchPlaceDetails(
       photoUrl,
     };
   } catch (err) {
-    logService.warn("PLACE_DETAILS", "取得失敗", { placeId, err });
+    fr.warn(C.PLACE_DETAILS, "placeDetails.failed", {
+      placeId,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return { name: null, address: null, rating: null, photoUrl: null };
   }
 }

@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { labelStorageService } from "@/services/labelStorage";
 import { generateId } from "@/utils/generateId";
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { Label } from "@/types";
 
 type LabelState = {
@@ -46,7 +47,6 @@ export const useLabelStore = create<LabelState & LabelActions>()((set) => ({
       updatedAt: now,
     };
     labelStorageService.saveLabel(label);
-    logService.info("LABEL_STORE", "ラベル追加", { id: label.id, name });
     set((state) => ({ labels: [...state.labels, label] }));
   },
 
@@ -60,14 +60,13 @@ export const useLabelStore = create<LabelState & LabelActions>()((set) => ({
         updatedAt: new Date().toISOString(),
       };
       labelStorageService.saveLabel(updated);
-      logService.info("LABEL_STORE", "ラベル更新", { id, updates });
+      fr.info(C.LABEL_STORE, "label.updated", { id, updates });
       return { labels: state.labels.map((l) => (l.id === id ? updated : l)) };
     });
   },
 
   deleteLabel: (id) => {
     labelStorageService.deleteLabel(id);
-    logService.info("LABEL_STORE", "ラベル削除", { id });
     set((state) => ({ labels: state.labels.filter((l) => l.id !== id) }));
   },
 

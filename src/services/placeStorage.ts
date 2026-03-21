@@ -1,4 +1,5 @@
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { SavedPlace } from "@/types";
 
 const STORAGE_KEY = "flexroute:places";
@@ -8,7 +9,8 @@ function readAll(): SavedPlace[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as SavedPlace[];
-  } catch {
+  } catch (err) {
+    fr.error(C.PLACE_STORAGE, "placeStorage.parseFailed", { err });
     return [];
   }
 }
@@ -20,7 +22,7 @@ function writeAll(places: SavedPlace[]): void {
 export const placeStorageService = {
   getPlaces: (): SavedPlace[] => {
     const places = readAll();
-    logService.info("PLACE_STORAGE", "場所一覧読み込み", { count: places.length });
+    fr.debug(C.PLACE_STORAGE, "placeStorage.loaded", { count: places.length });
     return places;
   },
 
@@ -33,13 +35,13 @@ export const placeStorageService = {
       places.push(place);
     }
     writeAll(places);
-    logService.info("PLACE_STORAGE", "場所保存", { id: place.id, name: place.name });
+    fr.info(C.PLACE_STORAGE, "placeStorage.saved", { id: place.id, name: place.name });
   },
 
   deletePlace: (placeId: string): void => {
     const places = readAll().filter((p) => p.id !== placeId);
     writeAll(places);
-    logService.info("PLACE_STORAGE", "場所削除", { id: placeId });
+    fr.info(C.PLACE_STORAGE, "placeStorage.deleted", { id: placeId });
   },
 
   getPlace: (placeId: string): SavedPlace | undefined => {

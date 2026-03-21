@@ -1,7 +1,7 @@
 import { create } from "zustand";
-import { userActionTracker } from "@/services/userActionTracker";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import { localStorageService } from "@/services/storage";
-import { logService } from "@/services/logService";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
 import { toSavedRoute, toRoute, createNewRoute, migrateLabelIds } from "@/stores/routeConverters";
 import { migrateThumbnails } from "@/utils/thumbnailUrl";
@@ -33,7 +33,12 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   addWaypoint: (waypoint, insertIndex) =>
     set((state) => {
       if (!state.currentRoute) return state;
-      if (!isValidPosition(waypoint.position)) return state;
+      if (!isValidPosition(waypoint.position)) {
+        fr.warn(C.ROUTE, "wp.invalidPosition", {
+          position: waypoint.position, label: waypoint.label,
+        });
+        return state;
+      }
       const normalized = { ...waypoint, placeId: waypoint.placeId || null };
       const wps = [...state.currentRoute.waypoints];
       if (insertIndex !== undefined) {
@@ -41,8 +46,10 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       } else {
         wps.push(normalized);
       }
-      userActionTracker.track("ADD_WAYPOINT", {
-        id: normalized.id, label: normalized.label, insertIndex,
+      fr.info(C.UI, "wp.added", {
+        id: normalized.id, label: normalized.label,
+        position: normalized.position, insertIndex,
+        wpCount: wps.length,
       });
       return {
         isDirty: true,
@@ -52,7 +59,10 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   removeWaypoint: (waypointId) =>
     set((state) => {
       if (!state.currentRoute) return state;
-      userActionTracker.track("REMOVE_WAYPOINT", { id: waypointId });
+      fr.info(C.UI, "wp.removed", {
+        id: waypointId,
+        remainingCount: state.currentRoute.waypoints.length - 1,
+      });
       return {
         isDirty: true,
         currentRoute: {
@@ -65,7 +75,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   reorderWaypoints: (waypoints) =>
     set((state) => {
       if (!state.currentRoute) return state;
-      userActionTracker.track("REORDER_WAYPOINTS", { count: waypoints.length });
+      fr.info(C.UI, "wp.reordered", { count: waypoints.length });
       return {
         isDirty: true,
         currentRoute: { ...state.currentRoute, waypoints, updatedAt: Date.now() },
@@ -78,7 +88,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
   setMapViewState: (center, zoom, width, height) => set({ mapCenter: center, mapZoom: zoom, mapWidth: width, mapHeight: height }),
   clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
-  setRouteData: (data) =>
+  setRouteData: (data) => {
     set((state) => ({
       currentRoute: state.currentRoute
         ? { ...state.currentRoute, totalDistanceMeters: data.totalDistanceMeters,
@@ -86,7 +96,14 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
         : null,
       encodedPolyline: data.encodedPolyline, routeSteps: data.steps,
       currentLegs: data.legs, isCalculatingRoute: false, routeError: null, isDirty: true,
-    })),
+    }));
+    fr.info(C.ROUTE, "route.calculated", {
+      distanceM: data.totalDistanceMeters,
+      durationS: data.totalDurationSeconds,
+      legs: data.legs.length,
+      steps: data.legs.reduce((n, l) => n + l.steps.length, 0),
+    });
+  },
   saveCurrentRoute: () => {
     const state = get();
     if (!state.currentRoute) return;
@@ -103,19 +120,25 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))
       : [...state.savedRoutes, saved];
     set({ savedRoutes: updated, isDirty: false });
-    logService.info("ROUTE", "ルート保存完了", { id: saved.id, version: saved.version });
   },
 
   loadRoute: (id) => {
     const saved = get().savedRoutes.find((r) => r.id === id);
-    if (!saved) return;
+    if (!saved) {
+      fr.warn(C.ROUTE, "route.loadNotFound", { id });
+      return;
+    }
     set({
       currentRoute: toRoute(saved), routeName: saved.name,
       encodedPolyline: saved.encodedPolyline || null, currentLegs: saved.legs ?? [],
       isDirty: false, mapCenter: saved.mapCenter ?? null, mapZoom: saved.mapZoom ?? null,
       currentLabelIds: saved.labelIds ?? [], skipNextCalculation: true,
     });
-    logService.info("ROUTE", "ルート読み込み", { id, name: saved.name });
+    fr.info(C.ROUTE, "route.loaded", {
+      id, name: saved.name,
+      wpCount: saved.waypoints.length,
+      hasLegs: (saved.legs?.length ?? 0) > 0,
+    });
   },
 
   deleteRoute: (id) => {
@@ -123,7 +146,6 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     set((state) => ({
       savedRoutes: state.savedRoutes.filter((r) => r.id !== id),
     }));
-    logService.info("ROUTE", "ルート削除", { id });
   },
 
   setCurrentLabelIds: (currentLabelIds) => set({ currentLabelIds, isDirty: true }),
@@ -135,14 +157,21 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
     const labelMigrated = migrateLabelIds(routes);
     if (changed || labelMigrated) routes.forEach((r) => localStorageService.saveRoute(r));
     set({ savedRoutes: routes });
+    fr.debug(C.ROUTE, "route.allLoaded", {
+      count: routes.length,
+      migrated: changed || labelMigrated,
+    });
   },
 
   setSkipNextCalculation: (skipNextCalculation) => set({ skipNextCalculation }),
-  newRoute: () => set({
-    currentRoute: createNewRoute(get().travelMode), routeName: "",
-    encodedPolyline: null, routeSteps: [], currentLegs: [], currentLabelIds: [],
-    isDirty: false, routeError: null, mapCenter: null, mapZoom: null,
-    mapWidth: null, mapHeight: null, skipNextCalculation: false,
-  }),
+  newRoute: () => {
+    fr.info(C.ROUTE, "route.new", { travelMode: get().travelMode });
+    set({
+      currentRoute: createNewRoute(get().travelMode), routeName: "",
+      encodedPolyline: null, routeSteps: [], currentLegs: [], currentLabelIds: [],
+      isDirty: false, routeError: null, mapCenter: null, mapZoom: null,
+      mapWidth: null, mapHeight: null, skipNextCalculation: false,
+    });
+  },
   reset: () => set({ ...initialState, skipNextCalculation: false }),
 }));

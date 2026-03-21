@@ -2,7 +2,8 @@ import { useCallback } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { useUiStore } from "@/stores/uiStore";
 import { usePlaceStore } from "@/stores/placeStore";
-import { userActionTracker } from "@/services/userActionTracker";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import { generateId } from "@/utils/generateId";
 import { fetchPlaceDetails } from "@/services/placeDetailsService";
 import type { MapMouseEvent } from "@vis.gl/react-google-maps";
@@ -25,7 +26,7 @@ export function useMapClickHandler() {
       if (placeId) {
         // 経路A: Placeアイコンタップ
         // Places API で詳細情報を取得 → PlaceActionModal を表示
-        userActionTracker.track("MAP_CLICK_PLACE", { position, placeId });
+        fr.info(C.UI, "map.clickPlace", { position, placeId });
 
         fetchPlaceDetails(placeId).then((placeData) => {
           openPlaceModal({
@@ -38,6 +39,11 @@ export function useMapClickHandler() {
             photoUrl: placeData.photoUrl ?? null,
             position,
           });
+        }).catch((err) => {
+          fr.error(C.PLACE_DETAILS, "placeDetails.fetchError", {
+            placeId,
+            error: err instanceof Error ? err.message : String(err),
+          });
         });
       } else {
         // 経路B: 地図タップ（Placeアイコン以外）
@@ -45,7 +51,7 @@ export function useMapClickHandler() {
         // 座標のみをウェイポイント名にする。
         const label = `${position.lat.toFixed(3)}, ${position.lng.toFixed(3)}`;
         const wpId = generateId();
-        userActionTracker.track("MAP_CLICK_ADD_WAYPOINT", { position });
+        fr.info(C.UI, "map.clickAddWp", { position });
         addWaypoint({
           id: wpId,
           position,
@@ -58,4 +64,3 @@ export function useMapClickHandler() {
     [viewMode, addWaypoint, openPlaceModal],
   );
 }
-

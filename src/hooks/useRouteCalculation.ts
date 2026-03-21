@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { computeRoutes } from "@/services/routeApi";
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import { classifyRoadType } from "@/utils/roadType";
 import type {
   ComputeRoutesRequest,
@@ -118,7 +119,11 @@ export function useRouteCalculation() {
             : typeof err === "string"
               ? err
               : "ルート計算エラー";
-        logService.error("ROUTE", "ルート計算に失敗", { error: message });
+        fr.error(C.ROUTE, "route.calcFailed", {
+          error: message,
+          wpCount: validWps.length,
+          travelMode,
+        });
         setRouteError(String(message));
       });
 

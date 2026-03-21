@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { placeStorageService } from "@/services/placeStorage";
 import { generateId } from "@/utils/generateId";
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { PlaceResult, PlaceModalData, SavedPlace } from "@/types";
 
 type PlaceState = {
@@ -68,7 +69,6 @@ export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => (
       updatedAt: now,
     };
     placeStorageService.savePlace(place);
-    logService.info("PLACE_STORE", "場所追加", { id: place.id, name: place.name });
     set((state) => ({ savedPlaces: [...state.savedPlaces, place] }));
     return place;
   },
@@ -83,14 +83,13 @@ export const usePlaceStore = create<PlaceState & PlaceActions>()((set, get) => (
         updatedAt: new Date().toISOString(),
       };
       placeStorageService.savePlace(updated);
-      logService.info("PLACE_STORE", "場所更新", { id, updates });
+      fr.info(C.PLACE_STORE, "place.updated", { id, updates });
       return { savedPlaces: state.savedPlaces.map((p) => (p.id === id ? updated : p)) };
     });
   },
 
   deletePlace: (id) => {
     placeStorageService.deletePlace(id);
-    logService.info("PLACE_STORE", "場所削除", { id });
     set((state) => ({ savedPlaces: state.savedPlaces.filter((p) => p.id !== id) }));
   },
 

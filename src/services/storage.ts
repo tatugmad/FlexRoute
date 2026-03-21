@@ -1,4 +1,5 @@
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { SavedRoute } from "@/types";
 
 // ── StorageService インターフェース ──
@@ -19,19 +20,24 @@ function readAll(): SavedRoute[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as SavedRoute[];
-  } catch {
+  } catch (err) {
+    fr.error(C.STORAGE, "storage.routes.parseFailed", { err });
     return [];
   }
 }
 
 function writeAll(routes: SavedRoute[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(routes));
+  const json = JSON.stringify(routes);
+  localStorage.setItem(STORAGE_KEY, json);
+  fr.debug(C.STORAGE, "storage.routes.written", {
+    count: routes.length, bytes: json.length,
+  });
 }
 
 export const localStorageService: StorageService = {
   getRoutes: () => {
     const routes = readAll();
-    logService.info("STORAGE", "ルート一覧読み込み", { count: routes.length });
+    fr.debug(C.STORAGE, "storage.routes.loaded", { count: routes.length });
     return routes;
   },
 
@@ -44,13 +50,16 @@ export const localStorageService: StorageService = {
       routes.push(route);
     }
     writeAll(routes);
-    logService.info("STORAGE", "ルート保存", { id: route.id, name: route.name });
+    fr.info(C.STORAGE, "storage.route.saved", {
+      id: route.id, name: route.name, version: route.version,
+      wpCount: route.waypoints.length, hasLegs: (route.legs?.length ?? 0) > 0,
+    });
   },
 
   deleteRoute: (routeId) => {
     const routes = readAll().filter((r) => r.id !== routeId);
     writeAll(routes);
-    logService.info("STORAGE", "ルート削除", { id: routeId });
+    fr.info(C.STORAGE, "storage.route.deleted", { id: routeId });
   },
 
   getRoute: (routeId) => {
