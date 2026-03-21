@@ -210,7 +210,6 @@
     updateUI();
   };
   window.addEventListener('beforeunload', function() {
-    channel.postMessage({ type: 'remote-close' });
     try {
       localStorage.setItem('flexroute:simPopupBounds', JSON.stringify({
         width: window.outerWidth,
@@ -218,6 +217,9 @@
         left: window.screenX,
         top: window.screenY
       }));
+    } catch(e) {}
+    try {
+      channel.postMessage({ type: 'remote-close' });
     } catch(e) {}
   });
   function updateUI() {
