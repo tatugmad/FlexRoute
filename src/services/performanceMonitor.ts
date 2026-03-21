@@ -1,5 +1,6 @@
 import type { PerformanceMetric } from "@/types";
-import { logService } from "./logService";
+import { LOG_CATEGORIES } from "@/types/log";
+import { flightRecorder } from "./flightRecorder";
 
 const SLOW_THRESHOLD_MS = 5000;
 
@@ -25,7 +26,10 @@ class PerformanceMonitorImpl {
   endTimer(label: string): number {
     const timer = this.timers.get(label);
     if (!timer) {
-      logService.warn("PERF", `Timer not found: ${label}`);
+      flightRecorder.warn(
+        LOG_CATEGORIES.PERF,
+        `Timer not found: ${label}`,
+      );
       return 0;
     }
 
@@ -34,11 +38,13 @@ class PerformanceMonitorImpl {
     this.recordMetric(label, elapsed);
 
     if (elapsed >= SLOW_THRESHOLD_MS) {
-      logService.warn("PERF", `Slow operation: ${label}`, {
+      flightRecorder.warn(LOG_CATEGORIES.PERF, "perf.slow", {
+        label,
         elapsed: Math.round(elapsed),
       });
     } else {
-      logService.info("PERF", `${label}`, {
+      flightRecorder.debug(LOG_CATEGORIES.PERF, "perf.timer", {
+        label,
         elapsed: Math.round(elapsed),
       });
     }

@@ -153,3 +153,13 @@ export type {
 
 // ── センサー ──
 export type { SensorMode, SensorChannelModes, SimValues, PositionCallbackMode } from "./sensor";
+
+// ── ログ (F-LOG v2) ──
+export type {
+  LogLevelName,
+  LogCategoryName,
+  FlightRecorderEntry,
+  FormattedLogEntry,
+  VerifyResult,
+} from "./log";
+export { LOG_LEVELS, LOG_CATEGORIES } from "./log";

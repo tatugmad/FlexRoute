@@ -1,32 +1,28 @@
 import type { UserAction } from "@/types";
-import { logService } from "./logService";
-
-const MAX_ACTIONS = 200;
+import { LOG_CATEGORIES } from "@/types/log";
+import { flightRecorder } from "./flightRecorder";
 
 class UserActionTrackerImpl {
-  private buffer: UserAction[] = [];
-
   track(action: string, detail?: unknown): void {
-    const entry: UserAction = {
-      timestamp: new Date().toISOString(),
-      action,
-      detail,
-    };
-
-    if (this.buffer.length >= MAX_ACTIONS) {
-      this.buffer.shift();
-    }
-    this.buffer.push(entry);
-
-    logService.info("USER_ACTION", action, detail);
+    flightRecorder.info(LOG_CATEGORIES.USER_ACTION, action, detail);
   }
 
   getRecentActions(count = 50): UserAction[] {
-    return this.buffer.slice(-count);
+    return flightRecorder
+      .getRecent(count * 5) // 余裕を持って取得しフィルタ
+      .filter((e) => e.cat === LOG_CATEGORIES.USER_ACTION)
+      .slice(0, count)
+      .map((e) => ({
+        timestamp: new Date(
+          Date.now() - (performance.now() - e.t),
+        ).toISOString(),
+        action: e.tag,
+        detail: e.data,
+      }));
   }
 
   exportActions(): string {
-    return JSON.stringify(this.buffer, null, 2);
+    return JSON.stringify(this.getRecentActions(200), null, 2);
   }
 }
 
