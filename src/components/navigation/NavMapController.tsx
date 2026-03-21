@@ -74,6 +74,8 @@ export function NavMapController() {
     const div = (map as google.maps.Map).getDiv();
     if (!div) return;
     const handleWheel = (e: WheelEvent) => {
+      // 一時的: googlezoom 比較用
+      if ((window as unknown as Record<string, unknown>).__googleZoomNative) return;
       const state = useNavigationStore.getState();
       if (state.followMode !== "auto") return;
       e.preventDefault();
