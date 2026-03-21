@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useSensorStore } from "@/stores/sensorStore";
 import { useRouteSnap } from "@/hooks/useRouteSnap";
 import { AccuracyCircle } from "@/components/navigation/AccuracyCircle";
+import { shortestDelta } from "@/utils/headingUtils";
 import type { PositionQuality } from "@/types";
 
 function getPointerColor(quality: PositionQuality): string {
@@ -38,9 +39,15 @@ export function NavCurrentLocationMarker() {
   const heading = useNavigationStore((s) => s.heading);
   const headingMode = useNavigationStore((s) => s.headingMode);
   const positionQuality = useNavigationStore((s) => s.positionQuality);
+  const prevMarkerHeadingRef = useRef(0);
   const isPositionSim = useSensorStore((s) => s.channelModes.position === "sim");
   const snappedPosition = useRouteSnap(position);
   const markerPosition = snappedPosition ?? position;
+
+  const rawMarkerHeading = headingMode === "northUp" ? heading : 0;
+  const markerDelta = shortestDelta(prevMarkerHeadingRef.current, rawMarkerHeading);
+  prevMarkerHeadingRef.current += markerDelta;
+  const markerHeading = prevMarkerHeadingRef.current;
 
   if (!position) return null;
 
@@ -56,7 +63,7 @@ export function NavCurrentLocationMarker() {
           <div
             className={`w-8 h-8 ${colorClass} ${extraClass} relative z-10`}
             style={{
-              transform: `rotate(${headingMode === "northUp" ? heading : 0}deg)`,
+              transform: `rotate(${markerHeading}deg)`,
               transition: "transform 0.3s ease-out",
             }}
           >

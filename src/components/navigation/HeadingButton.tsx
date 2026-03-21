@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { shortestDelta } from "@/utils/headingUtils";
 
 const BTN = "bg-slate-500/15 rounded-full shadow-lg border border-slate-400/50 hover:bg-white/20 transition-all active:scale-95 pointer-events-auto flex items-center justify-center w-14 h-14";
 
@@ -6,13 +8,17 @@ export function HeadingButton() {
   const headingMode = useNavigationStore((s) => s.headingMode);
   const setHeadingMode = useNavigationStore((s) => s.setHeadingMode);
   const heading = useNavigationStore((s) => s.heading);
+  const prevHeadingRef = useRef(0);
 
   const toggle = () => {
     const next = headingMode === "northUp" ? "headingUp" : "northUp";
     setHeadingMode(next);
   };
 
-  const mapHeading = headingMode === "headingUp" ? heading : 0;
+  const rawHeading = headingMode === "headingUp" ? heading : 0;
+  const delta = shortestDelta(prevHeadingRef.current, rawHeading);
+  prevHeadingRef.current += delta;
+  const mapHeading = prevHeadingRef.current;
 
   return (
     <button className={BTN} onClick={toggle}>
