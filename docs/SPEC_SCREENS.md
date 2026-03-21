@@ -1,6 +1,6 @@
 # FlexRoute 画面仕様書
 
-> 最終更新: 2026-03-16
+> 最終更新: 2026-03-21
 
 ## 画面一覧
 
@@ -178,7 +178,6 @@ TOP画面（viewMode === 'top'）のとき:
 
 - ウェイポイントマーカー（WaypointMarkers）: AdvancedMarker + Pin、色分け
 - ルートポリライン（RoutePolyline）: 道路種別色分け、ステップ単位で描画
-- 現在地マーカー（CurrentLocationMarker）: DESIGN_REFERENCE セクション1、常時表示、ZIndex=100
 
 ### MapViewState（src/components/map/MapViewState.tsx）
 
