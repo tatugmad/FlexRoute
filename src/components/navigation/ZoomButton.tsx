@@ -1,4 +1,6 @@
 import { useNavigationStore } from "@/stores/navigationStore";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 const BTN = "bg-slate-500/15 rounded-full shadow-lg border border-slate-400/50 hover:bg-white/20 transition-all active:scale-95 pointer-events-auto flex items-center justify-center w-14 h-14";
 
@@ -9,6 +11,7 @@ export function ZoomButton() {
 
   const toggle = () => {
     setZoomMode(isLocked ? "autoZoom" : "lockedZoom");
+    fr.debug(C.NAV, "nav.zoomToggle", { to: isLocked ? "autoZoom" : "lockedZoom" });
   };
 
   return (

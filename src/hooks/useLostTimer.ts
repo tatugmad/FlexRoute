@@ -1,5 +1,7 @@
 import { useRef } from "react";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 const DEFAULT_LOST_MS = 15000;
 const MIN_LOST_MS = 10000;
@@ -32,6 +34,7 @@ export function useLostTimer() {
       positionQuality: "lost",
       lostSince: new Date().toISOString(),
     });
+    fr.warn(C.GPS, "gps.lost", {});
   };
 
   const setActive = () => {
@@ -39,11 +42,16 @@ export function useLostTimer() {
       positionQuality: "active",
       lostSince: null,
     });
+    fr.debug(C.GPS, "gps.active", {});
   };
 
   const resetLostTimer = () => {
     if (lostTimerRef.current) clearTimeout(lostTimerRef.current);
     const threshold = computeLostThreshold(intervalsRef.current);
+    fr.trace(C.GPS, "gps.lostThreshold", {
+      thresholdMs: threshold,
+      samples: intervalsRef.current.length,
+    });
     lostTimerRef.current = setTimeout(setLost, threshold);
   };
 

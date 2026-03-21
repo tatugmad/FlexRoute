@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import { useRouteStore } from "@/stores/routeStore";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { LatLng, SavedRouteLeg } from "@/types";
 
 const SNAP_THRESHOLD_M = 50;
@@ -68,7 +70,15 @@ export function useRouteSnap(position: LatLng | null): LatLng | null {
     }
 
     if (bestPoint && bestDist <= SNAP_THRESHOLD_M) {
+      fr.trace(C.SNAP, "snap.hit", {
+        distM: Math.round(bestDist * 10) / 10,
+      });
       return { lat: bestPoint.lat(), lng: bestPoint.lng() };
+    }
+    if (bestDist < Infinity) {
+      fr.trace(C.SNAP, "snap.miss", {
+        distM: Math.round(bestDist * 10) / 10,
+      });
     }
     return null;
   }, [position, currentLegs]);

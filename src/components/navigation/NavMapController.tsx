@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 function getAutoZoom(speedKmh: number): number {
   if (speedKmh >= 80) return 13;
@@ -24,6 +26,7 @@ export function NavMapController() {
     const listener = map.addListener("dragstart", () => {
       if (useNavigationStore.getState().followMode === "auto") {
         setFollowMode("free");
+        fr.debug(C.NAV, "nav.dragToFree", {});
       }
     });
     return () => google.maps.event.removeListener(listener);
@@ -39,6 +42,7 @@ export function NavMapController() {
       }
       if (useNavigationStore.getState().zoomMode === "autoZoom") {
         setZoomMode("lockedZoom");
+        fr.debug(C.NAV, "nav.zoomToLocked", {});
       }
     });
     return () => google.maps.event.removeListener(listener);

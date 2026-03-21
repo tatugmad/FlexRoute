@@ -1,6 +1,7 @@
 import { Component } from "react";
 import type { ErrorInfo, ReactNode } from "react";
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 
 type Props = {
   children: ReactNode;
@@ -30,7 +31,8 @@ export class ErrorBoundary extends Component<Props, State> {
     const componentStack = info.componentStack ?? null;
     this.setState({ componentStack });
 
-    logService.error("ERROR", error.message, {
+    fr.error(C.ERROR, "errorBoundary.caught", {
+      message: error.message,
       stack: error.stack,
       componentStack,
       component: extractComponentName(componentStack),
