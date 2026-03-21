@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSensorStore } from '@/stores/sensorStore';
 import { openSimChannel, closeSimChannel } from '@/services/simChannel';
 
@@ -8,10 +8,19 @@ export function SimButton() {
   const debugEnabled = useSensorStore((s) => s.debugEnabled);
   const popupRef = useRef<Window | null>(null);
 
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && popupRef.current && !popupRef.current.closed) {
+        popupRef.current.focus();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   if (!debugEnabled) return null;
 
   const handleClick = () => {
-    // 既に開いている場合はフォーカス
     if (popupRef.current && !popupRef.current.closed) {
       popupRef.current.focus();
       return;
@@ -19,7 +28,6 @@ export function SimButton() {
 
     openSimChannel();
 
-    // base path を考慮した URL
     const basePath = import.meta.env.BASE_URL ?? '/';
     const url = `${basePath}sim-remote.html`;
 
@@ -29,7 +37,6 @@ export function SimButton() {
       'width=380,height=620,resizable=yes,scrollbars=yes',
     );
 
-    // ポップアップが閉じられたら cleanup
     const checkClosed = setInterval(() => {
       if (popupRef.current && popupRef.current.closed) {
         clearInterval(checkClosed);
