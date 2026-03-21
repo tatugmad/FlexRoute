@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { userActionTracker } from "@/services/userActionTracker";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { MapViewport, Panel, RouteSortKey, RouteViewMode, TopTab, ViewMode } from "@/types";
 
 type ConfirmDialog = {
@@ -71,12 +72,12 @@ export const useUiStore = create<UiState & UiActions>()((set) => ({
   ...initialState,
 
   setViewMode: (viewMode) => {
-    userActionTracker.track("SET_VIEW_MODE", { viewMode });
+    fr.info(C.UI, "ui.viewMode", { viewMode });
     set({ viewMode });
   },
 
   setActivePanel: (activePanel) => {
-    userActionTracker.track("SET_ACTIVE_PANEL", { activePanel });
+    fr.debug(C.UI, "ui.activePanel", { activePanel });
     set({ activePanel });
   },
 

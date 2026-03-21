@@ -1,4 +1,5 @@
-import { logService } from "@/services/logService";
+import { flightRecorder as fr } from "@/services/flightRecorder";
+import { LOG_CATEGORIES as C } from "@/types/log";
 import type { Label } from "@/types";
 
 const STORAGE_KEY = "flexroute:labels";
@@ -8,7 +9,8 @@ function readAll(): Label[] {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     return JSON.parse(raw) as Label[];
-  } catch {
+  } catch (err) {
+    fr.error(C.LABEL_STORAGE, "labelStorage.parseFailed", { err });
     return [];
   }
 }
@@ -20,7 +22,7 @@ function writeAll(labels: Label[]): void {
 export const labelStorageService = {
   getLabels: (): Label[] => {
     const labels = readAll();
-    logService.info("LABEL_STORAGE", "ラベル一覧読み込み", { count: labels.length });
+    fr.debug(C.LABEL_STORAGE, "labelStorage.loaded", { count: labels.length });
     return labels;
   },
 
@@ -33,13 +35,13 @@ export const labelStorageService = {
       labels.push(label);
     }
     writeAll(labels);
-    logService.info("LABEL_STORAGE", "ラベル保存", { id: label.id, name: label.name });
+    fr.info(C.LABEL_STORAGE, "labelStorage.saved", { id: label.id, name: label.name });
   },
 
   deleteLabel: (labelId: string): void => {
     const labels = readAll().filter((l) => l.id !== labelId);
     writeAll(labels);
-    logService.info("LABEL_STORAGE", "ラベル削除", { id: labelId });
+    fr.info(C.LABEL_STORAGE, "labelStorage.deleted", { id: labelId });
   },
 
   getLabel: (labelId: string): Label | undefined => {
