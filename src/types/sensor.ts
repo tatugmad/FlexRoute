@@ -16,7 +16,8 @@ export type SensorChannelModes = {
 export type SimValues = {
   position: { lat: number; lng: number } | null;
   heading: number;
-  speed: number;       // m/s
-  accuracy: number;    // meters
-  positionQuality: 'active' | 'lost' | 'denied';
+  speed: number;           // m/s
+  accuracy: number;        // meters
+  callbackIntervalMs: number;  // success callback の発火間隔（ms）
+  denied: boolean;             // true で error callback (PERMISSION_DENIED) を送る
 };
