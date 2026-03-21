@@ -98,31 +98,6 @@ export type MapViewport = {
   zoom: number;
 };
 
-// ── ログ ──
-export type LogLevel = "debug" | "info" | "warn" | "error";
-
-export type LogEntry = {
-  timestamp: string;
-  level: LogLevel;
-  category: string;
-  message: string;
-  data?: unknown;
-  component?: string;
-};
-
-export type UserAction = {
-  timestamp: string;
-  action: string;
-  detail?: unknown;
-};
-
-export type PerformanceMetric = {
-  count: number;
-  avg: number;
-  min: number;
-  max: number;
-};
-
 // ── 保存済み場所 ──
 export type SavedPlace = {
   id: string;
