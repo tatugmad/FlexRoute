@@ -27,12 +27,10 @@ export function SimPositionCross() {
 
   return (
     <AdvancedMarker position={simPosition} zIndex={102}>
-      <div className="sim-cross-blink">
-        <svg width="7" height="7" viewBox="0 0 7 7">
-          <line x1="3.5" y1="0" x2="3.5" y2="7" stroke="#3b82f6" strokeWidth="1.5" />
-          <line x1="0" y1="3.5" x2="7" y2="3.5" stroke="#3b82f6" strokeWidth="1.5" />
-        </svg>
-      </div>
+      <svg className="sim-cross-blink" width="9" height="9" viewBox="0 0 9 9" style={{ background: 'transparent', display: 'block' }}>
+        <line x1="4.5" y1="0" x2="4.5" y2="9" stroke="#3b82f6" strokeWidth="1.5" />
+        <line x1="0" y1="4.5" x2="9" y2="4.5" stroke="#3b82f6" strokeWidth="1.5" />
+      </svg>
     </AdvancedMarker>
   );
 }
