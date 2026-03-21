@@ -209,7 +209,17 @@
     state.simValues = msg.simValues;
     updateUI();
   };
-  window.addEventListener('beforeunload', function() { channel.postMessage({ type: 'remote-close' }); });
+  window.addEventListener('beforeunload', function() {
+    channel.postMessage({ type: 'remote-close' });
+    try {
+      localStorage.setItem('flexroute:simPopupBounds', JSON.stringify({
+        width: window.outerWidth,
+        height: window.outerHeight,
+        left: window.screenX,
+        top: window.screenY
+      }));
+    } catch(e) {}
+  });
   function updateUI() {
     updateToggle('position', state.channelModes.position);
     updateToggle('heading', state.channelModes.heading);
