@@ -1,22 +1,18 @@
-import { useMap } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
 
 const BTN = "bg-slate-500/15 rounded-full shadow-lg border border-slate-400/50 hover:bg-white/20 transition-all active:scale-95 pointer-events-auto flex items-center justify-center w-14 h-14";
 
 export function HeadingButton() {
-  const map = useMap();
   const headingMode = useNavigationStore((s) => s.headingMode);
   const setHeadingMode = useNavigationStore((s) => s.setHeadingMode);
+  const heading = useNavigationStore((s) => s.heading);
 
   const toggle = () => {
     const next = headingMode === "northUp" ? "headingUp" : "northUp";
     setHeadingMode(next);
-    if (next === "northUp" && map) {
-      map.setHeading(0);
-    }
   };
 
-  const mapHeading = map?.getHeading?.() ?? 0;
+  const mapHeading = headingMode === "headingUp" ? heading : 0;
 
   return (
     <button className={BTN} onClick={toggle}>

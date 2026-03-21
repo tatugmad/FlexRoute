@@ -6,18 +6,15 @@ let originalWatch: typeof navigator.geolocation.watchPosition | null = null;
 let originalGetCurrent: typeof navigator.geolocation.getCurrentPosition | null = null;
 let originalClear: typeof navigator.geolocation.clearWatch | null = null;
 
-// PG の watchPosition 登録
 const pgWatches = new Map<
   number,
   { success: PositionCallback; error?: PositionErrorCallback | null }
 >();
 let nextVirtualId = 1;
 
-// 内部 real GPS watch
 let internalWatchId: number | null = null;
 let lastRealPosition: GeolocationPosition | null = null;
 
-// sim callback タイマー
 let simTimerId: ReturnType<typeof setInterval> | null = null;
 
 const hasAnySim = (modes: SensorChannelModes): boolean =>
@@ -52,17 +49,30 @@ function mixValues(
   } as GeolocationPosition;
 }
 
-function buildFakePos(sim: SimValues): GeolocationPosition | null {
+/**
+ * position が sim の時に使う。heading/speed は channelModes に従い
+ * real 値があれば real を使う。
+ */
+function buildChannelAwarePos(
+  modes: SensorChannelModes,
+  sim: SimValues,
+): GeolocationPosition | null {
   if (!sim.position) return null;
   return {
     coords: {
       latitude: sim.position.lat,
       longitude: sim.position.lng,
-      heading: sim.heading,
-      speed: sim.speed,
+      heading:
+        modes.heading === 'sim'
+          ? sim.heading
+          : (lastRealPosition?.coords.heading ?? 0),
+      speed:
+        modes.speed === 'sim'
+          ? sim.speed
+          : (lastRealPosition?.coords.speed ?? 0),
       accuracy: sim.accuracy,
-      altitude: null,
-      altitudeAccuracy: null,
+      altitude: lastRealPosition?.coords.altitude ?? null,
+      altitudeAccuracy: lastRealPosition?.coords.altitudeAccuracy ?? null,
     },
     timestamp: Date.now(),
   } as GeolocationPosition;
@@ -106,31 +116,29 @@ function startSimTimer(intervalMs: number): void {
   stopSimTimer();
   simTimerId = setInterval(() => {
     const { channelModes: modes, simValues: sim } = useSensorStore.getState();
-    if (modes.position !== 'sim' || sim.denied) return;
+    if (sim.denied) return;
 
     if (modes.position === 'sim') {
-      const fakePos = buildFakePos(sim);
-      if (fakePos) forwardToAllPG(fakePos);
+      const pos = buildChannelAwarePos(modes, sim);
+      if (pos) forwardToAllPG(pos);
     } else if (lastRealPosition) {
       forwardToAllPG(mixValues(lastRealPosition, modes, sim));
     }
   }, intervalMs);
 }
 
-// sim 値変更時に即時発火（十字キー等の応答性のため）+ タイマーリセット
 function immediateForwardAndResetTimer(): void {
   const { channelModes: modes, simValues: sim } = useSensorStore.getState();
   if (sim.denied) return;
   if (pgWatches.size === 0) return;
 
   if (modes.position === 'sim') {
-    const fakePos = buildFakePos(sim);
-    if (fakePos) forwardToAllPG(fakePos);
+    const pos = buildChannelAwarePos(modes, sim);
+    if (pos) forwardToAllPG(pos);
   } else if (lastRealPosition) {
     forwardToAllPG(mixValues(lastRealPosition, modes, sim));
   }
 
-  // タイマーリセット（次の定期 tick までの間隔をリスタート）
   if (simTimerId !== null) {
     startSimTimer(sim.callbackIntervalMs);
   }
@@ -141,10 +149,8 @@ function onRealPosition(pos: GeolocationPosition): void {
   lastRealPosition = pos;
   const { channelModes: modes, simValues: sim } = useSensorStore.getState();
 
-  // position が sim → real GPS は PG に直接転送しない（タイマーが担当）
   if (modes.position === 'sim') return;
 
-  // position が real（heading/speed だけ sim）→ 混合して転送
   if (hasAnySim(modes)) {
     forwardToAllPG(mixValues(pos, modes, sim));
   } else {
@@ -169,6 +175,7 @@ function onSensorChange(
   const wasSim = hasAnySim(prevState.channelModes);
   const sim = newState.simValues;
   const prevSim = prevState.simValues;
+  const modesChanged = newState.channelModes !== prevState.channelModes;
 
   // 全チャンネル real に戻った → タイマー停止、最後の real 位置を PG に渡す
   if (!nowSim && wasSim) {
@@ -193,11 +200,6 @@ function onSensorChange(
   }
 
   // denied が OFF になった
-  // → pgWatches が空の場合（PG が clearWatch 済み）は何もしない。
-  //   PG の deniedRetry が getCurrentPosition を呼んだ時に
-  //   patchedGetCurrentPosition が応答し、PG が復帰する。
-  //   PG が watchPosition を再開したらタイマーを開始する。
-  // → pgWatches がある場合はタイマー再開 + 即時発火。
   if (!sim.denied && prevSim.denied) {
     if (pgWatches.size > 0) {
       startSimTimer(sim.callbackIntervalMs);
@@ -208,6 +210,12 @@ function onSensorChange(
 
   // denied 中は他の変更は無視
   if (sim.denied) return;
+
+  // channelModes 変更（heading/speed の real↔sim 切替等）→ 即時 forward
+  if (modesChanged) {
+    immediateForwardAndResetTimer();
+    return;
+  }
 
   // simValues 変更なし → skip
   if (newState.simValues === prevState.simValues) return;
@@ -247,7 +255,6 @@ function stopInternalWatch(): void {
     originalClear(internalWatchId);
     internalWatchId = null;
   }
-  // subscription は停止しない
 }
 
 // ---- パッチされた API ----
@@ -260,7 +267,6 @@ function patchedWatchPosition(
   pgWatches.set(virtualId, { success, error });
   ensureInternalWatch(options);
 
-  // position sim で denied でなければタイマー開始
   const { channelModes, simValues } = useSensorStore.getState();
   if (channelModes.position === 'sim' && !simValues.denied && simTimerId === null) {
     startSimTimer(simValues.callbackIntervalMs);
@@ -276,17 +282,15 @@ function patchedGetCurrentPosition(
 ): void {
   const { channelModes: modes, simValues: sim } = useSensorStore.getState();
 
-  // denied → error callback
   if (modes.position === 'sim' && sim.denied) {
     if (error) error(buildFakeDeniedError());
     return;
   }
 
-  // position sim → sim 値を返す
   if (modes.position === 'sim') {
-    const fakePos = buildFakePos(sim);
-    if (fakePos) {
-      success(fakePos);
+    const pos = buildChannelAwarePos(modes, sim);
+    if (pos) {
+      success(pos);
       return;
     }
     if (lastRealPosition) {
@@ -296,13 +300,11 @@ function patchedGetCurrentPosition(
     return;
   }
 
-  // heading/speed だけ sim → 混合値を返す
   if (hasAnySim(modes) && lastRealPosition) {
     success(mixValues(lastRealPosition, modes, sim));
     return;
   }
 
-  // 全て real → 本物の API に転送
   originalGetCurrent!(success, error ?? undefined, options);
 }
 
@@ -327,7 +329,6 @@ export function installSimGeolocation(): void {
   navigator.geolocation.getCurrentPosition = patchedGetCurrentPosition;
   navigator.geolocation.clearWatch = patchedClearWatch;
 
-  // subscription は install 時に開始し、常に維持する（unsubscribe 不要）
   useSensorStore.subscribe(onSensorChange);
 
   installed = true;

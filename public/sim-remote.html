@@ -87,13 +87,13 @@
     </div>
     <div class="dpad">
       <div></div>
-      <button class="dpad-btn" disabled id="dpad-n" onclick="movePos('n')">&#9650;</button>
+      <button class="dpad-btn" disabled id="dpad-n" data-dir="n">&#9650;</button>
       <div></div>
-      <button class="dpad-btn" disabled id="dpad-w" onclick="movePos('w')">&#9664;</button>
+      <button class="dpad-btn" disabled id="dpad-w" data-dir="w">&#9664;</button>
       <div style="width:32px;height:32px;"></div>
-      <button class="dpad-btn" disabled id="dpad-e" onclick="movePos('e')">&#9654;</button>
+      <button class="dpad-btn" disabled id="dpad-e" data-dir="e">&#9654;</button>
       <div></div>
-      <button class="dpad-btn" disabled id="dpad-s" onclick="movePos('s')">&#9660;</button>
+      <button class="dpad-btn" disabled id="dpad-s" data-dir="s">&#9660;</button>
       <div></div>
     </div>
     <div class="coord-display" id="coordDisplay">&mdash;</div>
@@ -274,6 +274,32 @@
   document.addEventListener('mouseup', stopStep);
   document.addEventListener('touchend', stopStep);
   document.addEventListener('mouseleave', stopStep);
+  // D-pad long press
+  var dpadTimer = null;
+  function dpadOnce(btn) {
+    var dir = btn.getAttribute('data-dir');
+    if (dir) movePos(dir);
+  }
+  function startDpad(btn) {
+    if (btn.disabled) return;
+    dpadOnce(btn);
+    dpadTimer = setTimeout(function repeat() {
+      dpadOnce(btn);
+      dpadTimer = setTimeout(repeat, 50);
+    }, 300);
+  }
+  function stopDpad() {
+    if (dpadTimer !== null) { clearTimeout(dpadTimer); dpadTimer = null; }
+  }
+  var dpadBtnsAll = document.querySelectorAll('.dpad-btn');
+  for (var d = 0; d < dpadBtnsAll.length; d++) {
+    (function(btn) {
+      btn.addEventListener('mousedown', function() { startDpad(btn); });
+      btn.addEventListener('touchstart', function(e) { startDpad(btn); e.preventDefault(); }, { passive: false });
+    })(dpadBtnsAll[d]);
+  }
+  document.addEventListener('mouseup', stopDpad);
+  document.addEventListener('touchend', stopDpad);
   // Actions
   window.setMode = function(ch, mode) {
     state.channelModes[ch] = mode;

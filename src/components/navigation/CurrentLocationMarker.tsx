@@ -77,8 +77,8 @@ export function NavCurrentLocationMarker() {
         <AdvancedMarker position={position} zIndex={101}>
           <div
             style={{
-              width: 5,
-              height: 5,
+              width: 7,
+              height: 7,
               borderRadius: '50%',
               background: '#f97316',
               border: '1px solid #ffffff',

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useRouteStore } from "@/stores/routeStore";
+import { useNavigationStore } from "@/stores/navigationStore";
 import { useNavGeolocation } from "@/hooks/useNavGeolocation";
 import { NavCurrentLocationMarker } from "@/components/navigation/CurrentLocationMarker";
 import { NavHeader } from "@/components/navigation/NavHeader";
@@ -30,10 +31,15 @@ function NavMap() {
     ? waypoints[0]!.position
     : { lat: 35.6895, lng: 139.6917 };
 
+  const heading = useNavigationStore((s) => s.heading);
+  const headingMode = useNavigationStore((s) => s.headingMode);
+  const mapHeading = headingMode === "headingUp" ? heading : 0;
+
   return (
     <Map
       defaultCenter={defaultCenter}
       defaultZoom={15}
+      heading={mapHeading}
       mapId={mapId}
       disableDefaultUI={true}
       gestureHandling="greedy"
