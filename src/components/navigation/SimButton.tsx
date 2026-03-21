@@ -19,20 +19,6 @@ function loadPopupBounds(): string {
   }
 }
 
-function savePopupBounds(popup: Window): void {
-  try {
-    const bounds = {
-      width: popup.outerWidth,
-      height: popup.outerHeight,
-      left: popup.screenX,
-      top: popup.screenY,
-    };
-    localStorage.setItem(POPUP_STORAGE_KEY, JSON.stringify(bounds));
-  } catch {
-    /* ignore quota errors */
-  }
-}
-
 export function SimButton() {
   const debugEnabled = useSensorStore((s) => s.debugEnabled);
   const popupRef = useRef<Window | null>(null);
@@ -83,15 +69,6 @@ export function SimButton() {
     );
 
     attachFocusListeners();
-
-    // ポップアップが閉じる直前にサイズ/位置を保存
-    const onBeforeUnload = () => {
-      if (popupRef.current) savePopupBounds(popupRef.current);
-    };
-
-    if (popupRef.current) {
-      popupRef.current.addEventListener('beforeunload', onBeforeUnload);
-    }
 
     const checkClosed = setInterval(() => {
       if (popupRef.current && popupRef.current.closed) {
