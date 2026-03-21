@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
+import { useSensorStore } from "@/stores/sensorStore";
 import { useRouteSnap } from "@/hooks/useRouteSnap";
 import { AccuracyCircle } from "@/components/navigation/AccuracyCircle";
 import type { PositionQuality } from "@/types";
@@ -37,6 +38,7 @@ export function NavCurrentLocationMarker() {
   const heading = useNavigationStore((s) => s.heading);
   const headingMode = useNavigationStore((s) => s.headingMode);
   const positionQuality = useNavigationStore((s) => s.positionQuality);
+  const isPositionSim = useSensorStore((s) => s.channelModes.position === "sim");
   const snappedPosition = useRouteSnap(position);
   const markerPosition = snappedPosition ?? position;
 
@@ -70,6 +72,21 @@ export function NavCurrentLocationMarker() {
           </div>
         </div>
       </AdvancedMarker>
+
+      {isPositionSim && (
+        <AdvancedMarker position={position} zIndex={101}>
+          <div
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#f97316',
+              border: '1px solid #ffffff',
+              boxShadow: '0 0 2px rgba(0,0,0,0.3)',
+            }}
+          />
+        </AdvancedMarker>
+      )}
     </>
   );
 }
