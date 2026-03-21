@@ -49,10 +49,6 @@ function mixValues(
   } as GeolocationPosition;
 }
 
-/**
- * position が sim の時に使う。heading/speed は channelModes に従い
- * real 値があれば real を使う。
- */
 function buildChannelAwarePos(
   modes: SensorChannelModes,
   sim: SimValues,
@@ -117,6 +113,8 @@ function startSimTimer(intervalMs: number): void {
   simTimerId = setInterval(() => {
     const { channelModes: modes, simValues: sim } = useSensorStore.getState();
     if (sim.denied) return;
+    // lost モード: callback を送らない（PG の lostTimer が自然発火する）
+    if (sim.positionCallbackMode === 'lost') return;
 
     if (modes.position === 'sim') {
       const pos = buildChannelAwarePos(modes, sim);
@@ -127,10 +125,11 @@ function startSimTimer(intervalMs: number): void {
   }, intervalMs);
 }
 
-function immediateForwardAndResetTimer(): void {
+function immediateForward(): void {
   const { channelModes: modes, simValues: sim } = useSensorStore.getState();
   if (sim.denied) return;
   if (pgWatches.size === 0) return;
+  if (sim.positionCallbackMode === 'lost') return;
 
   if (modes.position === 'sim') {
     const pos = buildChannelAwarePos(modes, sim);
@@ -138,7 +137,11 @@ function immediateForwardAndResetTimer(): void {
   } else if (lastRealPosition) {
     forwardToAllPG(mixValues(lastRealPosition, modes, sim));
   }
+}
 
+function immediateForwardAndResetTimer(): void {
+  immediateForward();
+  const { simValues: sim } = useSensorStore.getState();
   if (simTimerId !== null) {
     startSimTimer(sim.callbackIntervalMs);
   }
@@ -192,14 +195,14 @@ function onSensorChange(
     return;
   }
 
-  // denied が ON になった → タイマー停止、PG に denied error を送る
+  // denied が ON → タイマー停止、PG に denied error
   if (sim.denied && !prevSim.denied) {
     stopSimTimer();
     sendDeniedToAllPG();
     return;
   }
 
-  // denied が OFF になった
+  // denied が OFF
   if (!sim.denied && prevSim.denied) {
     if (pgWatches.size > 0) {
       startSimTimer(sim.callbackIntervalMs);
@@ -208,7 +211,6 @@ function onSensorChange(
     return;
   }
 
-  // denied 中は他の変更は無視
   if (sim.denied) return;
 
   // channelModes 変更（heading/speed の real↔sim 切替等）→ 即時 forward
@@ -217,7 +219,6 @@ function onSensorChange(
     return;
   }
 
-  // simValues 変更なし → skip
   if (newState.simValues === prevState.simValues) return;
 
   // interval 変更 → タイマー再起動
@@ -227,13 +228,38 @@ function onSensorChange(
     }
   }
 
-  // position/heading/speed/accuracy 変更 → 即時発火 + タイマーリセット
-  if (
-    sim.position !== prevSim.position ||
-    sim.heading !== prevSim.heading ||
-    sim.speed !== prevSim.speed ||
-    sim.accuracy !== prevSim.accuracy
-  ) {
+  // positionCallbackMode 変更 → lost から復帰した場合は即時 forward
+  if (sim.positionCallbackMode !== prevSim.positionCallbackMode) {
+    if (prevSim.positionCallbackMode === 'lost' && sim.positionCallbackMode !== 'lost') {
+      immediateForwardAndResetTimer();
+    }
+    return;
+  }
+
+  // position 変更 → positionCallbackMode に従う
+  if (sim.position !== prevSim.position) {
+    if (sim.positionCallbackMode === 'sync') {
+      immediateForwardAndResetTimer();
+    }
+    // interval/lost: タイマーに委ねる（何もしない）
+  }
+
+  // heading 変更 → headingSync に従う
+  if (sim.heading !== prevSim.heading) {
+    if (sim.headingSync) {
+      immediateForwardAndResetTimer();
+    }
+  }
+
+  // speed 変更 → speedSync に従う
+  if (sim.speed !== prevSim.speed) {
+    if (sim.speedSync) {
+      immediateForwardAndResetTimer();
+    }
+  }
+
+  // accuracy 変更 → 常に即時
+  if (sim.accuracy !== prevSim.accuracy) {
     immediateForwardAndResetTimer();
   }
 }

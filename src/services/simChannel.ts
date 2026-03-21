@@ -65,6 +65,18 @@ export function openSimChannel(): void {
         if (typeof msg.value === 'boolean') store.setSimDenied(msg.value);
         break;
 
+      case 'set-position-callback-mode':
+        if (msg.value) store.setPositionCallbackMode(msg.value);
+        break;
+
+      case 'set-heading-sync':
+        if (typeof msg.value === 'boolean') store.setHeadingSync(msg.value);
+        break;
+
+      case 'set-speed-sync':
+        if (typeof msg.value === 'boolean') store.setSpeedSync(msg.value);
+        break;
+
       case 'remote-close':
         store.resetAllToReal();
         break;

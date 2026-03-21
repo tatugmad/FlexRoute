@@ -152,4 +152,4 @@ export type {
 } from "@/types/routesApi";
 
 // ── センサー ──
-export type { SensorMode, SensorChannelModes, SimValues } from "./sensor";
+export type { SensorMode, SensorChannelModes, SimValues, PositionCallbackMode } from "./sensor";

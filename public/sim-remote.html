@@ -66,6 +66,24 @@
   .dial-dir-w { top: 50%; left: 6px; transform: translateY(-50%); }
   .border-bottom { border-bottom: 1px solid #e2e8f0; }
   .border-right { border-right: 1px solid #e2e8f0; }
+  .mode-btn {
+    padding: 2px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    background: #f1f5f9;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    color: #64748b;
+    transition: all 0.15s;
+  }
+  .mode-btn:hover { background: #e2e8f0; }
+  .mode-btn:disabled { opacity: 0.3; cursor: default; }
+  .mode-btn.active {
+    background: #dbeafe;
+    color: #1e40af;
+    border-color: #93c5fd;
+  }
 </style>
 </head>
 <body>
@@ -97,6 +115,11 @@
       <div></div>
     </div>
     <div class="coord-display" id="coordDisplay">&mdash;</div>
+    <div style="display:flex;gap:3px;justify-content:center;margin-top:4px;" id="dpadModeGroup">
+      <button class="mode-btn active" disabled id="mode-sync" onclick="setDpadMode('sync')">sync</button>
+      <button class="mode-btn" disabled id="mode-interval" onclick="setDpadMode('interval')">intv</button>
+      <button class="mode-btn" disabled id="mode-lost" onclick="setDpadMode('lost')">lost</button>
+    </div>
   </div>
   <div class="col section">
     <div class="section-label">Callback interval</div>
@@ -140,6 +163,10 @@
         </div>
       </div>
     </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;">
+      <input type="checkbox" id="headingSyncCheck" checked disabled onchange="onHeadingSyncChange(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;">
+      <label for="headingSyncCheck" style="font-size:10px;color:#64748b;font-weight:600;">sync</label>
+    </div>
   </div>
   <div class="col section">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
@@ -157,6 +184,10 @@
     <div style="text-align:right;margin-top:4px;">
       <span class="slider-val" id="speedVal">0 km/h</span>
     </div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px;">
+      <input type="checkbox" id="speedSyncCheck" checked disabled onchange="onSpeedSyncChange(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;">
+      <label for="speedSyncCheck" style="font-size:10px;color:#64748b;font-weight:600;">sync</label>
+    </div>
   </div>
 </div>
 <script>
@@ -165,7 +196,7 @@
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
     channelModes: { position: 'real', heading: 'real', speed: 'real' },
-    simValues: { position: null, heading: 0, speed: 0, accuracy: 10, callbackIntervalMs: 1000, denied: false }
+    simValues: { position: null, heading: 0, speed: 0, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true }
   };
   var connected = false;
   var connectTimer = setTimeout(function() { if (!connected) setConnectionStatus('disconnected'); }, 3000);
@@ -202,6 +233,21 @@
     document.getElementById('acc-up').disabled = !posIsSim;
     var dc = document.getElementById('deniedCheck');
     dc.disabled = !posIsSim; dc.checked = state.simValues.denied;
+    // D-pad mode
+    var modes = ['sync', 'interval', 'lost'];
+    for (var m = 0; m < modes.length; m++) {
+      var mb = document.getElementById('mode-' + modes[m]);
+      mb.disabled = !posIsSim;
+      mb.className = 'mode-btn' + (modes[m] === state.simValues.positionCallbackMode ? ' active' : '');
+    }
+    // Heading sync
+    var hsc = document.getElementById('headingSyncCheck');
+    hsc.disabled = !hdgIsSim;
+    hsc.checked = state.simValues.headingSync;
+    // Speed sync
+    var ssc = document.getElementById('speedSyncCheck');
+    ssc.disabled = !spdIsSim;
+    ssc.checked = state.simValues.speedSync;
     var dw = document.getElementById('dialWrapper');
     if (hdgIsSim) dw.classList.remove('disabled'); else dw.classList.add('disabled');
     document.getElementById('dialNeedle').style.transform = 'translateX(-50%) translateY(-100%) rotate(' + state.simValues.heading + 'deg)';
@@ -337,6 +383,19 @@
     state.simValues.denied = checked;
     channel.postMessage({ type: 'set-sim-denied', value: checked });
     updateUI();
+  };
+  window.setDpadMode = function(mode) {
+    state.simValues.positionCallbackMode = mode;
+    channel.postMessage({ type: 'set-position-callback-mode', value: mode });
+    updateUI();
+  };
+  window.onHeadingSyncChange = function(checked) {
+    state.simValues.headingSync = checked;
+    channel.postMessage({ type: 'set-heading-sync', value: checked });
+  };
+  window.onSpeedSyncChange = function(checked) {
+    state.simValues.speedSync = checked;
+    channel.postMessage({ type: 'set-speed-sync', value: checked });
   };
   updateUI();
 })();
