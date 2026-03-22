@@ -1,7 +1,7 @@
-type Point = { lat: number; lng: number };
+import type { LatLng } from "@/types";
 
-export function decodePolyline(encoded: string): Point[] {
-  const points: Point[] = [];
+export function decodePolyline(encoded: string): LatLng[] {
+  const points: LatLng[] = [];
   let index = 0;
   let lat = 0;
   let lng = 0;
@@ -36,7 +36,7 @@ export function decodePolyline(encoded: string): Point[] {
   return points;
 }
 
-export function encodePolyline(points: Point[]): string {
+export function encodePolyline(points: LatLng[]): string {
   let prevLat = 0;
   let prevLng = 0;
   let result = "";
