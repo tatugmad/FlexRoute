@@ -98,6 +98,15 @@ export function NavMapController() {
     (map as google.maps.Map).setOptions({
       scrollwheel: !isAuto || useNative,
     });
+    // __wheelMode 変更時に scrollwheel を再設定 (SPORADIC-001 対策)
+    const onWheelModeChanged = () => {
+      const native = (window as unknown as Record<string, unknown>)
+        .__wheelMode === "native";
+      const auto = useNavigationStore.getState().followMode === "auto";
+      (map as google.maps.Map).setOptions({ scrollwheel: !auto || native });
+    };
+    window.addEventListener("wheelmode-changed", onWheelModeChanged);
+
     const div = (map as google.maps.Map).getDiv();
     if (!div) return;
     let wheelStopTimer: ReturnType<typeof setTimeout> | null = null;
@@ -131,6 +140,7 @@ export function NavMapController() {
     };
     div.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
+      window.removeEventListener("wheelmode-changed", onWheelModeChanged);
       div.removeEventListener("wheel", handleWheel);
       if (wheelStopTimer) clearTimeout(wheelStopTimer);
       (map as google.maps.Map).setOptions({ scrollwheel: true });
