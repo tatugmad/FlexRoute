@@ -11,7 +11,6 @@ import { NavMapController } from "@/components/navigation/NavMapController";
 import { shortestDelta } from "@/utils/headingUtils";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
-import { ZoomCompare } from "@/components/navigation/ZoomCompare";
 import { ZoomInOutButtons } from "@/components/navigation/ZoomInOutButtons";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
@@ -25,7 +24,6 @@ export function NavigationScreen() {
         <NavHeader />
         <NavControls />
         <BugReportButton />
-        <ZoomCompare />
         <ZoomInOutButtons />
       </div>
     </APIProvider>
