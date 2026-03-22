@@ -239,12 +239,18 @@
 - **現状**: useHeadingFusion.ts はスケルトン（何もしない）。GPS heading がそのまま使われる
 - **却下**: 抽象化レイヤーをパッチする方式 → 融合ロジック自体のテストができない。PG の内部インターフェースに sim が依存する
 
-## D-032: 地図回転の heading 制御 — React props 方式
+## D-032: 地図回転の heading 制御 — moveCamera 統合方式（改訂）
 
-- **決定**: 地図の heading は Map コンポーネントの heading prop で制御する。map.setHeading() の命令的呼び出しは使わない
-- **理由**: @vis.gl/react-google-maps ライブラリは heading を含むカメラパラメータを React props で管理する設計。命令的な map.setHeading() はライブラリの内部状態管理と衝突し、値が上書きされて反映されない問題が発生した
-- **副次効果**: heading 制御が followMode（auto/free）に依存しなくなった。headingUp モードでは地図を手動操作中でも地図が回転する
-- **0°/360° 境界問題**: CSS transition が最短回転方向を選べないため、shortestDelta() で連続値に変換。NavigationScreen、HeadingButton、CurrentLocationMarker の3箇所に適用
+- **決定（改訂）**: 地図の heading は NavMapController 内で map.moveCamera({ center, heading, zoom }) を使って命令的に制御する。<Map> の heading prop は使用しない
+- **改訂理由（v1.6.84）**: 旧方式（heading prop）で以下の3問題が判明:
+  1. heading prop は即時上書きのため回転アニメーションがない（スナップ回転で見にくい）
+  2. followMode=free でも heading が毎レンダーで上書きされ、ドラッグ移動が不可能になる
+  3. panTo と heading の個別適用でカメラがカクカクする
+- **旧決定（v1.6.43）**: heading は Map の heading prop で制御。map.setHeading() は使わない
+- **旧決定の理由**: 命令的な map.setHeading() がライブラリの内部状態管理と衝突し、値が上書きされて反映されない問題が発生した
+- **今回の解決**: setHeading() ではなく moveCamera() を使用する。moveCamera は center / heading / zoom / tilt を一括適用する公式 API であり、ライブラリとの衝突が発生しない。さらに center + heading + zoom を1回の呼び出しで統合できるため、個別適用によるカクつきも解消される
+- **followMode=free 時**: moveCamera を呼ばない。ユーザーが自由にドラッグ・回転可能
+- **0°/360° 境界問題**: shortestDelta() による連続値変換は NavMapController 内で継続使用
 
 ## D-033: F-LOG v2 — フライトレコーダー方式
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useRouteStore } from "@/stores/routeStore";
 import { useNavigationStore } from "@/stores/navigationStore";
@@ -9,7 +9,6 @@ import { NavControls } from "@/components/navigation/NavControls";
 import { NavRoutePolyline } from "@/components/navigation/NavRoutePolyline";
 import { NavMapController } from "@/components/navigation/NavMapController";
 import { NavWheelZoom } from "@/components/navigation/NavWheelZoom";
-import { shortestDelta } from "@/utils/headingUtils";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { SimRouteFeeder } from "@/components/navigation/SimRouteFeeder";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
@@ -43,19 +42,11 @@ function NavMap() {
     ? waypoints[0]!.position
     : { lat: 35.6895, lng: 139.6917 };
 
-  const heading = useNavigationStore((s) => s.heading);
-  const headingMode = useNavigationStore((s) => s.headingMode);
-  const prevHeadingRef = useRef(0);
-  const rawHeading = headingMode === "headingUp" ? heading : 0;
-  const delta = shortestDelta(prevHeadingRef.current, rawHeading);
-  prevHeadingRef.current += delta;
-  const mapHeading = prevHeadingRef.current;
-
   return (
+    // D-032: heading は NavMapController が moveCamera で制御
     <Map
       defaultCenter={defaultCenter}
       defaultZoom={15}
-      heading={mapHeading}
       mapId={mapId}
       disableDefaultUI={true}
       gestureHandling="greedy"
