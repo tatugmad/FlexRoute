@@ -66,35 +66,89 @@ export function NavMapController() {
   }, [map, followMode, currentPosition, zoomMode, speed]);
 
   // followMode=auto 時: ホイールズームの center ずれを防止 (D-035)
-  // scrollwheel: false で Google Maps の内部 wheel ハンドラを止め、
-  // 自前の wheel リスナーで zoom だけ変更する（center は動かない）
   useEffect(() => {
     if (!map) return;
-    // followMode=auto のとき Google Maps のネイティブ wheel ズームを停止
-    // （一時比較用: __zoomMode === "native" の場合は停止しない）
-    const shouldDisable = followMode === "auto"
-      && (window as unknown as Record<string, unknown>).__zoomMode !== "native";
-    (map as google.maps.Map).setOptions({ scrollwheel: !shouldDisable });
+    const zoomModeFlag = (window as unknown as Record<string, unknown>).__zoomMode;
+    const isNative = zoomModeFlag === "native";
+    const isAuto = followMode === "auto";
+    const shouldDisableScrollwheel = isAuto && !isNative;
+    (map as google.maps.Map).setOptions({ scrollwheel: !shouldDisableScrollwheel });
+    // TEMP: scrollwheel 設定をログ
+    console.log("[TEMP D-035] useEffect run:", {
+      followMode,
+      zoomModeFlag,
+      isNative,
+      shouldDisableScrollwheel,
+      scrollwheelSetTo: !shouldDisableScrollwheel,
+    });
     const div = (map as google.maps.Map).getDiv();
     if (!div) return;
     const handleWheel = (e: WheelEvent) => {
-      // 動的チェック: followMode と __zoomMode は呼び出し時に評価
       const state = useNavigationStore.getState();
-      if (state.followMode !== "auto") return;
-      const zoomMode = (window as unknown as Record<string, unknown>).__zoomMode;
-      if (zoomMode === "native") return;
+      const currentZoomMode = (window as unknown as Record<string, unknown>).__zoomMode;
+      // TEMP: handleWheel 呼び出しを必ずログ（return 前に）
+      const beforeZoom = map.getZoom() ?? 0;
+      const centerBefore = map.getCenter();
+      console.log("[TEMP D-035] handleWheel fired:", {
+        followMode: state.followMode,
+        zoomModeFlag: currentZoomMode,
+        beforeZoom: beforeZoom.toFixed(4),
+        centerBefore: centerBefore
+          ? { lat: centerBefore.lat().toFixed(6), lng: centerBefore.lng().toFixed(6) }
+          : null,
+        deltaY: e.deltaY,
+      });
+      if (state.followMode !== "auto") {
+        console.log("[TEMP D-035] → skipped: not auto"); // TEMP
+        return;
+      }
+      if (currentZoomMode === "native") {
+        console.log("[TEMP D-035] → skipped: native mode"); // TEMP
+        return;
+      }
       e.preventDefault();
       const currentZoom = map.getZoom() ?? 15;
       const delta = e.deltaY < 0 ? 1 : -1;
       const newZoom = Math.max(1, Math.min(22, currentZoom + delta));
       if (newZoom !== currentZoom) {
         map.setZoom(newZoom);
+        // TEMP: setZoom 実行ログ
+        console.log("[TEMP D-035] → setZoom called:", {
+          from: currentZoom.toFixed(4),
+          to: newZoom,
+          delta,
+        });
       }
     };
     div.addEventListener("wheel", handleWheel, { passive: false });
+    // TEMP: Google Maps ネイティブズームの検知
+    // zoom_changed は setZoom でもネイティブでも発火する
+    // handleWheel の setZoom と同期的に発火するか、
+    // それとも別タイミングで発火するかで判別できる
+    let lastSetZoomTime = 0;
+    const origSetZoom = map.setZoom.bind(map);
+    (map as google.maps.Map).setZoom = ((z: number) => {
+      lastSetZoomTime = performance.now();
+      return origSetZoom(z);
+    }) as typeof map.setZoom;
+    const zoomListener = map.addListener("zoom_changed", () => {
+      const elapsed = performance.now() - lastSetZoomTime;
+      const zoom = map.getZoom() ?? 0;
+      const center = map.getCenter();
+      // TEMP: zoom_changed の発火元を判別
+      console.log("[TEMP D-035] zoom_changed:", {
+        zoom: zoom.toFixed(4),
+        center: center
+          ? { lat: center.lat().toFixed(6), lng: center.lng().toFixed(6) }
+          : null,
+        fromSetZoom: elapsed < 50,
+        elapsedSinceSetZoom: Math.round(elapsed),
+      });
+    });
     return () => {
       div.removeEventListener("wheel", handleWheel);
-      // クリーンアップ時に scrollwheel を復元
+      google.maps.event.removeListener(zoomListener); // TEMP
+      (map as google.maps.Map).setZoom = origSetZoom; // TEMP: restore
       (map as google.maps.Map).setOptions({ scrollwheel: true });
     };
   }, [map, followMode]);
