@@ -364,6 +364,7 @@ type SavedPlace = {
 ### routeStore（src/stores/routeStore.ts）
 
 型定義: `src/stores/routeStoreTypes.ts`
+永続化アクション実装: `src/stores/routeStorePersistence.ts`
 
 #### 状態
 
@@ -412,6 +413,17 @@ type SavedPlace = {
   - `migrateLabelIds(routes)` — labelIds 未設定の古いデータを [] にマイグレーション
   - `createNewRoute(travelMode)` — 新規空ルートを生成
   - `toRoute(saved)` — 保存形式から編集形式に変換
+
+### routeStorePersistence.ts（src/stores/routeStorePersistence.ts）
+
+- **責務**: routeStore の永続化アクション。localStorage への保存・読込・削除・一覧取得
+- **公開関数**:
+  - `saveCurrentRoute(get, set)` — 現在ルートをサムネイル生成込みで localStorage に保存
+  - `loadRoute(get, set, id)` — 保存済みルートを読み込み、currentRoute に設定
+  - `deleteRoute(get, set, id)` — ルートを localStorage から削除
+  - `loadSavedRoutes(get, set)` — localStorage から全ルート読み込み。サムネイル・labelIds のマイグレーション含む
+- **呼び出し元**: routeStore.ts（Zustand の get/set を渡して委譲）
+- **依存**: localStorageService, routeConverters, routeThumbnail, thumbnailUrl, flightRecorder
 
 ### navigationStore（src/stores/navigationStore.ts）
 
@@ -1011,7 +1023,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### NavMapController.tsx（src/components/navigation/）
 
-- **責務**: ナビゲーション地図の制御。followMode=auto 時のホイールズーム無効化（scrollwheel: false）+ normalize-wheel による正規化ステップでのマーカーピボットズーム。ホイール停止時 150ms debounce + moveCamera で余韻カット
+- **責務**: ナビゲーション地図の制御。followMode=auto 時のホイールズーム無効化（scrollwheel: false）+ normalize-wheel による正規化ステップでのマーカーピボットズーム。ホイール停止時 150ms debounce + moveCamera で余韻カット。wheelmode-changed カスタムイベントのリスナーで P/N モード切替時の scrollwheel 設定を一元管理
 - **export**: pivotZoom 関数（ZoomInOutButtons と共有）
 - **依存**: normalize-wheel, @types/normalize-wheel
 
