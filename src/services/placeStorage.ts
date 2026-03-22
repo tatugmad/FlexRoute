@@ -10,7 +10,7 @@ function readAll(): SavedPlace[] {
     if (!raw) return [];
     return JSON.parse(raw) as SavedPlace[];
   } catch (err) {
-    fr.error(C.PLACE_STORAGE, "placeStorage.parseFailed", { err });
+    fr.error(C.PLACE_STORAGE, "placeStorageService.parseFailed", { err });
     return [];
   }
 }
@@ -22,7 +22,7 @@ function writeAll(places: SavedPlace[]): void {
 export const placeStorageService = {
   getPlaces: (): SavedPlace[] => {
     const places = readAll();
-    fr.debug(C.PLACE_STORAGE, "placeStorage.loaded", { count: places.length });
+    fr.debug(C.PLACE_STORAGE, "placeStorageService.loaded", { count: places.length });
     return places;
   },
 
@@ -35,13 +35,13 @@ export const placeStorageService = {
       places.push(place);
     }
     writeAll(places);
-    fr.info(C.PLACE_STORAGE, "placeStorage.saved", { id: place.id, name: place.name });
+    fr.info(C.PLACE_STORAGE, "placeStorageService.saved", { id: place.id, name: place.name });
   },
 
   deletePlace: (placeId: string): void => {
     const places = readAll().filter((p) => p.id !== placeId);
     writeAll(places);
-    fr.info(C.PLACE_STORAGE, "placeStorage.deleted", { id: placeId });
+    fr.info(C.PLACE_STORAGE, "placeStorageService.deleted", { id: placeId });
   },
 
   getPlace: (placeId: string): SavedPlace | undefined => {
