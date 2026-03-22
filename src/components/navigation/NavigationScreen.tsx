@@ -11,6 +11,7 @@ import { NavMapController } from "@/components/navigation/NavMapController";
 import { NavWheelZoom } from "@/components/navigation/NavWheelZoom";
 import { shortestDelta } from "@/utils/headingUtils";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
+import { SimRouteFeeder } from "@/components/navigation/SimRouteFeeder";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
 import { ZoomInOutButtons } from "@/components/navigation/ZoomInOutButtons";
 import { StepDebugMarkers } from "@/components/navigation/StepDebugMarkers";
@@ -66,6 +67,7 @@ function NavMap() {
       <NavGeolocationRunner />
       <NavStepProgressionRunner />
       <SimPositionCross />
+      <SimRouteFeeder />
       <StepDebugMarkers />
     </Map>
   );
