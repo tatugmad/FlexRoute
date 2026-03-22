@@ -128,10 +128,8 @@ export function NavMapController() {
           const scale = Math.pow(2, currentZoom - newZoom);
           const newLat = marker.lat + (center.lat() - marker.lat) * scale;
           const newLng = marker.lng + (center.lng() - marker.lng) * scale;
-          (map as google.maps.Map).moveCamera({
-            center: { lat: newLat, lng: newLng },
-            zoom: newZoom,
-          });
+          map.setZoom(newZoom);
+          map.setCenter({ lat: newLat, lng: newLng });
           // TEMP
           console.log("[TEMP D-035] → pivot zoom:", {
             mode,
