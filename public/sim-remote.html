@@ -198,11 +198,30 @@
   var connected = false;
   var connectTimer = setTimeout(function() { if (!connected) setConnectionStatus('disconnected'); }, 3000);
 
+  // ── Distance utilities (no google.maps.geometry available) ──
+  function distM(a, b) {
+    var dLat = (b.lat - a.lat) * 111320;
+    var dLng = (b.lng - a.lng) * 111320 * Math.cos(a.lat * Math.PI / 180);
+    return Math.sqrt(dLat * dLat + dLng * dLng);
+  }
+  function lerpLatLng(a, b, t) {
+    return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+  }
+  function bearingDeg(a, b) {
+    var dLng = b.lng - a.lng;
+    var dLat = b.lat - a.lat;
+    var deg = Math.round(Math.atan2(dLng, dLat) * 180 / Math.PI);
+    if (deg < 0) deg += 360;
+    return deg;
+  }
+
   // ── Route follow state ──
   var routePoints = [];
-  var routeIndex = 0;
+  var currentSegment = 0;
+  var progressM = 0;
   var isFollowing = false;
   var followTimer = null;
+  var FOLLOW_TICK_MS = 100;
 
   // ── Build ring D-pad SVG ──
   var segments = [
@@ -319,7 +338,8 @@
         break;
       case 'route-polyline':
         routePoints = msg.points || [];
-        routeIndex = 0;
+        currentSegment = 0;
+        progressM = 0;
         if (isFollowing) {
           clearInterval(followTimer);
           followTimer = null;
@@ -435,46 +455,63 @@
     }
   }
 
-  // ── Follow interval ──
-  function getFollowIntervalMs() {
+  // ── Follow tick (distance-based interpolation) ──
+  function followTick() {
+    if (currentSegment >= routePoints.length - 1) {
+      clearInterval(followTimer);
+      followTimer = null;
+      isFollowing = false;
+      updateFollowButton();
+      return;
+    }
     var speedMs = state.simValues.speed || 0;
-    if (speedMs <= 0) return 1000;
-    var interval = Math.round(10 / speedMs * 1000);
-    return Math.max(100, Math.min(3000, interval));
+    if (speedMs <= 0) return;
+    var stepM = speedMs * (FOLLOW_TICK_MS / 1000);
+    progressM += stepM;
+    while (currentSegment < routePoints.length - 1) {
+      var a = routePoints[currentSegment];
+      var b = routePoints[currentSegment + 1];
+      var segLen = distM(a, b);
+      if (segLen < 0.001) {
+        currentSegment++;
+        continue;
+      }
+      if (progressM < segLen) {
+        var t = progressM / segLen;
+        var pos = lerpLatLng(a, b, t);
+        state.simValues.position = pos;
+        channel.postMessage({ type: 'set-sim-position', lat: pos.lat, lng: pos.lng });
+        if (state.simValues.headingSync) {
+          var hdg = bearingDeg(a, b);
+          state.simValues.heading = hdg;
+          channel.postMessage({ type: 'set-sim-heading', value: hdg });
+        }
+        updateUI();
+        return;
+      }
+      progressM -= segLen;
+      currentSegment++;
+    }
+    var lastPt = routePoints[routePoints.length - 1];
+    state.simValues.position = lastPt;
+    channel.postMessage({ type: 'set-sim-position', lat: lastPt.lat, lng: lastPt.lng });
+    updateUI();
+    clearInterval(followTimer);
+    followTimer = null;
+    isFollowing = false;
+    updateFollowButton();
   }
 
   // ── Toggle route follow ──
   window.toggleRouteFollow = function() {
-    if (routePoints.length === 0) return;
+    if (routePoints.length < 2) return;
     if (isFollowing) {
       clearInterval(followTimer);
       followTimer = null;
       isFollowing = false;
     } else {
       isFollowing = true;
-      followTimer = setInterval(function() {
-        if (routeIndex >= routePoints.length) {
-          clearInterval(followTimer);
-          followTimer = null;
-          isFollowing = false;
-          updateFollowButton();
-          return;
-        }
-        var pt = routePoints[routeIndex];
-        state.simValues.position = { lat: pt.lat, lng: pt.lng };
-        channel.postMessage({ type: 'set-sim-position', lat: pt.lat, lng: pt.lng });
-        if (routeIndex < routePoints.length - 1 && state.simValues.headingSync) {
-          var next = routePoints[routeIndex + 1];
-          var dLng = next.lng - pt.lng;
-          var dLat = next.lat - pt.lat;
-          var hdg = Math.round(Math.atan2(dLng, dLat) * 180 / Math.PI);
-          if (hdg < 0) hdg += 360;
-          state.simValues.heading = hdg;
-          channel.postMessage({ type: 'set-sim-heading', value: hdg });
-        }
-        routeIndex++;
-        updateUI();
-      }, getFollowIntervalMs());
+      followTimer = setInterval(followTick, FOLLOW_TICK_MS);
     }
     updateFollowButton();
   };
