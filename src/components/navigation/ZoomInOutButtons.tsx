@@ -63,7 +63,19 @@ export function ZoomInOutButtons() {
     if (intervalRef.current) clearTimeout(intervalRef.current);
     timerRef.current = null;
     intervalRef.current = null;
-  }, []);
+    // Google Maps のアニメーションキューをキャンセルし、
+    // 現在の表示ズームで即座に固定する
+    if (map) {
+      const currentZoom = map.getZoom();
+      const currentCenter = map.getCenter();
+      if (currentZoom != null && currentCenter) {
+        (map as google.maps.Map).moveCamera({
+          zoom: currentZoom,
+          center: currentCenter,
+        });
+      }
+    }
+  }, [map]);
 
   const handlePointerDown = useCallback(
     (direction: 1 | -1) => {
