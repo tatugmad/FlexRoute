@@ -93,7 +93,7 @@
 </head>
 <body>
 <div class="title-bar">
-  <span>SensorBridge Remote</span>
+  <span>SensorBridge Remote <span id="appVersionDisplay" style="font-size:10px;font-weight:400;color:#94a3b8;"></span></span>
   <div class="status">
     <div class="status-dot connecting" id="statusDot"></div>
     <span id="statusText">connecting...</span>
@@ -189,7 +189,7 @@
 </div>
 <script>
 (function() {
-  var SIM_VERSION = '1.6.80';
+  var SIM_VERSION = '1.6.81';
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
@@ -335,8 +335,11 @@
         if (!connected) { connected = true; clearTimeout(connectTimer); setConnectionStatus('connected'); }
         state.channelModes = msg.channelModes;
         state.simValues = msg.simValues;
-        if (msg.appVersion && msg.appVersion !== SIM_VERSION) {
-          showVersionWarning(msg.appVersion);
+        if (msg.appVersion) {
+          document.getElementById('appVersionDisplay').textContent = 'v' + msg.appVersion;
+          if (msg.appVersion !== SIM_VERSION) {
+            showVersionWarning(msg.appVersion);
+          }
         }
         updateUI();
         break;
@@ -487,7 +490,8 @@
         var pos = lerpLatLng(a, b, t);
         state.simValues.position = pos;
         channel.postMessage({ type: 'set-sim-position', lat: pos.lat, lng: pos.lng });
-        if (state.simValues.headingSync) {
+        // heading: 常に計算・送信する（sync/intv の制御は simGeolocation.ts 側で行う）
+        if (currentSegment < routePoints.length - 1) {
           var hdg = bearingDeg(a, b);
           state.simValues.heading = hdg;
           channel.postMessage({ type: 'set-sim-heading', value: hdg });
