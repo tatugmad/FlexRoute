@@ -37,8 +37,8 @@
   .toggle-btn.active-sim { background: #fef3c7; color: #92400e; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
   .row { display: flex; gap: 0; }
   .row > .col { flex: 1; }
-  .dpad { display: grid; grid-template-columns: 32px 32px 32px; grid-template-rows: 32px 32px 32px; gap: 2px; justify-content: center; }
-  .dpad-btn { width: 32px; height: 32px; border: 1px solid #cbd5e1; border-radius: 5px; background: #f1f5f9; cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; color: #475569; }
+  .dpad { display: grid; grid-template-columns: repeat(5, 28px); grid-template-rows: repeat(5, 28px); gap: 2px; justify-content: center; }
+  .dpad-btn { width: 28px; height: 28px; border: 1px solid #cbd5e1; border-radius: 5px; background: #f1f5f9; cursor: pointer; font-size: 9px; display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 600; }
   .dpad-btn:hover { background: #e2e8f0; }
   .dpad-btn:active { background: #cbd5e1; }
   .dpad-btn:disabled { opacity: 0.3; cursor: default; }
@@ -105,13 +105,23 @@
     </div>
     <div class="dpad">
       <div></div>
-      <button class="dpad-btn" disabled id="dpad-n" data-dir="n">&#9650;</button>
+      <button class="dpad-btn" disabled data-dir="330">NNW</button>
+      <button class="dpad-btn" disabled data-dir="0">N</button>
+      <button class="dpad-btn" disabled data-dir="30">NNE</button>
       <div></div>
-      <button class="dpad-btn" disabled id="dpad-w" data-dir="w">&#9664;</button>
-      <div style="width:32px;height:32px;"></div>
-      <button class="dpad-btn" disabled id="dpad-e" data-dir="e">&#9654;</button>
+      <button class="dpad-btn" disabled data-dir="300">WNW</button>
+      <div></div><div></div><div></div>
+      <button class="dpad-btn" disabled data-dir="60">ENE</button>
+      <button class="dpad-btn" disabled data-dir="270">W</button>
+      <div></div><div></div><div></div>
+      <button class="dpad-btn" disabled data-dir="90">E</button>
+      <button class="dpad-btn" disabled data-dir="240">WSW</button>
+      <div></div><div></div><div></div>
+      <button class="dpad-btn" disabled data-dir="120">ESE</button>
       <div></div>
-      <button class="dpad-btn" disabled id="dpad-s" data-dir="s">&#9660;</button>
+      <button class="dpad-btn" disabled data-dir="210">SSW</button>
+      <button class="dpad-btn" disabled data-dir="180">S</button>
+      <button class="dpad-btn" disabled data-dir="150">SSE</button>
       <div></div>
     </div>
     <div class="coord-display" id="coordDisplay">&mdash;</div>
@@ -229,8 +239,8 @@
     var posIsSim = state.channelModes.position === 'sim';
     var hdgIsSim = state.channelModes.heading === 'sim';
     var spdIsSim = state.channelModes.speed === 'sim';
-    var dpadBtns = ['dpad-n', 'dpad-s', 'dpad-e', 'dpad-w'];
-    for (var i = 0; i < dpadBtns.length; i++) document.getElementById(dpadBtns[i]).disabled = !posIsSim;
+    var dpadBtnsAll = document.querySelectorAll('.dpad-btn');
+    for (var i = 0; i < dpadBtnsAll.length; i++) dpadBtnsAll[i].disabled = !posIsSim;
     var pos = state.simValues.position;
     document.getElementById('coordDisplay').textContent = pos ? pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4) : '\u2014';
     var is2 = document.getElementById('intervalSlider');
@@ -335,19 +345,16 @@
   // D-pad long press
   var dpadTimer = null;
   function dpadOnce(btn) {
-    var dir = btn.getAttribute('data-dir');
-    if (dir) movePos(dir);
+    var deg = parseInt(btn.getAttribute('data-dir'), 10);
+    if (!isNaN(deg)) movePos(deg);
   }
   function startDpad(btn) {
     if (btn.disabled) return;
     dpadOnce(btn);
-    dpadTimer = setTimeout(function repeat() {
-      dpadOnce(btn);
-      dpadTimer = setTimeout(repeat, 50);
-    }, 300);
+    dpadTimer = setInterval(function() { dpadOnce(btn); }, 500);
   }
   function stopDpad() {
-    if (dpadTimer !== null) { clearTimeout(dpadTimer); dpadTimer = null; }
+    if (dpadTimer !== null) { clearInterval(dpadTimer); dpadTimer = null; }
   }
   var dpadBtnsAll = document.querySelectorAll('.dpad-btn');
   for (var d = 0; d < dpadBtnsAll.length; d++) {
@@ -364,11 +371,14 @@
     channel.postMessage({ type: 'set-channel-mode', channel: ch, mode: mode });
     updateUI();
   };
-  window.movePos = function(dir) {
+  window.movePos = function(deg) {
     var pos = state.simValues.position;
     if (!pos) return;
-    var lat = pos.lat, lng = pos.lng;
-    switch (dir) { case 'n': lat += 0.00009; break; case 's': lat -= 0.00009; break; case 'e': lng += 0.00011; break; case 'w': lng -= 0.00011; break; }
+    var rad = deg * Math.PI / 180;
+    var dlat = 0.00009 * Math.cos(rad);
+    var dlng = 0.00011 * Math.sin(rad);
+    var lat = pos.lat + dlat;
+    var lng = pos.lng + dlng;
     state.simValues.position = { lat: lat, lng: lng };
     channel.postMessage({ type: 'set-sim-position', lat: lat, lng: lng });
     updateUI();

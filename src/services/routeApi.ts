@@ -9,8 +9,12 @@ const FIELD_MASK = [
   "routes.duration",
   "routes.distanceMeters",
   "routes.polyline.encodedPolyline",
+  "routes.legs.distanceMeters",
+  "routes.legs.duration",
   "routes.legs.steps.polyline.encodedPolyline",
   "routes.legs.steps.navigationInstruction.instructions",
+  "routes.legs.steps.distanceMeters",
+  "routes.legs.steps.staticDuration",
 ].join(",");
 
 export async function computeRoutes(
