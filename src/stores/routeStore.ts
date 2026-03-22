@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
-import { localStorageService } from "@/services/storage";
 import type { RouteStoreState } from "@/stores/routeStoreTypes";
-import { toSavedRoute, toRoute, createNewRoute, migrateLabelIds } from "@/stores/routeConverters";
-import { migrateThumbnails } from "@/utils/thumbnailUrl";
-import { generateRouteThumbnailUrl, generateRouteThumbnailUrlSmall } from "@/utils/routeThumbnail";
+import { createNewRoute } from "@/stores/routeConverters";
 import { isValidPosition } from "@/utils/validation";
+import {
+  saveCurrentRoute, loadRoute, deleteRoute, loadSavedRoutes,
+} from "@/stores/routeStorePersistence";
 
 const initialState = {
   currentRoute: null,
@@ -85,7 +85,7 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
   setRouteName: (routeName) => set({ routeName, isDirty: true }),
   setIsDirty: (isDirty) => set({ isDirty }),
   setRouteError: (routeError) => set({ routeError, isCalculatingRoute: false }),
-  setIsCalculatingRoute: (isCalculatingRoute) => set({ isCalculatingRoute }),
+  setIsCalculatingRoute: (isCalculating) => set({ isCalculatingRoute: isCalculating }),
   setMapViewState: (center, zoom, width, height) => set({ mapCenter: center, mapZoom: zoom, mapWidth: width, mapHeight: height }),
   clearRouteData: () => set({ routeSteps: [], encodedPolyline: null, routeError: null, currentLegs: [] }),
   setRouteData: (data) => {
@@ -104,65 +104,11 @@ export const useRouteStore = create<RouteStoreState>()((set, get) => ({
       steps: data.legs.reduce((n, l) => n + l.steps.length, 0),
     });
   },
-  saveCurrentRoute: () => {
-    const state = get();
-    if (!state.currentRoute) return;
-    const saved = toSavedRoute(
-      state.currentRoute, state.routeName, state.encodedPolyline,
-      state.currentLegs, state.savedRoutes, state.mapCenter, state.mapZoom,
-      state.mapWidth, state.mapHeight, state.currentLabelIds,
-    );
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-    saved.thumbnailUrl = generateRouteThumbnailUrl(saved, apiKey);
-    saved.thumbnailUrlSmall = generateRouteThumbnailUrlSmall(saved, apiKey);
-    localStorageService.saveRoute(saved);
-    const updated = state.savedRoutes.some((r) => r.id === saved.id)
-      ? state.savedRoutes.map((r) => (r.id === saved.id ? saved : r))
-      : [...state.savedRoutes, saved];
-    set({ savedRoutes: updated, isDirty: false });
-  },
-
-  loadRoute: (id) => {
-    const saved = get().savedRoutes.find((r) => r.id === id);
-    if (!saved) {
-      fr.warn(C.ROUTE, "route.loadNotFound", { id });
-      return;
-    }
-    set({
-      currentRoute: toRoute(saved), routeName: saved.name,
-      encodedPolyline: saved.encodedPolyline || null, currentLegs: saved.legs ?? [],
-      isDirty: false, mapCenter: saved.mapCenter ?? null, mapZoom: saved.mapZoom ?? null,
-      currentLabelIds: saved.labelIds ?? [], skipNextCalculation: true,
-    });
-    fr.info(C.ROUTE, "route.loaded", {
-      id, name: saved.name,
-      wpCount: saved.waypoints.length,
-      hasLegs: (saved.legs?.length ?? 0) > 0,
-    });
-  },
-
-  deleteRoute: (id) => {
-    localStorageService.deleteRoute(id);
-    set((state) => ({
-      savedRoutes: state.savedRoutes.filter((r) => r.id !== id),
-    }));
-  },
-
+  saveCurrentRoute: () => saveCurrentRoute(get, set),
+  loadRoute: (id) => loadRoute(get, set, id),
+  deleteRoute: (id) => deleteRoute(set, id),
   setCurrentLabelIds: (currentLabelIds) => set({ currentLabelIds, isDirty: true }),
-
-  loadSavedRoutes: () => {
-    const raw = localStorageService.getRoutes();
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-    const { routes, changed } = migrateThumbnails(raw, apiKey);
-    const labelMigrated = migrateLabelIds(routes);
-    if (changed || labelMigrated) routes.forEach((r) => localStorageService.saveRoute(r));
-    set({ savedRoutes: routes });
-    fr.debug(C.ROUTE, "route.allLoaded", {
-      count: routes.length,
-      migrated: changed || labelMigrated,
-    });
-  },
-
+  loadSavedRoutes: () => loadSavedRoutes(set),
   setSkipNextCalculation: (skipNextCalculation) => set({ skipNextCalculation }),
   newRoute: () => {
     fr.info(C.ROUTE, "route.new", { travelMode: get().travelMode });
