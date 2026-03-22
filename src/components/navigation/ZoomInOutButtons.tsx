@@ -1,8 +1,14 @@
 import { useRef, useCallback, useState } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 
-const LONG_PRESS_DELAY = 400;
-const INTERVALS = [300, 300, 300, 200, 200, 200, 100];
+const LONG_PRESS_DELAY = 200;
+// [間隔ms, ステップ] の加速テーブル
+// リピート回数に応じてフェーズが変わる
+const ACCEL_PHASES = [
+  { until: 5,  intervalMs: 80,  step: 0.25 },
+  { until: 15, intervalMs: 50,  step: 0.5 },
+  { until: Infinity, intervalMs: 30, step: 1.0 },
+] as const;
 
 export function ZoomInOutButtons() {
   const map = useMap();
@@ -12,11 +18,10 @@ export function ZoomInOutButtons() {
   const [modeLabel, setModeLabel] = useState("P");
 
   const applyZoom = useCallback(
-    (direction: 1 | -1) => {
+    (direction: 1 | -1, step: number = 0.25) => {
       if (!map) return;
       const current = map.getZoom() ?? 15;
-      const step = direction * 0.25;
-      const next = Math.max(1, Math.min(22, current + step));
+      const next = Math.max(1, Math.min(22, current + direction * step));
       if (next !== current) map.setZoom(next);
     },
     [map],
@@ -26,10 +31,12 @@ export function ZoomInOutButtons() {
     (direction: 1 | -1) => {
       stepCountRef.current = 0;
       const tick = () => {
-        applyZoom(direction);
         stepCountRef.current++;
-        const idx = Math.min(stepCountRef.current, INTERVALS.length - 1);
-        intervalRef.current = setTimeout(tick, INTERVALS[idx]!);
+        const phase = ACCEL_PHASES.find(
+          (p) => stepCountRef.current <= p.until,
+        ) ?? ACCEL_PHASES[ACCEL_PHASES.length - 1]!;
+        applyZoom(direction, phase.step);
+        intervalRef.current = setTimeout(tick, phase.intervalMs);
       };
       timerRef.current = setTimeout(tick, LONG_PRESS_DELAY);
     },
