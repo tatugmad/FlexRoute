@@ -90,8 +90,6 @@ export function NavMapController() {
   }, [map, followMode, currentPosition, zoomMode, speed]);
 
   // followMode=auto 時: ホイールズームの center ずれを防止 (D-035)
-  // scrollwheel: false で Google Maps のネイティブ wheel を止め、
-  // normalize-wheel で正規化したステップでマーカーピボットズーム
   useEffect(() => {
     if (!map) return;
     const isAuto = followMode === "auto";
@@ -102,6 +100,7 @@ export function NavMapController() {
     });
     const div = (map as google.maps.Map).getDiv();
     if (!div) return;
+    let wheelStopTimer: ReturnType<typeof setTimeout> | null = null;
     const handleWheel = (e: WheelEvent) => {
       const state = useNavigationStore.getState();
       if (state.followMode !== "auto") return;
@@ -118,10 +117,22 @@ export function NavMapController() {
       } else {
         map.setZoom(newZoom);
       }
+      // ホイール停止検知: 最後のホイールイベントから150ms後に
+      // moveCamera で現在値に固定し、余韻をカットする
+      if (wheelStopTimer) clearTimeout(wheelStopTimer);
+      wheelStopTimer = setTimeout(() => {
+        const z = map.getZoom();
+        const c = map.getCenter();
+        if (z != null && c) {
+          (map as google.maps.Map).moveCamera({ zoom: z, center: c });
+        }
+        wheelStopTimer = null;
+      }, 150);
     };
     div.addEventListener("wheel", handleWheel, { passive: false });
     return () => {
       div.removeEventListener("wheel", handleWheel);
+      if (wheelStopTimer) clearTimeout(wheelStopTimer);
       (map as google.maps.Map).setOptions({ scrollwheel: true });
     };
   }, [map, followMode]);
