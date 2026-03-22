@@ -1,5 +1,7 @@
 import { useRef, useCallback, useState } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
+import { useNavigationStore } from "@/stores/navigationStore";
+import { pivotZoom } from "@/components/navigation/NavMapController";
 
 const LONG_PRESS_DELAY = 200;
 // リピート回数に応じてステップが大きくなる加速テーブル
@@ -36,7 +38,15 @@ export function ZoomInOutButtons() {
       if (!map) return;
       const current = map.getZoom() ?? 15;
       const next = Math.max(1, Math.min(22, current + direction * step));
-      if (next !== current) map.setZoom(next);
+      if (next === current) return;
+      const isNative = (window as unknown as Record<string, unknown>)
+        .__wheelMode === "native";
+      const marker = useNavigationStore.getState().currentPosition;
+      if (!isNative && marker) {
+        pivotZoom(map as google.maps.Map, marker, next);
+      } else {
+        map.setZoom(next);
+      }
     },
     [map],
   );
