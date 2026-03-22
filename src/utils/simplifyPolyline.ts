@@ -1,9 +1,9 @@
-type Point = { lat: number; lng: number };
+import type { LatLng } from "@/types";
 
 export function simplifyPolyline(
-  points: Point[],
+  points: LatLng[],
   tolerance: number = 0.0001,
-): Point[] {
+): LatLng[] {
   if (points.length <= 2) return points;
 
   let maxDist = 0;
@@ -29,9 +29,9 @@ export function simplifyPolyline(
 }
 
 function perpendicularDistance(
-  point: Point,
-  lineStart: Point,
-  lineEnd: Point,
+  point: LatLng,
+  lineStart: LatLng,
+  lineEnd: LatLng,
 ): number {
   const dx = lineEnd.lng - lineStart.lng;
   const dy = lineEnd.lat - lineStart.lat;

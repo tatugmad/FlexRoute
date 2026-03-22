@@ -21,7 +21,7 @@ const MAX_URL_LENGTH = 8192;
 const DEFAULT_TOLERANCE = 0.0001;
 const FALLBACK_TOLERANCE = 0.0005;
 
-type Point = { lat: number; lng: number };
+import type { LatLng } from "@/types";
 
 export function generateThumbnailUrl(
   encodedPolyline: string,
@@ -130,8 +130,8 @@ export function migrateThumbnails<T extends {
 function buildUrl(
   encodedPath: string,
   apiKey: string,
-  startPoint: Point | null,
-  endPoint: Point | null,
+  startPoint: LatLng | null,
+  endPoint: LatLng | null,
 ): string {
   let url =
     "https://maps.googleapis.com/maps/api/staticmap?" +
