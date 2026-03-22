@@ -3,6 +3,7 @@ import { useNavigationStore } from "@/stores/navigationStore";
 import { closestPointOnSegment } from "@/utils/geometry";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
+import { checkOffRoute } from "@/utils/offRouteCheck";
 import type { LatLng, SavedRouteLeg } from "@/types";
 
 type SegmentInfo = {
@@ -54,6 +55,7 @@ export function useStepProgression(legs: SavedRouteLeg[], position: LatLng | nul
   const advanceStep = useNavigationStore((s) => s.advanceStep);
   const setNextInstruction = useNavigationStore((s) => s.setNextInstruction);
   const setRemaining = useNavigationStore((s) => s.setRemaining);
+  const setOffRoute = useNavigationStore((s) => s.setOffRoute);
   const prevGlobalRef = useRef(0);
 
   const { segments, stepMetas } = useMemo(() => {
@@ -63,12 +65,8 @@ export function useStepProgression(legs: SavedRouteLeg[], position: LatLng | nul
     return buildSegmentsAndMeta(legs);
   }, [legs]);
 
-  const totalDistance = useMemo(
-    () => stepMetas.reduce((sum, m) => sum + m.distanceMeters, 0), [stepMetas],
-  );
-  const totalDuration = useMemo(
-    () => stepMetas.reduce((sum, m) => sum + m.durationSeconds, 0), [stepMetas],
-  );
+  const totalDistance = useMemo(() => stepMetas.reduce((sum, m) => sum + m.distanceMeters, 0), [stepMetas]);
+  const totalDuration = useMemo(() => stepMetas.reduce((sum, m) => sum + m.durationSeconds, 0), [stepMetas]);
 
   useEffect(() => {
     if (!position || segments.length === 0 || stepMetas.length === 0) return;
@@ -91,22 +89,31 @@ export function useStepProgression(legs: SavedRouteLeg[], position: LatLng | nul
       bestGlobal = prevGlobalRef.current;
     }
 
-    // Advance through skipped steps
-    while (prevGlobalRef.current < bestGlobal) {
-      const meta = stepMetas.find((m) => m.globalStepIndex === prevGlobalRef.current);
-      if (meta) {
-        advanceStep({
-          legIndex: meta.legIndex,
-          stepIndex: meta.stepIndex,
-          exitTimestamp: new Date().toISOString(),
-          exitPosition: position,
-        });
-        fr.debug(C.NAV, "step.advance", {
-          legIndex: meta.legIndex, stepIndex: meta.stepIndex,
-          globalStepIndex: meta.globalStepIndex,
-        });
+    // Off-route detection (hysteresis)
+    const wasOff = useNavigationStore.getState().isOffRoute;
+    const isOff = checkOffRoute(wasOff, bestDist);
+    if (!wasOff && isOff) fr.warn(C.NAV, "nav.offRoute", { distM: Math.round(bestDist) });
+    else if (wasOff && !isOff) fr.info(C.NAV, "nav.backOnRoute", { distM: Math.round(bestDist) });
+    setOffRoute(isOff, Math.round(bestDist));
+
+    // Skip step advancement while off-route
+    if (!isOff) {
+      while (prevGlobalRef.current < bestGlobal) {
+        const meta = stepMetas.find((m) => m.globalStepIndex === prevGlobalRef.current);
+        if (meta) {
+          advanceStep({
+            legIndex: meta.legIndex,
+            stepIndex: meta.stepIndex,
+            exitTimestamp: new Date().toISOString(),
+            exitPosition: position,
+          });
+          fr.debug(C.NAV, "step.advance", {
+            legIndex: meta.legIndex, stepIndex: meta.stepIndex,
+            globalStepIndex: meta.globalStepIndex,
+          });
+        }
+        prevGlobalRef.current++;
       }
-      prevGlobalRef.current++;
     }
 
     // Distance to current step endpoint
@@ -137,5 +144,5 @@ export function useStepProgression(legs: SavedRouteLeg[], position: LatLng | nul
       ? (remainDist / totalDistance) * totalDuration
       : 0;
     setRemaining(remainDist, remainDur);
-  }, [position, segments, stepMetas, totalDistance, totalDuration, advanceStep, setNextInstruction, setRemaining]);
+  }, [position, segments, stepMetas, totalDistance, totalDuration, advanceStep, setNextInstruction, setRemaining, setOffRoute]);
 }

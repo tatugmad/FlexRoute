@@ -21,6 +21,8 @@ type NavigationStoreState = {
   stepPassages: StepPassage[];
   nextInstruction: string | null;
   distanceToNextStepM: number;
+  isOffRoute: boolean;
+  offRouteDistance: number;
 };
 
 type NavigationActions = {
@@ -44,6 +46,7 @@ type NavigationActions = {
   advanceStep: (passage: StepPassage) => void;
   setNextInstruction: (instruction: string | null, distanceM: number) => void;
   resetStepProgression: () => void;
+  setOffRoute: (isOff: boolean, distance: number) => void;
 };
 
 const initialState: NavigationStoreState = {
@@ -64,6 +67,8 @@ const initialState: NavigationStoreState = {
   stepPassages: [],
   nextInstruction: null,
   distanceToNextStepM: 0,
+  isOffRoute: false,
+  offRouteDistance: 0,
 };
 
 export const useNavigationStore = create<
@@ -73,7 +78,7 @@ export const useNavigationStore = create<
 
   startNavigation: () => {
     fr.info(C.NAV, "nav.started", {});
-    set({ status: "navigating", currentLegIndex: 0, currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0 });
+    set({ status: "navigating", currentLegIndex: 0, currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0, isOffRoute: false, offRouteDistance: 0 });
   },
 
   pauseNavigation: () => {
@@ -124,5 +129,7 @@ export const useNavigationStore = create<
   setNextInstruction: (instruction, distanceM) =>
     set({ nextInstruction: instruction, distanceToNextStepM: distanceM }),
   resetStepProgression: () =>
-    set({ currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0 }),
+    set({ currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0, isOffRoute: false, offRouteDistance: 0 }),
+  setOffRoute: (isOff, distance) =>
+    set({ isOffRoute: isOff, offRouteDistance: distance }),
 }));
