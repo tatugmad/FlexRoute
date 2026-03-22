@@ -3,6 +3,7 @@ import { useMap } from "@vis.gl/react-google-maps";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { useAutoZoom } from "@/hooks/useAutoZoom";
 import { shortestDelta } from "@/utils/headingUtils";
+import { computeEdgeFollow } from "@/utils/edgeFollow";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
 
@@ -74,38 +75,54 @@ export function NavMapController() {
     return () => google.maps.event.removeListener(listener);
   }, [map, setZoomMode]);
 
-  // D-032: moveCamera で center + heading + zoom を一括適用
+  // D-032 + D-036: moveCamera による統合カメラ制御（auto / free 分岐）
   useEffect(() => {
-    if (!map || followMode !== "auto" || !currentPosition) return;
+    if (!map || !currentPosition) return;
 
-    // free → auto 復帰時: 地図の実際の heading に同期
-    const actualHeading = map.getHeading() ?? 0;
-    if (Math.abs(shortestDelta(prevHeadingRef.current, actualHeading)) > 10) {
-      prevHeadingRef.current = actualHeading;
+    // auto 復帰時: 地図の実際の heading に同期
+    if (followMode === "auto") {
+      const actualHeading = map.getHeading() ?? 0;
+      if (Math.abs(shortestDelta(prevHeadingRef.current, actualHeading)) > 10) {
+        prevHeadingRef.current = actualHeading;
+      }
     }
 
-    // heading 算出
+    // heading 算出（auto / free 共通）
     const rawHeading = headingMode === "headingUp" ? heading : 0;
     const delta = shortestDelta(prevHeadingRef.current, rawHeading);
     prevHeadingRef.current += delta;
     const mapHeading = prevHeadingRef.current;
 
-    // カメラオプション構築
-    const cameraOptions: google.maps.CameraOptions = {
-      center: currentPosition,
-      heading: mapHeading,
-    };
-
-    // autoZoom 適用
-    if (zoomMode === "autoZoom" && targetZoom !== null) {
-      const currentZoom = map.getZoom() ?? 15;
-      if (Math.abs(currentZoom - targetZoom) >= AUTO_ZOOM_THRESHOLD) {
-        isAutoZoomingRef.current = true;
-        cameraOptions.zoom = targetZoom;
+    if (followMode === "auto") {
+      // --- auto モード: center + heading + zoom ---
+      const cameraOptions: google.maps.CameraOptions = {
+        center: currentPosition,
+        heading: mapHeading,
+      };
+      if (zoomMode === "autoZoom" && targetZoom !== null) {
+        const currentZoom = map.getZoom() ?? 15;
+        if (Math.abs(currentZoom - targetZoom) >= AUTO_ZOOM_THRESHOLD) {
+          isAutoZoomingRef.current = true;
+          cameraOptions.zoom = targetZoom;
+        }
+      }
+      map.moveCamera(cameraOptions);
+    } else {
+      // --- free モード (D-036) ---
+      const cameraOptions: google.maps.CameraOptions = {};
+      // headingUp なら heading を適用
+      if (headingMode === "headingUp") {
+        cameraOptions.heading = mapHeading;
+      }
+      // エッジ追従: マーカーが画面端に接近したらスクロール
+      const edgeCenter = computeEdgeFollow(map, currentPosition, mapHeading);
+      if (edgeCenter) {
+        cameraOptions.center = edgeCenter;
+      }
+      if (cameraOptions.heading !== undefined || cameraOptions.center !== undefined) {
+        map.moveCamera(cameraOptions);
       }
     }
-
-    map.moveCamera(cameraOptions);
   }, [map, followMode, currentPosition, headingMode, heading, zoomMode, targetZoom]);
 
   return null;
