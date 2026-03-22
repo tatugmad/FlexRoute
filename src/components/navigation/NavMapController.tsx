@@ -18,7 +18,7 @@ function getAutoZoom(speedKmh: number): number {
  * newCenter = marker + (oldCenter - marker) * 2^(oldZoom - newZoom)
  * により、マーカーの画面上のピクセル位置を不変に保つ。
  */
-function pivotZoom(
+export function pivotZoom(
   map: google.maps.Map,
   marker: { lat: number; lng: number },
   newZoom: number,
