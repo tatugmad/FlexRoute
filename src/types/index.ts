@@ -32,7 +32,6 @@ export type Waypoint = {
   label: string;
   placeId: string | null;
   placeData?: PlaceData | null;
-  userNote?: string;
   isCurrentLocation?: boolean;
 };
 

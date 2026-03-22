@@ -10,7 +10,7 @@ function readAll(): Label[] {
     if (!raw) return [];
     return JSON.parse(raw) as Label[];
   } catch (err) {
-    fr.error(C.LABEL_STORAGE, "labelStorage.parseFailed", { err });
+    fr.error(C.LABEL_STORAGE, "labelStorageService.parseFailed", { err });
     return [];
   }
 }
@@ -22,7 +22,7 @@ function writeAll(labels: Label[]): void {
 export const labelStorageService = {
   getLabels: (): Label[] => {
     const labels = readAll();
-    fr.debug(C.LABEL_STORAGE, "labelStorage.loaded", { count: labels.length });
+    fr.debug(C.LABEL_STORAGE, "labelStorageService.loaded", { count: labels.length });
     return labels;
   },
 
@@ -35,13 +35,13 @@ export const labelStorageService = {
       labels.push(label);
     }
     writeAll(labels);
-    fr.info(C.LABEL_STORAGE, "labelStorage.saved", { id: label.id, name: label.name });
+    fr.info(C.LABEL_STORAGE, "labelStorageService.saved", { id: label.id, name: label.name });
   },
 
   deleteLabel: (labelId: string): void => {
     const labels = readAll().filter((l) => l.id !== labelId);
     writeAll(labels);
-    fr.info(C.LABEL_STORAGE, "labelStorage.deleted", { id: labelId });
+    fr.info(C.LABEL_STORAGE, "labelStorageService.deleted", { id: labelId });
   },
 
   getLabel: (labelId: string): Label | undefined => {
