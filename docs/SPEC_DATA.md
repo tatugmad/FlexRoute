@@ -1,6 +1,6 @@
 # FlexRoute データ仕様書
 
-> 最終更新: 2026-03-21
+> 最終更新: 2026-03-22
 
 ## 型定義一覧
 
@@ -978,6 +978,26 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `captureBugReport()` — スクリーンショット撮影 → ダンプ収集 → JSON ダウンロード
 - **依存**: flightRecorder, html2canvas（動的 import）, APP_VERSION
 - **使用箇所**: BugReportButton.tsx
+
+## Navigation コンポーネント責務一覧
+
+### NavMapController.tsx（src/components/navigation/）
+
+- **責務**: ナビゲーション地図の制御。followMode=auto 時のホイールズーム無効化（scrollwheel: false）+ normalize-wheel による正規化ステップでのマーカーピボットズーム。ホイール停止時 150ms debounce + moveCamera で余韻カット
+- **export**: pivotZoom 関数（ZoomInOutButtons と共有）
+- **依存**: normalize-wheel, @types/normalize-wheel
+
+### ZoomInOutButtons.tsx（src/components/navigation/）
+
+- **責務**: +/- ズームボタンと P/N モードトグル。P モードは pivotZoom 共有関数を使用しホイールと同一挙動。N モードは Google Maps ネイティブ。idle イベントチェーンによる長押し加速、zoomStepFactor でズームレベル補正
+- **依存**: NavMapController.tsx の pivotZoom 関数
+
+## 外部依存パッケージ
+
+| パッケージ | 用途 | 導入決定 |
+|---|---|---|
+| normalize-wheel | ホイールイベントのデバイス間差異を正規化（Facebook製） | D-035 |
+| @types/normalize-wheel | normalize-wheel の TypeScript 型定義 | D-035 |
 
 ## Utils 責務一覧
 

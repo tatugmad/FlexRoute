@@ -1,6 +1,6 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-21
+> 最終更新: 2026-03-22
 
 ## 機能一覧
 
@@ -31,6 +31,7 @@
 | F-LABEL | ラベル管理（CRUD） | ✅ | 1-5 |
 | F-PLACE | 場所保存・一覧 | ✅ | 1-5 |
 | F-THUMB | ルートサムネイル（Static Maps API） | ✅ | 1-5 |
+| F-ZOOM | ズーム制御（ホイール + ボタン + P/Nトグル） | ✅ | 1-6 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 未実装 | 1-6 |
 | F-NAV-WIPE | ワイプマップ（PiP） | 未実装 | 1-6 |
 | F-NAV-REROUTE | 逸脱検知・リルート（3選択肢） | 未実装 | 1-6 |
@@ -706,6 +707,36 @@ flexroute-bug-{timestamp}.json に以下を集約:
 
 ---
 
+### F-ZOOM: ズーム制御（1-6で実装）
+
+概要: ナビゲーション画面で followMode=auto 時に現在地マーカーをピボットとしたズーム制御を提供する。ホイール・ボタン・P/Nモード切替の3要素で構成。
+
+#### ホイールズーム（followMode=auto 時）
+- Google Maps のネイティブ wheel ズームを scrollwheel: false で無効化
+- normalize-wheel ライブラリで deltaY をデバイス間で正規化
+- 正規化ステップでマーカーピボットズームを実行（pivotZoom 関数）
+- ホイール停止後 150ms の debounce で moveCamera を呼び、Google Maps の余韻アニメーションを即時カット
+- followMode=free 時は Google Maps のネイティブ動作を維持
+
+#### ピボット計算（pivotZoom 関数）
+- NavMapController.tsx で export
+- 計算式: newCenter = marker + (oldCenter - marker) x 2^(oldZoom - newZoom)
+- マーカーの画面上ピクセル位置を不変に保つ
+- setZoom + setCenter の2呼び出しでアニメーション付きズームを実現
+- ホイールと +/- ボタン（Pモード）の両方から共有使用
+
+#### ZoomInOutButtons（+/- ボタン + P/N トグル）
+- +/- ボタン: idle イベントチェーンによる長押し加速。zoomStepFactor でズームレベルに応じたステップ補正
+- P モード（pivot-fine）: pivotZoom 共有関数を使用。ホイールと同一挙動
+- N モード（native）: Google Maps のネイティブズームを使用。将来の動作比較用に保持
+
+入力: マウスホイール、+/- ボタンタップ/長押し、P/N トグル
+出力: 地図ズームレベル変更（マーカーピボット or ネイティブ）
+エラー: なし
+関連: F-NAV, D-035
+
+---
+
 ### F-NAV: ナビゲーション（1-6で実装）
 
 概要: 保存ルートに沿ってターンバイターンナビゲーションを行う。Routes API を再呼出しない。
@@ -1113,6 +1144,21 @@ Google Maps API 依存部分の方針:
 | ~~デスクトップPCでナビ開始時にGPSロストアイコン（赤い丸）が常時表示される（固定15秒閾値がWifi/IP更新間隔より短い）~~ | 1-6 Step1 | F-LOC, F-NAV | ✅ D-028: 適応的lost閾値で解決 |
 | routeStore.ts が 177 行で 150 行ルール超過（F-LOG v2 のログ追加によるブロック化が原因。整理セッションで分割予定） | 1-6 | F-LOG | 未対処 |
 | html2canvas が Google Maps タイル（CORS）でスクリーンショット取得に失敗する（ログデータは正常回収） | 1-6 | F-BUGREPORT | 既知の制約（D-034） |
+| Routes API v2 の 25 ウェイポイント上限が未強制（ユーザーが 25 件超を追加してもエラーにならない） | 1-6設計 | F-ROUTE-CALC | 未対処 |
+
+## 再現困難な不具合
+
+確認されたが再現手順が確定しておらず、修正に着手できない不具合を記録する。
+再現手順が確定した場合は「既知の問題（TODO）」に移動する。
+
+### SPORADIC-001: P モードでホイールズームが突然効かなくなる
+
+- 発見バージョン: v1.6.64
+- 症状: P モードでホイールズームが突然反応しなくなる。N に切り替えると効く。P に戻しても効かない。ページリロードで復旧
+- 発生条件: followMode=auto のまま P/N 切替 + ホイール + +/- ボタンを繰り返し操作中に発生
+- 再現手順: 未確定（繰り返し操作中に散発的に発生）
+- 推定原因: scrollwheel 設定または handleWheel リスナー登録の競合が疑われるが未確定
+- 関連: F-ZOOM, D-035
 
 ## MD反映待ちドラフト
 
