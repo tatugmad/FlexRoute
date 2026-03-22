@@ -15,6 +15,7 @@ import { SimRouteFeeder } from "@/components/navigation/SimRouteFeeder";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
 import { ZoomInOutButtons } from "@/components/navigation/ZoomInOutButtons";
 import { StepDebugMarkers } from "@/components/navigation/StepDebugMarkers";
+import { OffRouteBanner } from "@/components/navigation/OffRouteBanner";
 import { useStepProgression } from "@/hooks/useStepProgression";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
@@ -26,6 +27,7 @@ export function NavigationScreen() {
       <div className="h-screen w-full relative">
         <NavMap />
         <NavHeader />
+        <OffRouteBanner />
         <NavControls />
         <BugReportButton />
         <ZoomInOutButtons />

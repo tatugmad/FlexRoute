@@ -87,6 +87,8 @@ function StepPopover({ endpoint: ep, passages, onClose }: {
   passages: { legIndex: number; stepIndex: number; exitTimestamp: string }[];
   onClose: () => void;
 }) {
+  const isOffRoute = useNavigationStore((s) => s.isOffRoute);
+  const offRouteDistance = useNavigationStore((s) => s.offRouteDistance);
   if (!ep) return null;
   const passage = passages.find((p) => p.legIndex === ep.legIndex && p.stepIndex === ep.stepIndex);
   return (
@@ -97,6 +99,7 @@ function StepPopover({ endpoint: ep, passages, onClose }: {
         <div>road: {ep.roadType}</div>
         <div>{ep.distanceMeters}m / {ep.durationSeconds}s</div>
         {passage && <div className="text-green-600 mt-1">passed: {passage.exitTimestamp}</div>}
+        <div className="mt-1">Off-route: {offRouteDistance}m ({isOffRoute ? "YES" : "no"})</div>
         <button className="text-blue-500 mt-1 underline" onClick={onClose}>close</button>
       </div>
     </AdvancedMarker>
