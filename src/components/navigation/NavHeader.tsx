@@ -8,6 +8,7 @@ export function NavHeader() {
   const remainingDistance = useNavigationStore((s) => s.remainingDistanceMeters);
   const remainingDuration = useNavigationStore((s) => s.remainingDurationSeconds);
   const speed = useNavigationStore((s) => s.speed);
+  const nextInstruction = useNavigationStore((s) => s.nextInstruction);
   const stopNavigation = useNavigationStore((s) => s.stopNavigation);
   const setViewMode = useUiStore((s) => s.setViewMode);
 
@@ -35,6 +36,9 @@ export function NavHeader() {
             <span className="font-bold text-lg tracking-tight">ナビゲーション中</span>
             <GpsStatusIcon />
           </div>
+          {nextInstruction && (
+            <p className="text-sm text-emerald-100 truncate max-w-[280px] mb-1">{nextInstruction}</p>
+          )}
           <div className="flex gap-6 text-emerald-50">
             <div>
               <div className="text-[10px] uppercase opacity-80 font-medium leading-none mb-1">到着予想</div>

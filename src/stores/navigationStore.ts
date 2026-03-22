@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
-import type { LatLng, NavigationStatus, PositionQuality, FollowMode, ZoomMode, HeadingMode } from "@/types";
+import type { LatLng, NavigationStatus, PositionQuality, FollowMode, ZoomMode, HeadingMode, StepPassage } from "@/types";
 
 type NavigationStoreState = {
   status: NavigationStatus;
@@ -17,6 +17,10 @@ type NavigationStoreState = {
   followMode: FollowMode;
   zoomMode: ZoomMode;
   headingMode: HeadingMode;
+  currentStepIndex: number;
+  stepPassages: StepPassage[];
+  nextInstruction: string | null;
+  distanceToNextStepM: number;
 };
 
 type NavigationActions = {
@@ -37,6 +41,9 @@ type NavigationActions = {
   setFollowMode: (mode: FollowMode) => void;
   setZoomMode: (mode: ZoomMode) => void;
   setHeadingMode: (mode: HeadingMode) => void;
+  advanceStep: (passage: StepPassage) => void;
+  setNextInstruction: (instruction: string | null, distanceM: number) => void;
+  resetStepProgression: () => void;
 };
 
 const initialState: NavigationStoreState = {
@@ -53,6 +60,10 @@ const initialState: NavigationStoreState = {
   followMode: "auto",
   zoomMode: "autoZoom",
   headingMode: "northUp",
+  currentStepIndex: 0,
+  stepPassages: [],
+  nextInstruction: null,
+  distanceToNextStepM: 0,
 };
 
 export const useNavigationStore = create<
@@ -62,7 +73,7 @@ export const useNavigationStore = create<
 
   startNavigation: () => {
     fr.info(C.NAV, "nav.started", {});
-    set({ status: "navigating", currentLegIndex: 0 });
+    set({ status: "navigating", currentLegIndex: 0, currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0 });
   },
 
   pauseNavigation: () => {
@@ -105,4 +116,13 @@ export const useNavigationStore = create<
     fr.debug(C.NAV, "nav.headingMode", { headingMode });
     set({ headingMode });
   },
+  advanceStep: (passage) =>
+    set((state) => ({
+      stepPassages: [...state.stepPassages, passage],
+      currentStepIndex: state.currentStepIndex + 1,
+    })),
+  setNextInstruction: (instruction, distanceM) =>
+    set({ nextInstruction: instruction, distanceToNextStepM: distanceM }),
+  resetStepProgression: () =>
+    set({ currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0 }),
 }));

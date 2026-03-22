@@ -113,6 +113,14 @@ export type SavedPlace = {
   updatedAt: string;
 };
 
+// ── ステップ通過記録 ──
+export type StepPassage = {
+  legIndex: number;
+  stepIndex: number;
+  exitTimestamp: string;
+  exitPosition: LatLng;
+};
+
 // ── 測位品質 ──
 export type PositionQuality = 'active' | 'lost' | 'denied';
 

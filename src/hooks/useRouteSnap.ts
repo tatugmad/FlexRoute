@@ -2,35 +2,10 @@ import { useMemo } from "react";
 import { useRouteStore } from "@/stores/routeStore";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
+import { closestPointOnSegment } from "@/utils/geometry";
 import type { LatLng, SavedRouteLeg } from "@/types";
 
 const SNAP_THRESHOLD_M = 50;
-
-function closestPointOnSegment(
-  p: google.maps.LatLng,
-  a: google.maps.LatLng,
-  b: google.maps.LatLng,
-): { point: google.maps.LatLng; dist: number } {
-  const { spherical } = google.maps.geometry;
-  const headingAB = spherical.computeHeading(a, b);
-  const headingAP = spherical.computeHeading(a, p);
-  const distAB = spherical.computeDistanceBetween(a, b);
-  const distAP = spherical.computeDistanceBetween(a, p);
-
-  const angleDiff = ((headingAP - headingAB + 360) % 360);
-  const angleRad = (angleDiff > 180 ? angleDiff - 360 : angleDiff) * (Math.PI / 180);
-  const projection = distAP * Math.cos(angleRad);
-
-  if (projection <= 0) {
-    return { point: a, dist: spherical.computeDistanceBetween(p, a) };
-  }
-  if (projection >= distAB) {
-    return { point: b, dist: spherical.computeDistanceBetween(p, b) };
-  }
-
-  const snapped = spherical.computeOffset(a, projection, headingAB);
-  return { point: snapped, dist: spherical.computeDistanceBetween(p, snapped) };
-}
 
 function decodeLegsPolylines(legs: SavedRouteLeg[]): google.maps.LatLng[][] {
   const paths: google.maps.LatLng[][] = [];
