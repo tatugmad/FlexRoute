@@ -124,11 +124,7 @@ export function ZoomInOutButtons() {
           const isNative = w.__wheelMode === "native";
           w.__wheelMode = isNative ? undefined : "native";
           setModeLabel(isNative ? "P" : "N");
-          if (map) {
-            (map as google.maps.Map).setOptions({
-              scrollwheel: !isNative ? true : false,
-            });
-          }
+          window.dispatchEvent(new Event("wheelmode-changed"));
         }}
         className="w-10 h-10 flex items-center justify-center text-slate-600 text-sm font-bold hover:bg-slate-100 active:bg-slate-200 select-none"
         title="Wheel zoom: P=pivot-fine / N=native"
