@@ -37,11 +37,16 @@
   .toggle-btn.active-sim { background: #fef3c7; color: #92400e; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
   .row { display: flex; gap: 0; }
   .row > .col { flex: 1; }
-  .dpad { display: grid; grid-template-columns: repeat(5, 28px); grid-template-rows: repeat(5, 28px); gap: 2px; justify-content: center; }
-  .dpad-btn { width: 28px; height: 28px; border: 1px solid #cbd5e1; border-radius: 5px; background: #f1f5f9; cursor: pointer; font-size: 9px; display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 600; }
-  .dpad-btn:hover { background: #e2e8f0; }
-  .dpad-btn:active { background: #cbd5e1; }
-  .dpad-btn:disabled { opacity: 0.3; cursor: default; }
+  .ring-seg { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 1; cursor: pointer; }
+  .ring-seg:hover { fill: #e2e8f0; }
+  .ring-seg:active { fill: #cbd5e1; }
+  .ring-seg.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+  .ring-center { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 1; cursor: pointer; }
+  .ring-center:hover { fill: #e2e8f0; }
+  .ring-center.following { fill: #dbeafe; stroke: #3b82f6; }
+  .ring-center.disabled { opacity: 0.3; cursor: default; pointer-events: none; }
+  .ring-label { font-size: 8px; font-weight: 600; fill: #475569; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+  .ring-label.cardinal { font-size: 9px; font-weight: 700; }
   .coord-display { text-align: center; font-size: 10px; color: #64748b; margin-top: 4px; font-variant-numeric: tabular-nums; }
   .slider-row { display: flex; align-items: center; gap: 3px; margin-top: 4px; }
   .slider-row input[type="range"] { flex: 1; accent-color: #6366f1; height: 16px; }
@@ -103,26 +108,8 @@
         <button class="toggle-btn" id="pos-sim" onclick="setMode('position','sim')">sim</button>
       </div>
     </div>
-    <div class="dpad">
-      <div></div>
-      <button class="dpad-btn" disabled data-dir="330">NNW</button>
-      <button class="dpad-btn" disabled data-dir="0">N</button>
-      <button class="dpad-btn" disabled data-dir="30">NNE</button>
-      <div></div>
-      <button class="dpad-btn" disabled data-dir="300">WNW</button>
-      <div></div><div></div><div></div>
-      <button class="dpad-btn" disabled data-dir="60">ENE</button>
-      <button class="dpad-btn" disabled data-dir="270">W</button>
-      <div></div><div></div><div></div>
-      <button class="dpad-btn" disabled data-dir="90">E</button>
-      <button class="dpad-btn" disabled data-dir="240">WSW</button>
-      <div></div><div></div><div></div>
-      <button class="dpad-btn" disabled data-dir="120">ESE</button>
-      <div></div>
-      <button class="dpad-btn" disabled data-dir="210">SSW</button>
-      <button class="dpad-btn" disabled data-dir="180">S</button>
-      <button class="dpad-btn" disabled data-dir="150">SSE</button>
-      <div></div>
+    <div style="display:flex;justify-content:center;">
+      <svg id="ringDpad" viewBox="0 0 200 200" width="170" height="170"></svg>
     </div>
     <div class="coord-display" id="coordDisplay">&mdash;</div>
     <div style="display:flex;gap:3px;justify-content:center;margin-top:4px;" id="dpadModeGroup">
@@ -210,14 +197,137 @@
   };
   var connected = false;
   var connectTimer = setTimeout(function() { if (!connected) setConnectionStatus('disconnected'); }, 3000);
+
+  // ── Route follow state ──
+  var routePoints = [];
+  var routeIndex = 0;
+  var isFollowing = false;
+  var followTimer = null;
+
+  // ── Build ring D-pad SVG ──
+  var segments = [
+    { deg: 0, label: 'N', cardinal: true },
+    { deg: 30, label: 'NNE', cardinal: false },
+    { deg: 60, label: 'ENE', cardinal: false },
+    { deg: 90, label: 'E', cardinal: true },
+    { deg: 120, label: 'ESE', cardinal: false },
+    { deg: 150, label: 'SSE', cardinal: false },
+    { deg: 180, label: 'S', cardinal: true },
+    { deg: 210, label: 'SSW', cardinal: false },
+    { deg: 240, label: 'WSW', cardinal: false },
+    { deg: 270, label: 'W', cardinal: true },
+    { deg: 300, label: 'WNW', cardinal: false },
+    { deg: 330, label: 'NNW', cardinal: false }
+  ];
+  var cx = 100, cy = 100, innerR = 42, outerR = 85, centerR = 36;
+  var midR = (innerR + outerR) / 2;
+
+  function arcPath(cxp, cyp, ir, or, startDeg, endDeg) {
+    var s1 = (startDeg - 90) * Math.PI / 180;
+    var e1 = (endDeg - 90) * Math.PI / 180;
+    var x1 = cxp + or * Math.cos(s1), y1 = cyp + or * Math.sin(s1);
+    var x2 = cxp + or * Math.cos(e1), y2 = cyp + or * Math.sin(e1);
+    var x3 = cxp + ir * Math.cos(e1), y3 = cyp + ir * Math.sin(e1);
+    var x4 = cxp + ir * Math.cos(s1), y4 = cyp + ir * Math.sin(s1);
+    return 'M' + x1 + ' ' + y1 +
+      ' A' + or + ' ' + or + ' 0 0 1 ' + x2 + ' ' + y2 +
+      ' L' + x3 + ' ' + y3 +
+      ' A' + ir + ' ' + ir + ' 0 0 0 ' + x4 + ' ' + y4 + ' Z';
+  }
+
+  var svg = document.getElementById('ringDpad');
+  // Create segments
+  for (var i = 0; i < segments.length; i++) {
+    var seg = segments[i];
+    var startAngle = seg.deg - 15;
+    var endAngle = seg.deg + 15;
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', arcPath(cx, cy, innerR, outerR, startAngle, endAngle));
+    path.setAttribute('class', 'ring-seg disabled');
+    path.setAttribute('data-dir', String(seg.deg));
+    svg.appendChild(path);
+    // Label
+    var labelAngle = (seg.deg - 90) * Math.PI / 180;
+    var lx = cx + midR * Math.cos(labelAngle);
+    var ly = cy + midR * Math.sin(labelAngle);
+    var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', String(lx));
+    text.setAttribute('y', String(ly));
+    text.setAttribute('class', 'ring-label' + (seg.cardinal ? ' cardinal' : ''));
+    text.textContent = seg.label;
+    svg.appendChild(text);
+  }
+  // Center button
+  var centerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  centerCircle.setAttribute('cx', String(cx));
+  centerCircle.setAttribute('cy', String(cy));
+  centerCircle.setAttribute('r', String(centerR));
+  centerCircle.setAttribute('class', 'ring-center disabled');
+  centerCircle.setAttribute('id', 'followBtn');
+  svg.appendChild(centerCircle);
+  var followText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  followText.setAttribute('x', String(cx));
+  followText.setAttribute('y', String(cy));
+  followText.setAttribute('id', 'followText');
+  followText.setAttribute('text-anchor', 'middle');
+  followText.setAttribute('dominant-baseline', 'central');
+  followText.setAttribute('style', 'font-size:18px;fill:#475569;pointer-events:none;');
+  followText.textContent = '\u2014';
+  svg.appendChild(followText);
+
+  // ── Ring D-pad long press ──
+  var dpadTimer = null;
+  function dpadOnce(seg) {
+    var deg = parseInt(seg.getAttribute('data-dir'), 10);
+    if (!isNaN(deg)) movePos(deg);
+  }
+  function startDpad(seg) {
+    if (seg.classList.contains('disabled')) return;
+    dpadOnce(seg);
+    dpadTimer = setInterval(function() { dpadOnce(seg); }, 500);
+  }
+  function stopDpad() {
+    if (dpadTimer !== null) { clearInterval(dpadTimer); dpadTimer = null; }
+  }
+  var ringSegs = svg.querySelectorAll('.ring-seg');
+  for (var d = 0; d < ringSegs.length; d++) {
+    (function(seg) {
+      seg.addEventListener('mousedown', function() { startDpad(seg); });
+      seg.addEventListener('touchstart', function(e) { startDpad(seg); e.preventDefault(); }, { passive: false });
+      seg.addEventListener('mouseleave', stopDpad);
+    })(ringSegs[d]);
+  }
+  document.addEventListener('mouseup', stopDpad);
+  document.addEventListener('touchend', stopDpad);
+
+  // Center button click
+  document.getElementById('followBtn').addEventListener('click', function() {
+    if (this.classList.contains('disabled')) return;
+    toggleRouteFollow();
+  });
+
   channel.postMessage({ type: 'remote-ready' });
   channel.onmessage = function(event) {
     var msg = event.data;
-    if (!msg || msg.type !== 'state-sync') return;
-    if (!connected) { connected = true; clearTimeout(connectTimer); setConnectionStatus('connected'); }
-    state.channelModes = msg.channelModes;
-    state.simValues = msg.simValues;
-    updateUI();
+    if (!msg) return;
+    switch (msg.type) {
+      case 'state-sync':
+        if (!connected) { connected = true; clearTimeout(connectTimer); setConnectionStatus('connected'); }
+        state.channelModes = msg.channelModes;
+        state.simValues = msg.simValues;
+        updateUI();
+        break;
+      case 'route-polyline':
+        routePoints = msg.points || [];
+        routeIndex = 0;
+        if (isFollowing) {
+          clearInterval(followTimer);
+          followTimer = null;
+          isFollowing = false;
+        }
+        updateFollowButton();
+        break;
+    }
   };
   window.addEventListener('beforeunload', function() {
     try {
@@ -232,6 +342,7 @@
       channel.postMessage({ type: 'remote-close' });
     } catch(e) {}
   });
+
   function updateUI() {
     updateToggle('position', state.channelModes.position);
     updateToggle('heading', state.channelModes.heading);
@@ -239,8 +350,19 @@
     var posIsSim = state.channelModes.position === 'sim';
     var hdgIsSim = state.channelModes.heading === 'sim';
     var spdIsSim = state.channelModes.speed === 'sim';
-    var dpadBtnsAll = document.querySelectorAll('.dpad-btn');
-    for (var i = 0; i < dpadBtnsAll.length; i++) dpadBtnsAll[i].disabled = !posIsSim;
+    // Ring segments enable/disable
+    var segs = svg.querySelectorAll('.ring-seg');
+    for (var i = 0; i < segs.length; i++) {
+      if (posIsSim) segs[i].classList.remove('disabled');
+      else segs[i].classList.add('disabled');
+    }
+    // Stop following if switched to real
+    if (!posIsSim && isFollowing) {
+      clearInterval(followTimer);
+      followTimer = null;
+      isFollowing = false;
+    }
+    updateFollowButton();
     var pos = state.simValues.position;
     document.getElementById('coordDisplay').textContent = pos ? pos.lat.toFixed(4) + ', ' + pos.lng.toFixed(4) : '\u2014';
     var is2 = document.getElementById('intervalSlider');
@@ -290,14 +412,81 @@
     document.getElementById('statusDot').className = 'status-dot ' + s;
     document.getElementById('statusText').textContent = s === 'connected' ? 'connected' : s === 'disconnected' ? 'disconnected' : 'connecting...';
   }
+
+  // ── Follow button state ──
+  function updateFollowButton() {
+    var btn = document.getElementById('followBtn');
+    var txt = document.getElementById('followText');
+    var posIsSim = state.channelModes.position === 'sim';
+    if (routePoints.length === 0 || !posIsSim) {
+      txt.textContent = routePoints.length === 0 ? '\u2014' : '\u25B6';
+      if (!posIsSim || routePoints.length === 0) {
+        btn.classList.add('disabled');
+      }
+      btn.classList.remove('following');
+    } else if (isFollowing) {
+      txt.textContent = '\u25A0';
+      btn.classList.remove('disabled');
+      btn.classList.add('following');
+    } else {
+      txt.textContent = '\u25B6';
+      btn.classList.remove('disabled');
+      btn.classList.remove('following');
+    }
+  }
+
+  // ── Follow interval ──
+  function getFollowIntervalMs() {
+    var speedMs = state.simValues.speed || 0;
+    if (speedMs <= 0) return 1000;
+    var interval = Math.round(10 / speedMs * 1000);
+    return Math.max(100, Math.min(3000, interval));
+  }
+
+  // ── Toggle route follow ──
+  window.toggleRouteFollow = function() {
+    if (routePoints.length === 0) return;
+    if (isFollowing) {
+      clearInterval(followTimer);
+      followTimer = null;
+      isFollowing = false;
+    } else {
+      isFollowing = true;
+      followTimer = setInterval(function() {
+        if (routeIndex >= routePoints.length) {
+          clearInterval(followTimer);
+          followTimer = null;
+          isFollowing = false;
+          updateFollowButton();
+          return;
+        }
+        var pt = routePoints[routeIndex];
+        state.simValues.position = { lat: pt.lat, lng: pt.lng };
+        channel.postMessage({ type: 'set-sim-position', lat: pt.lat, lng: pt.lng });
+        if (routeIndex < routePoints.length - 1 && state.simValues.headingSync) {
+          var next = routePoints[routeIndex + 1];
+          var dLng = next.lng - pt.lng;
+          var dLat = next.lat - pt.lat;
+          var hdg = Math.round(Math.atan2(dLng, dLat) * 180 / Math.PI);
+          if (hdg < 0) hdg += 360;
+          state.simValues.heading = hdg;
+          channel.postMessage({ type: 'set-sim-heading', value: hdg });
+        }
+        routeIndex++;
+        updateUI();
+      }, getFollowIntervalMs());
+    }
+    updateFollowButton();
+  };
+
   // Heading dial
   var dialDragging = false;
   function getAngleFromEvent(e) {
     var rect = document.getElementById('dialWrapper').getBoundingClientRect();
-    var cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    var cxd = rect.left + rect.width / 2, cyd = rect.top + rect.height / 2;
     var clientX = e.touches ? e.touches[0].clientX : e.clientX;
     var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    var deg = Math.round(Math.atan2(clientX - cx, -(clientY - cy)) * 180 / Math.PI);
+    var deg = Math.round(Math.atan2(clientX - cxd, -(clientY - cyd)) * 180 / Math.PI);
     if (deg < 0) deg += 360;
     return deg;
   }
@@ -317,6 +506,7 @@
   }, { passive: false });
   document.addEventListener('touchmove', function(e) { if (dialDragging) { applyDialAngle(e); e.preventDefault(); } }, { passive: false });
   document.addEventListener('touchend', function() { dialDragging = false; });
+
   // Step buttons with long press
   var stepTimer = null;
   function stepOnce(btn) {
@@ -342,29 +532,7 @@
   document.addEventListener('mouseup', stopStep);
   document.addEventListener('touchend', stopStep);
   document.addEventListener('mouseleave', stopStep);
-  // D-pad long press
-  var dpadTimer = null;
-  function dpadOnce(btn) {
-    var deg = parseInt(btn.getAttribute('data-dir'), 10);
-    if (!isNaN(deg)) movePos(deg);
-  }
-  function startDpad(btn) {
-    if (btn.disabled) return;
-    dpadOnce(btn);
-    dpadTimer = setInterval(function() { dpadOnce(btn); }, 500);
-  }
-  function stopDpad() {
-    if (dpadTimer !== null) { clearInterval(dpadTimer); dpadTimer = null; }
-  }
-  var dpadBtnsAll = document.querySelectorAll('.dpad-btn');
-  for (var d = 0; d < dpadBtnsAll.length; d++) {
-    (function(btn) {
-      btn.addEventListener('mousedown', function() { startDpad(btn); });
-      btn.addEventListener('touchstart', function(e) { startDpad(btn); e.preventDefault(); }, { passive: false });
-    })(dpadBtnsAll[d]);
-  }
-  document.addEventListener('mouseup', stopDpad);
-  document.addEventListener('touchend', stopDpad);
+
   // Actions
   window.setMode = function(ch, mode) {
     state.channelModes[ch] = mode;

@@ -5,7 +5,7 @@ import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
 import type { SensorMode, SensorChannelModes } from '@/types';
 
-const CHANNEL_NAME = 'flexroute-sensor-bridge';
+export const CHANNEL_NAME = 'flexroute-sensor-bridge';
 let channel: BroadcastChannel | null = null;
 
 /** ポップアップとの通信チャンネルを開く */
