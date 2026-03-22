@@ -5,10 +5,23 @@ const LONG_PRESS_DELAY = 200;
 // [間隔ms, ステップ] の加速テーブル
 // リピート回数に応じてフェーズが変わる
 const ACCEL_PHASES = [
-  { until: 5,  intervalMs: 80,  step: 0.25 },
-  { until: 15, intervalMs: 50,  step: 0.5 },
-  { until: Infinity, intervalMs: 30, step: 1.0 },
+  { until: 5,  intervalMs: 80,  baseStep: 0.25 },
+  { until: 15, intervalMs: 50,  baseStep: 0.4 },
+  { until: Infinity, intervalMs: 30, baseStep: 0.5 },
 ] as const;
+
+function zoomStepFactor(currentZoom: number, direction: 1 | -1): number {
+  if (direction > 0) {
+    if (currentZoom >= 18) return 0.3;
+    if (currentZoom >= 15) return 0.5;
+    if (currentZoom >= 10) return 0.8;
+    return 1.0;
+  } else {
+    if (currentZoom <= 5) return 0.5;
+    if (currentZoom <= 8) return 0.8;
+    return 1.0;
+  }
+}
 
 export function ZoomInOutButtons() {
   const map = useMap();
@@ -35,12 +48,14 @@ export function ZoomInOutButtons() {
         const phase = ACCEL_PHASES.find(
           (p) => stepCountRef.current <= p.until,
         ) ?? ACCEL_PHASES[ACCEL_PHASES.length - 1]!;
-        applyZoom(direction, phase.step);
+        const currentZoom = map?.getZoom() ?? 15;
+        const effectiveStep = phase.baseStep * zoomStepFactor(currentZoom, direction);
+        applyZoom(direction, effectiveStep);
         intervalRef.current = setTimeout(tick, phase.intervalMs);
       };
       timerRef.current = setTimeout(tick, LONG_PRESS_DELAY);
     },
-    [applyZoom],
+    [applyZoom, map],
   );
 
   const stopContinuous = useCallback(() => {
