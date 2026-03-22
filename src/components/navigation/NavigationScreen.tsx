@@ -8,6 +8,7 @@ import { NavHeader } from "@/components/navigation/NavHeader";
 import { NavControls } from "@/components/navigation/NavControls";
 import { NavRoutePolyline } from "@/components/navigation/NavRoutePolyline";
 import { NavMapController } from "@/components/navigation/NavMapController";
+import { NavWheelZoom } from "@/components/navigation/NavWheelZoom";
 import { shortestDelta } from "@/utils/headingUtils";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
@@ -59,6 +60,7 @@ function NavMap() {
     >
       <NavMapInitialFit />
       <NavMapController />
+      <NavWheelZoom />
       <NavRoutePolyline />
       <NavCurrentLocationMarker />
       <NavGeolocationRunner />
