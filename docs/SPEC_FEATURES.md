@@ -1159,6 +1159,7 @@ Google Maps API 依存部分の方針:
 - 再現手順: 未確定（繰り返し操作中に散発的に発生）
 - 推定原因: scrollwheel 設定または handleWheel リスナー登録の競合が疑われるが未確定
 - 関連: F-ZOOM, D-035
+- 対処: v1.6.66 で scrollwheel 設定を NavMapController に一元化（方法B: カスタムイベント wheelmode-changed）。ZoomInOutButtons の P/N トグルから map.setOptions({ scrollwheel }) を削除。修正後の再現テストでは発生せず。根本解消か未確定
 
 ## MD反映待ちドラフト
 
