@@ -1,4 +1,4 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 
 const LONG_PRESS_DELAY = 400;
@@ -9,6 +9,7 @@ export function ZoomInOutButtons() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepCountRef = useRef(0);
+  const [modeLabel, setModeLabel] = useState("P");
 
   const applyZoom = useCallback(
     (direction: 1 | -1) => {
@@ -67,6 +68,24 @@ export function ZoomInOutButtons() {
         className="w-10 h-10 flex items-center justify-center text-slate-600 text-lg font-bold hover:bg-slate-100 active:bg-slate-200 select-none"
       >
         -
+      </button>
+      <div className="border-t border-slate-200" />
+      <button
+        onClick={() => {
+          const w = window as unknown as Record<string, unknown>;
+          const isNative = w.__wheelMode === "native";
+          w.__wheelMode = isNative ? undefined : "native";
+          setModeLabel(isNative ? "P" : "N");
+          if (map) {
+            (map as google.maps.Map).setOptions({
+              scrollwheel: !isNative ? true : false,
+            });
+          }
+        }}
+        className="w-full text-center text-[9px] text-slate-400 hover:text-slate-600 py-0.5"
+        title="Wheel zoom: P=pivot-fine / N=native"
+      >
+        {modeLabel}
       </button>
     </div>
   );

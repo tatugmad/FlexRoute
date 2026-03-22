@@ -11,6 +11,31 @@ function getAutoZoom(speedKmh: number): number {
   return 17;
 }
 
+/**
+ * followMode=auto 時のホイールズームで、マーカーをピボット（固定点）に
+ * した小刻みズームを行う (D-035)。
+ *
+ * newCenter = marker + (oldCenter - marker) * 2^(oldZoom - newZoom)
+ * により、マーカーの画面上のピクセル位置を不変に保つ。
+ */
+function pivotZoom(
+  map: google.maps.Map,
+  marker: { lat: number; lng: number },
+  newZoom: number,
+): void {
+  const currentZoom = map.getZoom() ?? 15;
+  const center = map.getCenter();
+  if (!center) {
+    map.setZoom(newZoom);
+    return;
+  }
+  const scale = Math.pow(2, currentZoom - newZoom);
+  const newLat = marker.lat + (center.lat() - marker.lat) * scale;
+  const newLng = marker.lng + (center.lng() - marker.lng) * scale;
+  map.setZoom(newZoom);
+  map.setCenter({ lat: newLat, lng: newLng });
+}
+
 export function NavMapController() {
   const map = useMap();
   const followMode = useNavigationStore((s) => s.followMode);
@@ -52,9 +77,7 @@ export function NavMapController() {
   // Auto-follow: pan to position + auto-zoom
   useEffect(() => {
     if (!map || followMode !== "auto" || !currentPosition) return;
-
     map.panTo(currentPosition);
-
     if (zoomMode === "autoZoom") {
       const speedKmh = (speed ?? 0) * 3.6;
       const targetZoom = getAutoZoom(speedKmh);
@@ -67,145 +90,38 @@ export function NavMapController() {
   }, [map, followMode, currentPosition, zoomMode, speed]);
 
   // followMode=auto 時: ホイールズームの center ずれを防止 (D-035)
+  // scrollwheel: false で Google Maps のネイティブ wheel を止め、
+  // normalize-wheel で正規化したステップでマーカーピボットズーム
   useEffect(() => {
     if (!map) return;
-    const zoomModeFlag = (window as unknown as Record<string, unknown>).__zoomMode;
-    const isNative = zoomModeFlag === "native";
     const isAuto = followMode === "auto";
-    const shouldDisableScrollwheel = isAuto && !isNative;
-    (map as google.maps.Map).setOptions({ scrollwheel: !shouldDisableScrollwheel });
-    // TEMP: scrollwheel 設定をログ
-    console.log("[TEMP D-035] useEffect run:", {
-      followMode,
-      zoomModeFlag,
-      isNative,
-      shouldDisableScrollwheel,
-      scrollwheelSetTo: !shouldDisableScrollwheel,
+    const useNative = (window as unknown as Record<string, unknown>)
+      .__wheelMode === "native";
+    (map as google.maps.Map).setOptions({
+      scrollwheel: !isAuto || useNative,
     });
     const div = (map as google.maps.Map).getDiv();
     if (!div) return;
     const handleWheel = (e: WheelEvent) => {
       const state = useNavigationStore.getState();
-      const currentZoomModeFlag = (window as unknown as Record<string, unknown>).__zoomMode as string | undefined;
-      // TEMP: handleWheel 呼び出しログ
-      const beforeZoom = map.getZoom() ?? 0;
-      const centerBefore = map.getCenter();
-      console.log("[TEMP D-035] handleWheel fired:", {
-        followMode: state.followMode,
-        zoomModeFlag: currentZoomModeFlag,
-        beforeZoom: beforeZoom.toFixed(4),
-        centerBefore: centerBefore
-          ? { lat: centerBefore.lat().toFixed(6), lng: centerBefore.lng().toFixed(6) }
-          : null,
-        deltaY: e.deltaY,
-      });
-      if (state.followMode !== "auto") {
-        console.log("[TEMP D-035] → skipped: not auto"); // TEMP
-        return;
-      }
-      if (currentZoomModeFlag === "native") {
-        console.log("[TEMP D-035] → skipped: native mode"); // TEMP
-        return;
-      }
+      if (state.followMode !== "auto") return;
+      if ((window as unknown as Record<string, unknown>).__wheelMode === "native") return;
       e.preventDefault();
       const currentZoom = map.getZoom() ?? 15;
-      const mode = currentZoomModeFlag ?? "setzoom";
-      // ステップ計算
-      let newZoom: number;
-      if (mode === "pivot-fine" || mode === "pivot") {
-        const normalized = normalizeWheel(e);
-        if (mode === "pivot-fine") {
-          // 小刻み: 正規化された pixelY を使用 + クランプ
-          const step = Math.max(-1, Math.min(1, -normalized.pixelY / 400));
-          newZoom = Math.max(1, Math.min(22, currentZoom + step));
-        } else {
-          // pivot: 正規化された符号のみ使用（±1 ステップ）
-          const delta = normalized.pixelY < 0 ? 1 : normalized.pixelY > 0 ? -1 : 0;
-          if (delta === 0) return;
-          newZoom = Math.max(1, Math.min(22, currentZoom + delta));
-        }
-        // TEMP: normalize-wheel の値をログ
-        console.log("[TEMP D-035] normalized:", {
-          mode,
-          rawDeltaY: e.deltaY,
-          rawDeltaMode: e.deltaMode,
-          normalizedPixelY: normalized.pixelY,
-          step: mode === "pivot-fine"
-            ? Math.max(-1, Math.min(1, -normalized.pixelY / 400))
-            : (normalized.pixelY < 0 ? 1 : -1),
-          from: currentZoom.toFixed(4),
-          to: newZoom.toFixed(4),
-        });
-      } else {
-        // setzoom: 従来通り（normalize-wheel を使わない）
-        const delta = e.deltaY < 0 ? 1 : -1;
-        newZoom = Math.max(1, Math.min(22, currentZoom + delta));
-      }
+      const normalized = normalizeWheel(e);
+      const step = Math.max(-1, Math.min(1, -normalized.pixelY / 400));
+      const newZoom = Math.max(1, Math.min(22, currentZoom + step));
       if (newZoom === currentZoom) return;
-      // ピボット計算（pivot / pivot-fine）
-      if (mode === "pivot" || mode === "pivot-fine") {
-        const marker = state.currentPosition;
-        const center = map.getCenter();
-        if (marker && center) {
-          const scale = Math.pow(2, currentZoom - newZoom);
-          const newLat = marker.lat + (center.lat() - marker.lat) * scale;
-          const newLng = marker.lng + (center.lng() - marker.lng) * scale;
-          map.setZoom(newZoom);
-          map.setCenter({ lat: newLat, lng: newLng });
-          // TEMP
-          console.log("[TEMP D-035] → pivot zoom:", {
-            mode,
-            from: currentZoom.toFixed(4),
-            to: newZoom.toFixed(4),
-            marker: { lat: marker.lat.toFixed(6), lng: marker.lng.toFixed(6) },
-            newCenter: { lat: newLat.toFixed(6), lng: newLng.toFixed(6) },
-            scale: scale.toFixed(4),
-          });
-        } else {
-          // マーカーがない場合はフォールバック
-          map.setZoom(newZoom);
-          console.log("[TEMP D-035] → pivot fallback (no marker), setZoom:", newZoom); // TEMP
-        }
+      const marker = state.currentPosition;
+      if (marker) {
+        pivotZoom(map as google.maps.Map, marker, newZoom);
       } else {
-        // setzoom: 地図中心でズーム（従来）
         map.setZoom(newZoom);
-        // TEMP
-        console.log("[TEMP D-035] → setZoom called:", {
-          from: currentZoom.toFixed(4),
-          to: newZoom,
-          delta: e.deltaY < 0 ? 1 : -1,
-        });
       }
     };
     div.addEventListener("wheel", handleWheel, { passive: false });
-    // TEMP: Google Maps ネイティブズームの検知
-    // zoom_changed は setZoom でもネイティブでも発火する
-    // handleWheel の setZoom と同期的に発火するか、
-    // それとも別タイミングで発火するかで判別できる
-    let lastSetZoomTime = 0;
-    const origSetZoom = map.setZoom.bind(map);
-    (map as google.maps.Map).setZoom = ((z: number) => {
-      lastSetZoomTime = performance.now();
-      return origSetZoom(z);
-    }) as typeof map.setZoom;
-    const zoomListener = map.addListener("zoom_changed", () => {
-      const elapsed = performance.now() - lastSetZoomTime;
-      const zoom = map.getZoom() ?? 0;
-      const center = map.getCenter();
-      // TEMP: zoom_changed の発火元を判別
-      console.log("[TEMP D-035] zoom_changed:", {
-        zoom: zoom.toFixed(4),
-        center: center
-          ? { lat: center.lat().toFixed(6), lng: center.lng().toFixed(6) }
-          : null,
-        fromSetZoom: elapsed < 50,
-        elapsedSinceSetZoom: Math.round(elapsed),
-      });
-    });
     return () => {
       div.removeEventListener("wheel", handleWheel);
-      google.maps.event.removeListener(zoomListener); // TEMP
-      (map as google.maps.Map).setZoom = origSetZoom; // TEMP: restore
       (map as google.maps.Map).setOptions({ scrollwheel: true });
     };
   }, [map, followMode]);
