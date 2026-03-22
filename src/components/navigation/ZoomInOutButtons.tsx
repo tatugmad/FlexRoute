@@ -15,7 +15,8 @@ export function ZoomInOutButtons() {
     (direction: 1 | -1) => {
       if (!map) return;
       const current = map.getZoom() ?? 15;
-      const next = Math.max(1, Math.min(22, current + direction));
+      const step = direction * 0.25;
+      const next = Math.max(1, Math.min(22, current + step));
       if (next !== current) map.setZoom(next);
     },
     [map],
@@ -82,7 +83,7 @@ export function ZoomInOutButtons() {
             });
           }
         }}
-        className="w-full text-center text-[9px] text-slate-400 hover:text-slate-600 py-0.5"
+        className="w-10 h-10 flex items-center justify-center text-slate-600 text-sm font-bold hover:bg-slate-100 active:bg-slate-200 select-none"
         title="Wheel zoom: P=pivot-fine / N=native"
       >
         {modeLabel}
