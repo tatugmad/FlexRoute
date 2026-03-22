@@ -160,9 +160,9 @@
         </div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px;">
-      <input type="checkbox" id="headingSyncCheck" checked disabled onchange="onHeadingSyncChange(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;">
-      <label for="headingSyncCheck" style="font-size:10px;color:#64748b;font-weight:600;">sync</label>
+    <div style="display:flex;gap:3px;justify-content:center;margin-top:4px;" id="headingModeGroup">
+      <button class="mode-btn active" disabled id="hdg-mode-sync" onclick="setHeadingSync(true)">sync</button>
+      <button class="mode-btn" disabled id="hdg-mode-intv" onclick="setHeadingSync(false)">intv</button>
     </div>
   </div>
   <div class="col section">
@@ -181,14 +181,15 @@
     <div style="text-align:right;margin-top:4px;">
       <span class="slider-val" id="speedVal">0 km/h</span>
     </div>
-    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:4px;">
-      <input type="checkbox" id="speedSyncCheck" checked disabled onchange="onSpeedSyncChange(this.checked)" style="width:14px;height:14px;accent-color:#6366f1;">
-      <label for="speedSyncCheck" style="font-size:10px;color:#64748b;font-weight:600;">sync</label>
+    <div style="display:flex;gap:3px;justify-content:center;margin-top:4px;" id="speedModeGroup">
+      <button class="mode-btn active" disabled id="spd-mode-sync" onclick="setSpeedSync(true)">sync</button>
+      <button class="mode-btn" disabled id="spd-mode-intv" onclick="setSpeedSync(false)">intv</button>
     </div>
   </div>
 </div>
 <script>
 (function() {
+  var SIM_VERSION = '1.6.80';
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
@@ -334,6 +335,9 @@
         if (!connected) { connected = true; clearTimeout(connectTimer); setConnectionStatus('connected'); }
         state.channelModes = msg.channelModes;
         state.simValues = msg.simValues;
+        if (msg.appVersion && msg.appVersion !== SIM_VERSION) {
+          showVersionWarning(msg.appVersion);
+        }
         updateUI();
         break;
       case 'route-polyline':
@@ -404,14 +408,16 @@
       mb.disabled = !posIsSim;
       mb.className = 'mode-btn' + (modes[m] === state.simValues.positionCallbackMode ? ' active' : '');
     }
-    // Heading sync
-    var hsc = document.getElementById('headingSyncCheck');
-    hsc.disabled = !hdgIsSim;
-    hsc.checked = state.simValues.headingSync;
-    // Speed sync
-    var ssc = document.getElementById('speedSyncCheck');
-    ssc.disabled = !spdIsSim;
-    ssc.checked = state.simValues.speedSync;
+    // Heading sync toggle
+    document.getElementById('hdg-mode-sync').className = 'mode-btn' + (state.simValues.headingSync ? ' active' : '');
+    document.getElementById('hdg-mode-intv').className = 'mode-btn' + (!state.simValues.headingSync ? ' active' : '');
+    document.getElementById('hdg-mode-sync').disabled = !hdgIsSim;
+    document.getElementById('hdg-mode-intv').disabled = !hdgIsSim;
+    // Speed sync toggle
+    document.getElementById('spd-mode-sync').className = 'mode-btn' + (state.simValues.speedSync ? ' active' : '');
+    document.getElementById('spd-mode-intv').className = 'mode-btn' + (!state.simValues.speedSync ? ' active' : '');
+    document.getElementById('spd-mode-sync').disabled = !spdIsSim;
+    document.getElementById('spd-mode-intv').disabled = !spdIsSim;
     var dw = document.getElementById('dialWrapper');
     if (hdgIsSim) dw.classList.remove('disabled'); else dw.classList.add('disabled');
     document.getElementById('dialNeedle').style.transform = 'translateX(-50%) translateY(-100%) rotate(' + state.simValues.heading + 'deg)';
@@ -616,14 +622,28 @@
     channel.postMessage({ type: 'set-position-callback-mode', value: mode });
     updateUI();
   };
-  window.onHeadingSyncChange = function(checked) {
-    state.simValues.headingSync = checked;
-    channel.postMessage({ type: 'set-heading-sync', value: checked });
+  window.setHeadingSync = function(sync) {
+    state.simValues.headingSync = sync;
+    channel.postMessage({ type: 'set-heading-sync', value: sync });
+    updateUI();
   };
-  window.onSpeedSyncChange = function(checked) {
-    state.simValues.speedSync = checked;
-    channel.postMessage({ type: 'set-speed-sync', value: checked });
+  window.setSpeedSync = function(sync) {
+    state.simValues.speedSync = sync;
+    channel.postMessage({ type: 'set-speed-sync', value: sync });
+    updateUI();
   };
+  function showVersionWarning(serverVersion) {
+    var el = document.getElementById('versionWarning');
+    if (!el) {
+      el = document.createElement('span');
+      el.id = 'versionWarning';
+      el.style.cssText = 'color:#fbbf24;font-size:10px;font-weight:600;cursor:pointer;';
+      el.title = 'SIM remote is outdated. Click to reload.';
+      el.textContent = '\u26A0 reload';
+      el.onclick = function() { location.reload(); };
+      document.querySelector('.status').insertBefore(el, document.getElementById('statusDot'));
+    }
+  }
   updateUI();
 })();
 </script>

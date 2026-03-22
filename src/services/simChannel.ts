@@ -3,6 +3,7 @@ import { useNavigationStore } from '@/stores/navigationStore';
 import { getLastKnownPosition } from '@/services/geolocation';
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
+import { APP_VERSION } from "@/constants/appVersion";
 import type { SensorMode, SensorChannelModes } from '@/types';
 
 export const CHANNEL_NAME = 'flexroute-sensor-bridge';
@@ -96,6 +97,7 @@ export function syncStateToRemote(): void {
     type: 'state-sync',
     channelModes,
     simValues,
+    appVersion: APP_VERSION,
   });
 }
 
