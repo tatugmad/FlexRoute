@@ -12,6 +12,8 @@ import { shortestDelta } from "@/utils/headingUtils";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
 import { ZoomInOutButtons } from "@/components/navigation/ZoomInOutButtons";
+import { StepDebugMarkers } from "@/components/navigation/StepDebugMarkers";
+import { useStepProgression } from "@/hooks/useStepProgression";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 const mapId = (import.meta.env.VITE_GOOGLE_MAPS_MAP_ID as string) || "DEMO_MAP_ID";
@@ -60,13 +62,26 @@ function NavMap() {
       <NavRoutePolyline />
       <NavCurrentLocationMarker />
       <NavGeolocationRunner />
+      <NavStepProgressionRunner />
       <SimPositionCross />
+      <StepDebugMarkers />
     </Map>
   );
 }
 
 function NavGeolocationRunner() {
   useNavGeolocation();
+  return null;
+}
+
+function NavStepProgressionRunner() {
+  const status = useNavigationStore((s) => s.status);
+  const currentLegs = useRouteStore((s) => s.currentLegs);
+  const position = useNavigationStore((s) => s.currentPosition);
+  useStepProgression(
+    status === "navigating" ? currentLegs : [],
+    status === "navigating" ? position : null,
+  );
   return null;
 }
 
