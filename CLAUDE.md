@@ -527,10 +527,17 @@ RouteSnapshot {
 | 機能 | マイルストーン |
 |------|-------------|
 | routeSteps + legs の保存構造（型定義・StorageService） | 1-4 |
-| ステップ通過タイムスタンプ（navigationStore） | 1-6 |
-| ナビ中GPS記録（rawPath, simplifiedPath） | 1-6 |
-| 非ナビ中GPS自動記録（tracking） | 1-6 |
-| 逸脱検知 + リルートダイアログ（3選択肢） | 1-6 |
+| F-LOG v2（FlightRecorder） | 1-6（実装済み） |
+| F-BUGREPORT（Bug ボタン） | 1-6（実装済み） |
+| F-SIM（SensorBridge） | 1-6（実装済み） |
+| F-ZOOM（ズーム制御） | 1-6（実装済み） |
+| ステップ通過判定 + 案内文表示（useStepProgression, StepPassage） | 1-6 Step 1 |
+| オートズーム D-023（useAutoZoom, ターン接近ズーム） | 1-6 Step 2 |
+| 逸脱検知 + リルートダイアログ（useOffRouteDetection, RerouteDialog） | 1-6 Step 3 |
+| ワイプマップ F-NAV-WIPE（WipeMap, 動的配置） | 1-6 Step 4 |
+| ナビ中GPS記録（gpsLogStore, gpsLogStorageService） | 1-6 Step 5 |
+| F-WAKELOCK + 25WP制限 + ドキュメント最終更新 | 1-6 Step 6 |
+| 非ナビ中GPS自動記録（tracking） | 1-6後追加 |
 | 走行記録画面（一覧・複数選択・Polyline表示） | 1-6後追加 |
 | ルート編集の表示レイヤー切替パネル | 1-6後追加 |
 | KMLエクスポート | 1-6後追加 |
@@ -538,5 +545,3 @@ RouteSnapshot {
 | 都道府県走破率・統計 | フェーズ2 |
 | 個人APIキー設定（F-APIKEY） | フェーズ2 |
 | APIコスト監視・無料枠超過停止（ローカルカウンタ + Cloud Monitoring同期） | フェーズ2 |
-| F-LOG v2（FlightRecorder） | 1-6 |
-| F-BUGREPORT（Bug ボタン） | 1-6 |
