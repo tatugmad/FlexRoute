@@ -978,7 +978,36 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **依存**: flightRecorder, html2canvas（動的 import）, APP_VERSION
 - **使用箇所**: BugReportButton.tsx
 
-## Navigation コンポーネント責務一覧
+## コンポーネント責務一覧
+
+#### map/
+
+### MapView.tsx（src/components/map/）
+
+- **責務**: ルート編集画面の地図表示。Map コンポーネントをラップし mapId・デフォルト center/zoom を設定
+- **依存**: routeStore（なし）、uiStore（なし）。Props で onClick / children を受け取る
+
+### MapInitialView.tsx（src/components/map/）
+
+- **責務**: useMapInitialView フックの呼び出しシェル。レンダリングなし（return null）
+- **依存**: hooks/useMapInitialView
+
+### MapViewState.tsx（src/components/map/）
+
+- **責務**: useMapViewState フックの呼び出しシェル。レンダリングなし（return null）
+- **依存**: hooks/useMapViewState
+
+### RoutePolyline.tsx（src/components/map/）
+
+- **責務**: ルート編集画面のポリライン描画。routeSteps から道路種別色分けポリラインを生成
+- **依存**: routeStore（routeSteps）、utils/roadType
+
+### WaypointMarkers.tsx（src/components/map/）
+
+- **責務**: ウェイポイントの AdvancedMarker 表示。S=緑 / G=赤 / 中間=黄 でピン色分け。ラベル番号付き
+- **依存**: routeStore（currentRoute.waypoints）
+
+#### navigation/
 
 ### NavMapController.tsx（src/components/navigation/）
 
@@ -990,6 +1019,224 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 - **責務**: +/- ズームボタンと P/N モードトグル。P モードは pivotZoom 共有関数を使用しホイールと同一挙動。N モードは Google Maps ネイティブ。idle イベントチェーンによる長押し加速、zoomStepFactor でズームレベル補正
 - **依存**: NavMapController.tsx の pivotZoom 関数
+
+### NavigationScreen.tsx（src/components/navigation/）
+
+- **責務**: ナビゲーション画面のルートコンポーネント。APIProvider + Map + 全ナビサブコンポーネントを配置。NavMapInitialFit（内部関数）でウェイポイント fitBounds
+- **依存**: routeStore, navigationStore, 全 navigation/ コンポーネント
+
+### NavControls.tsx（src/components/navigation/）
+
+- **責務**: ナビ画面右側のコントロールボタン群レイアウト。HeadingButton / ZoomButton / FollowButton / SimButton を縦配置
+- **依存**: HeadingButton, ZoomButton, FollowButton, SimButton
+
+### NavHeader.tsx（src/components/navigation/）
+
+- **責務**: ナビゲーションヘッダー。残距離・残時間・速度表示 + ナビ終了ボタン + GpsStatusIcon
+- **依存**: navigationStore, uiStore, GpsStatusIcon, utils/formatters
+
+### CurrentLocationMarker.tsx（src/components/navigation/）
+
+- **責務**: ナビ画面の現在地マーカー（三角ポインター）。heading に連動して回転。positionQuality に応じて色・点滅を切替
+- **依存**: navigationStore（currentPosition, heading, positionQuality）
+
+### AccuracyCircle.tsx（src/components/navigation/）
+
+- **責務**: GPS 精度リング。google.maps.OverlayView でパルスアニメーション付き円を描画。accuracy メートル値を地図ズームに合わせた半径で表示
+- **依存**: navigationStore（currentPosition, accuracy, positionQuality）
+
+### GpsStatusIcon.tsx（src/components/navigation/）
+
+- **責務**: NavHeader 内の GPS 状態アイコン。quality に応じた SVG + lost 秒数 / accuracy 値表示。タップでポップオーバー（状況説明・対応指示）
+- **依存**: navigationStore（positionQuality, accuracy, lostSince）
+
+### FollowButton.tsx（src/components/navigation/）
+
+- **責務**: followMode トグルボタン（auto/free）。free 時に表示され、タップで auto に復帰
+- **依存**: navigationStore（followMode, setFollowMode）
+
+### HeadingButton.tsx（src/components/navigation/）
+
+- **責務**: headingMode トグルボタン（headingUp/northUp）。コンパス SVG で現在 heading を反映
+- **依存**: navigationStore（headingMode, setHeadingMode, heading）
+
+### ZoomButton.tsx（src/components/navigation/）
+
+- **責務**: autoZoom/lockedZoom トグルボタン。SVG アイコンで Auto/Lock 表示。Lock 時は赤文字
+- **依存**: navigationStore（zoomMode, setZoomMode）
+
+### NavRoutePolyline.tsx（src/components/navigation/）
+
+- **責務**: ナビ画面のルートポリライン描画。routeSteps から道路種別色分け。google.maps.Polyline を直接操作
+- **依存**: routeStore（routeSteps）、utils/roadType
+
+### BugReportButton.tsx（src/components/navigation/）
+
+- **責務**: Bug レポート FAB（左下）。タップで bugReportService を呼び出し JSON ダウンロード
+- **依存**: services/bugReportService
+
+### SimButton.tsx（src/components/navigation/）
+
+- **責務**: SIM リモコンポップアップの開閉ボタン。?debug=1 時のみ表示。BroadcastChannel 通信管理
+- **依存**: services/simChannel
+
+### SimPositionCross.tsx（src/components/navigation/）
+
+- **責務**: sim 座標の青十字マーカー。sensorStore の sim position を直接参照し AdvancedMarker で表示。点滅アニメーション付き
+- **依存**: sensorStore（channelModes, simValues）
+
+#### places/
+
+### PlaceActionModal.tsx（src/components/places/）
+
+- **責務**: Place アイコンタップ時のアクションモーダル。2段階 UI（actions → save）。「経路に追加」「保存」アクション
+- **依存**: placeStore（placeModalOpen, placeModalData）、routeStore（addWaypoint）、PlaceSaveStep
+
+### PlaceDetailModal.tsx（src/components/places/）
+
+- **責務**: 保存済み場所の詳細表示・編集モーダル。メモ blur 保存、ラベル即時編集、削除。usePlaceCache で写真再取得
+- **依存**: placeStore, labelStore, uiStore, hooks/usePlaceCache, PlaceLabelEditor
+
+### PlaceLabelEditor.tsx（src/components/places/）
+
+- **責務**: 場所のラベル選択 UI。forPlace=true のラベルをトグル表示。選択変更で即時保存
+- **依存**: labelStore, placeStore
+
+### PlaceResultList.tsx（src/components/places/）
+
+- **責務**: 場所検索結果リスト。PlaceResult[] を Props で受け取り、選択コールバックを親に返す
+- **依存**: なし（Props 駆動の表示コンポーネント）
+
+### PlaceSaveStep.tsx（src/components/places/）
+
+- **責務**: PlaceActionModal の保存ステップ。ラベル選択 + メモ入力 → SavedPlace 保存
+- **依存**: labelStore, placeStore
+
+### PlaceSearch.tsx（src/components/places/）
+
+- **責務**: 場所検索。Places Autocomplete API で候補取得、選択でウェイポイント追加。insertIndex 対応
+- **依存**: routeStore, uiStore, PlaceResultList
+
+### SearchModal.tsx（src/components/places/）
+
+- **責務**: 検索モーダルのシェル。PlaceSearch をラップ。insertIndex 管理、閉じる時のクリーンアップ
+- **依存**: uiStore, PlaceSearch
+
+#### route/
+
+### RouteEditor.tsx（src/components/route/）
+
+- **責務**: ルート編集画面のサイドバー。ルート名入力 + WaypointList + RouteSummary + RouteLabelSelector を配置
+- **依存**: routeStore, uiStore, WaypointList, RouteSummary, RouteLabelSelector
+
+### WaypointList.tsx（src/components/route/）
+
+- **責務**: ウェイポイント一覧。framer-motion Reorder でドラッグ並べ替え + 「経路を追加」ボタン
+- **依存**: routeStore, uiStore, WaypointItem
+
+### WaypointItem.tsx（src/components/route/）
+
+- **責務**: ウェイポイント行。ドラッグハンドル + 名前表示 + 削除ボタン + 挿入（+）ボタン
+- **依存**: routeStore, uiStore
+
+### RouteSummary.tsx（src/components/route/）
+
+- **責務**: ルート概要表示。総距離・時間・ナビ開始ボタン・計算中/エラー状態表示
+- **依存**: routeStore, navigationStore, uiStore, utils/formatters
+
+### RouteLabelSelector.tsx（src/components/route/）
+
+- **責務**: ルートのラベル選択 UI。forRoute=true のラベルをトグル表示。選択変更で isDirty → 自動保存
+- **依存**: labelStore, routeStore
+
+#### top/
+
+### TopView.tsx（src/components/top/）
+
+- **責務**: TOP 画面のルートコンポーネント。ヘッダー + タブバー（routes/labels/places）+ 各タブコンテンツ切替
+- **依存**: uiStore, RouteList, LabelList, PlaceList, LabelEditModal, PlaceDetailModal, QrCodePopover
+
+### RouteList.tsx（src/components/top/）
+
+- **責務**: ルート一覧。タイル/リスト切替 + ソート + 検索フィルタ + 新規作成ボタン + 削除アニメーション
+- **依存**: routeStore, labelStore, uiStore, hooks/useNewRoute, RouteCard, ViewToggle, SortSelector, SearchInput
+
+### RouteCard.tsx（src/components/top/）
+
+- **責務**: ルートカード（タイル/リスト両対応）。サムネイル + 名前 + 距離・時間 + ラベルチップ + 削除ボタン
+- **依存**: labelStore, LabelChip
+
+### LabelList.tsx（src/components/top/）
+
+- **責務**: ラベル一覧。タイル/リスト切替 + 検索 + 新規作成ボタン + LabelEditModal 連携。件数は実データ集計
+- **依存**: labelStore, routeStore, placeStore, uiStore, LabelCard, ViewToggle, SearchInput
+
+### LabelCard.tsx（src/components/top/）
+
+- **責務**: ラベルカード（タイル/リスト両対応）。色チップ + 名前 + 紐付き件数 + 編集・削除ボタン
+- **依存**: なし（Props 駆動）
+
+### PlaceList.tsx（src/components/top/）
+
+- **責務**: 場所一覧。タイル/リスト切替 + 検索 + PlaceDetailModal 連携。削除アニメーション付き
+- **依存**: placeStore, labelStore, uiStore, PlaceCard, ViewToggle, SearchInput
+
+### PlaceCard.tsx（src/components/top/）
+
+- **責務**: 場所カード（タイル/リスト両対応）。写真 + 名前 + メモ + ラベルチップ + 削除ボタン。usePlaceCache で写真再取得
+- **依存**: labelStore, hooks/usePlaceCache, LabelChip
+
+#### ui/
+
+### ConfirmDialog.tsx（src/components/ui/）
+
+- **責務**: 確認ダイアログ。uiStore.confirmDialog で制御。オーバーレイ + メッセージ + 確定/キャンセルボタン
+- **依存**: uiStore
+
+### ErrorBoundary.tsx（src/components/ui/）
+
+- **責務**: React エラーバウンダリ。開発モードでスタックトレース表示、本番モードでユーザー向けエラー画面。FlightRecorder にログ送信
+- **依存**: services/flightRecorder
+
+### DebugPanel.tsx（src/components/ui/）
+
+- **責務**: デバッグパネル。?log パラメータ指定時に FlightRecorder のログをリアルタイム表示。レベルフィルタ付き
+- **依存**: services/flightRecorder, services/logConfig
+
+### LabelEditModal.tsx（src/components/ui/）
+
+- **責務**: ラベル編集モーダル（ボトムシート型）。名前・色プリセット・forRoute/forPlace 編集。既存ラベル時は LabelLinkedItems を一体表示
+- **依存**: labelStore, LabelLinkedItems
+
+### LabelLinkedItems.tsx（src/components/ui/）
+
+- **責務**: ラベル紐付きルート・場所リスト。ルートタップでルート編集画面遷移、場所タップで PlaceDetailModal 表示
+- **依存**: routeStore, placeStore, labelStore, uiStore
+
+### LabelChip.tsx（src/components/ui/）
+
+- **責務**: ラベル表示チップ。色丸 + 名前のインライン表示。Props 駆動
+- **依存**: なし（Props 駆動）
+
+### QrCodePopover.tsx（src/components/ui/）
+
+- **責務**: QR コードポップオーバー。現在 URL の QR コード表示。外側クリックで閉じる
+- **依存**: qrcode.react
+
+### SearchInput.tsx（src/components/ui/）
+
+- **責務**: 検索入力コンポーネント。虫眼鏡アイコン + テキスト入力 + クリアボタン。Props 駆動
+- **依存**: なし（Props 駆動）
+
+### SortSelector.tsx（src/components/ui/）
+
+- **責務**: ソート選択ドロップダウン。更新日/作成日/名前/距離 の4種類。Props で value/onChange
+- **依存**: なし（Props 駆動）
+
+### ViewToggle.tsx（src/components/ui/）
+
+- **責務**: タイル/リスト表示切替トグル。LayoutGrid / List アイコン。Props 駆動
+- **依存**: なし（Props 駆動）
 
 ## 外部依存パッケージ
 
