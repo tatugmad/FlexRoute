@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
+import normalizeWheel from "normalize-wheel";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
@@ -111,11 +112,32 @@ export function NavMapController() {
       const mode = currentZoomModeFlag ?? "setzoom";
       // ステップ計算
       let newZoom: number;
-      if (mode === "pivot-fine") {
-        const step = -e.deltaY / 400;
-        newZoom = Math.max(1, Math.min(22, currentZoom + step));
+      if (mode === "pivot-fine" || mode === "pivot") {
+        const normalized = normalizeWheel(e);
+        if (mode === "pivot-fine") {
+          // 小刻み: 正規化された pixelY を使用 + クランプ
+          const step = Math.max(-1, Math.min(1, -normalized.pixelY / 400));
+          newZoom = Math.max(1, Math.min(22, currentZoom + step));
+        } else {
+          // pivot: 正規化された符号のみ使用（±1 ステップ）
+          const delta = normalized.pixelY < 0 ? 1 : normalized.pixelY > 0 ? -1 : 0;
+          if (delta === 0) return;
+          newZoom = Math.max(1, Math.min(22, currentZoom + delta));
+        }
+        // TEMP: normalize-wheel の値をログ
+        console.log("[TEMP D-035] normalized:", {
+          mode,
+          rawDeltaY: e.deltaY,
+          rawDeltaMode: e.deltaMode,
+          normalizedPixelY: normalized.pixelY,
+          step: mode === "pivot-fine"
+            ? Math.max(-1, Math.min(1, -normalized.pixelY / 400))
+            : (normalized.pixelY < 0 ? 1 : -1),
+          from: currentZoom.toFixed(4),
+          to: newZoom.toFixed(4),
+        });
       } else {
-        // setzoom, pivot: ±1 ステップ
+        // setzoom: 従来通り（normalize-wheel を使わない）
         const delta = e.deltaY < 0 ? 1 : -1;
         newZoom = Math.max(1, Math.min(22, currentZoom + delta));
       }
