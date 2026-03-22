@@ -24,6 +24,8 @@ export type ComputeRoutesRequest = {
 export type RoutesApiStep = {
   polyline: { encodedPolyline: string };
   navigationInstruction?: { instructions: string };
+  distanceMeters?: number;
+  staticDuration?: string;
 };
 
 export type ComputeRoutesResponse = {

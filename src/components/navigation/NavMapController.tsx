@@ -37,6 +37,7 @@ export function NavMapController() {
   const setFollowMode = useNavigationStore((s) => s.setFollowMode);
   const setZoomMode = useNavigationStore((s) => s.setZoomMode);
   const isAutoZoomingRef = useRef(false);
+  const mountedAtRef = useRef(Date.now());
 
   const targetZoom = useAutoZoom();
 
@@ -60,6 +61,7 @@ export function NavMapController() {
         isAutoZoomingRef.current = false;
         return;
       }
+      if (Date.now() - mountedAtRef.current < 2000) return;
       if (useNavigationStore.getState().zoomMode === "autoZoom") {
         setZoomMode("lockedZoom");
         fr.debug(C.NAV, "nav.zoomToLocked", {});

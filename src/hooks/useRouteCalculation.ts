@@ -97,8 +97,8 @@ export function useRouteCalculation() {
               encodedPolyline: step.polyline.encodedPolyline,
               roadType: classifyRoadType(instruction),
               instruction,
-              distanceMeters: 0,
-              durationSeconds: 0,
+              distanceMeters: Number(step.distanceMeters) || 0,
+              durationSeconds: parseDuration(step.staticDuration),
             };
           }),
         }));
