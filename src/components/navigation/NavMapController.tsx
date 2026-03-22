@@ -85,13 +85,13 @@ export function NavMapController() {
     if (!div) return;
     const handleWheel = (e: WheelEvent) => {
       const state = useNavigationStore.getState();
-      const currentZoomMode = (window as unknown as Record<string, unknown>).__zoomMode;
-      // TEMP: handleWheel 呼び出しを必ずログ（return 前に）
+      const currentZoomModeFlag = (window as unknown as Record<string, unknown>).__zoomMode as string | undefined;
+      // TEMP: handleWheel 呼び出しログ
       const beforeZoom = map.getZoom() ?? 0;
       const centerBefore = map.getCenter();
       console.log("[TEMP D-035] handleWheel fired:", {
         followMode: state.followMode,
-        zoomModeFlag: currentZoomMode,
+        zoomModeFlag: currentZoomModeFlag,
         beforeZoom: beforeZoom.toFixed(4),
         centerBefore: centerBefore
           ? { lat: centerBefore.lat().toFixed(6), lng: centerBefore.lng().toFixed(6) }
@@ -102,21 +102,58 @@ export function NavMapController() {
         console.log("[TEMP D-035] → skipped: not auto"); // TEMP
         return;
       }
-      if (currentZoomMode === "native") {
+      if (currentZoomModeFlag === "native") {
         console.log("[TEMP D-035] → skipped: native mode"); // TEMP
         return;
       }
       e.preventDefault();
       const currentZoom = map.getZoom() ?? 15;
-      const delta = e.deltaY < 0 ? 1 : -1;
-      const newZoom = Math.max(1, Math.min(22, currentZoom + delta));
-      if (newZoom !== currentZoom) {
+      const mode = currentZoomModeFlag ?? "setzoom";
+      // ステップ計算
+      let newZoom: number;
+      if (mode === "pivot-fine") {
+        const step = -e.deltaY / 400;
+        newZoom = Math.max(1, Math.min(22, currentZoom + step));
+      } else {
+        // setzoom, pivot: ±1 ステップ
+        const delta = e.deltaY < 0 ? 1 : -1;
+        newZoom = Math.max(1, Math.min(22, currentZoom + delta));
+      }
+      if (newZoom === currentZoom) return;
+      // ピボット計算（pivot / pivot-fine）
+      if (mode === "pivot" || mode === "pivot-fine") {
+        const marker = state.currentPosition;
+        const center = map.getCenter();
+        if (marker && center) {
+          const scale = Math.pow(2, currentZoom - newZoom);
+          const newLat = marker.lat + (center.lat() - marker.lat) * scale;
+          const newLng = marker.lng + (center.lng() - marker.lng) * scale;
+          (map as google.maps.Map).moveCamera({
+            center: { lat: newLat, lng: newLng },
+            zoom: newZoom,
+          });
+          // TEMP
+          console.log("[TEMP D-035] → pivot zoom:", {
+            mode,
+            from: currentZoom.toFixed(4),
+            to: newZoom.toFixed(4),
+            marker: { lat: marker.lat.toFixed(6), lng: marker.lng.toFixed(6) },
+            newCenter: { lat: newLat.toFixed(6), lng: newLng.toFixed(6) },
+            scale: scale.toFixed(4),
+          });
+        } else {
+          // マーカーがない場合はフォールバック
+          map.setZoom(newZoom);
+          console.log("[TEMP D-035] → pivot fallback (no marker), setZoom:", newZoom); // TEMP
+        }
+      } else {
+        // setzoom: 地図中心でズーム（従来）
         map.setZoom(newZoom);
-        // TEMP: setZoom 実行ログ
+        // TEMP
         console.log("[TEMP D-035] → setZoom called:", {
           from: currentZoom.toFixed(4),
           to: newZoom,
-          delta,
+          delta: e.deltaY < 0 ? 1 : -1,
         });
       }
     };
