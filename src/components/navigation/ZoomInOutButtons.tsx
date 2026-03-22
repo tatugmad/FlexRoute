@@ -2,21 +2,22 @@ import { useRef, useCallback, useState } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
 
 const LONG_PRESS_DELAY = 200;
-// [間隔ms, ステップ] の加速テーブル
-// リピート回数に応じてフェーズが変わる
+// リピート回数に応じてステップが大きくなる加速テーブル
 const ACCEL_PHASES = [
-  { until: 5,  intervalMs: 80,  baseStep: 0.25 },
-  { until: 15, intervalMs: 50,  baseStep: 0.4 },
-  { until: Infinity, intervalMs: 30, baseStep: 0.5 },
+  { until: 5,        baseStep: 0.25 },
+  { until: 15,       baseStep: 0.4 },
+  { until: Infinity, baseStep: 0.5 },
 ] as const;
 
 function zoomStepFactor(currentZoom: number, direction: 1 | -1): number {
   if (direction > 0) {
+    // ズームイン: 高倍率ほど繊細に
     if (currentZoom >= 18) return 0.3;
     if (currentZoom >= 15) return 0.5;
     if (currentZoom >= 10) return 0.8;
     return 1.0;
   } else {
+    // ズームアウト: 低倍率でも加速を維持
     if (currentZoom <= 5) return 0.5;
     if (currentZoom <= 8) return 0.8;
     return 1.0;
@@ -25,8 +26,8 @@ function zoomStepFactor(currentZoom: number, direction: 1 | -1): number {
 
 export function ZoomInOutButtons() {
   const map = useMap();
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeRef = useRef(false);
+  const delayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stepCountRef = useRef(0);
   const [modeLabel, setModeLabel] = useState("P");
 
@@ -40,49 +41,51 @@ export function ZoomInOutButtons() {
     [map],
   );
 
-  const startContinuous = useCallback(
+  const startIdleChain = useCallback(
     (direction: 1 | -1) => {
+      if (!map) return;
+      activeRef.current = true;
       stepCountRef.current = 0;
-      const tick = () => {
+
+      const onIdle = () => {
+        if (!activeRef.current) return;
         stepCountRef.current++;
         const phase = ACCEL_PHASES.find(
           (p) => stepCountRef.current <= p.until,
         ) ?? ACCEL_PHASES[ACCEL_PHASES.length - 1]!;
-        const currentZoom = map?.getZoom() ?? 15;
+        const currentZoom = map.getZoom() ?? 15;
         const effectiveStep = phase.baseStep * zoomStepFactor(currentZoom, direction);
         applyZoom(direction, effectiveStep);
-        intervalRef.current = setTimeout(tick, phase.intervalMs);
+        // アニメーション完了を待ってから次を呼ぶ
+        google.maps.event.addListenerOnce(map, "idle", onIdle);
       };
-      timerRef.current = setTimeout(tick, LONG_PRESS_DELAY);
+
+      // 長押し検知後に idle チェーン開始
+      delayTimerRef.current = setTimeout(() => {
+        if (!activeRef.current) return;
+        // 最初の1回を実行し、idle を待つ
+        onIdle();
+      }, LONG_PRESS_DELAY);
     },
-    [applyZoom, map],
+    [map, applyZoom],
   );
 
   const stopContinuous = useCallback(() => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (intervalRef.current) clearTimeout(intervalRef.current);
-    timerRef.current = null;
-    intervalRef.current = null;
-    // Google Maps のアニメーションキューをキャンセルし、
-    // 現在の表示ズームで即座に固定する
-    if (map) {
-      const currentZoom = map.getZoom();
-      const currentCenter = map.getCenter();
-      if (currentZoom != null && currentCenter) {
-        (map as google.maps.Map).moveCamera({
-          zoom: currentZoom,
-          center: currentCenter,
-        });
-      }
+    activeRef.current = false;
+    if (delayTimerRef.current) {
+      clearTimeout(delayTimerRef.current);
+      delayTimerRef.current = null;
     }
-  }, [map]);
+    // idle リスナーは activeRef.current === false で自然停止する
+    // moveCamera 不要（キューが溜まっていないため）
+  }, []);
 
   const handlePointerDown = useCallback(
     (direction: 1 | -1) => {
       applyZoom(direction);
-      startContinuous(direction);
+      startIdleChain(direction);
     },
-    [applyZoom, startContinuous],
+    [applyZoom, startIdleChain],
   );
 
   return (
