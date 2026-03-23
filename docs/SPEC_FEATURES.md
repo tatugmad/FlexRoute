@@ -1173,6 +1173,11 @@ Google Maps API 依存部分の方針:
 - 地図表示、Place検索、ルート計算はテスト時にモック（偽のレスポンス）で代替する
 - モックの設計はPhase1後半（1-6 ナビゲーション）で行う
 
+リグレッションテスト優先対象:
+- F-NAV Step 6（仕上げ）のタイミングで、変更頻度が高くリグレッションが実際に発生したコードから優先的にテストを書く
+- 対象: NavMapController（カメラ制御）、edgeFollow（エッジ追従）、useStepProgression（ステップ通過判定）
+- テスト内容: 特定の入力（followMode, headingMode, position 等）に対する moveCamera 呼び出しの検証
+
 関連: F-SECURITY
 
 ---
@@ -1197,6 +1202,8 @@ Google Maps API 依存部分の方針:
 | ~~routeStore.ts が 177 行で 150 行ルール超過（F-LOG v2 のログ追加によるブロック化が原因。整理セッションで分割予定）~~ | 1-6 | F-LOG | ✅ v1.6.71: routeStorePersistence.ts に永続化アクションを分離（177→123行） |
 | html2canvas が Google Maps タイル（CORS）でスクリーンショット取得に失敗する（ログデータは正常回収） | 1-6 | F-BUGREPORT | 既知の制約（D-034） |
 | Routes API v2 の 25 ウェイポイント上限が未強制（ユーザーが 25 件超を追加してもエラーにならない） | 1-6設計 | F-ROUTE-CALC | 未対処 |
+| エッジ追従: 斜め接近時にマーカーがエッジ沿いに徐々にずれる | 1-6 | F-NAV | 留置（v1.6.87 で軽減したが完全解消せず。getBounds の近似誤差に起因） |
+| エッジ追従: headingUp で上方向に進むとマーカーが画面外に出る場合がある | 1-6 | F-NAV | 留置（getBounds が heading 回転を考慮しない。EDGE_MARGIN_PX=120 で軽減。Phase 2 でピクセル座標判定を検討） |
 
 ## 再現困難な不具合
 

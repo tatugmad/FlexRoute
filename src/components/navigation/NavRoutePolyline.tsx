@@ -8,6 +8,7 @@ export function NavRoutePolyline() {
   const map = useMap();
   const currentLegs = useRouteStore((s) => s.currentLegs);
   const currentStepIndex = useNavigationStore((s) => s.currentStepIndex);
+  const reroutePolyline = useNavigationStore((s) => s.reroutePolyline);
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
 
   useEffect(() => {
@@ -35,11 +36,29 @@ export function NavRoutePolyline() {
       }
     }
 
+    // Reroute polyline (gray dashed)
+    if (reroutePolyline) {
+      const decoded = google.maps.geometry.encoding.decodePath(reroutePolyline);
+      const reroute = new google.maps.Polyline({
+        path: decoded,
+        strokeColor: "#9ca3af",
+        strokeWeight: 4,
+        strokeOpacity: 0,
+        icons: [{
+          icon: { path: "M 0,-1 0,1", strokeOpacity: 0.8, scale: 3 },
+          offset: "0",
+          repeat: "15px",
+        }],
+        map,
+      });
+      polylinesRef.current.push(reroute);
+    }
+
     return () => {
       polylinesRef.current.forEach((p) => p.setMap(null));
       polylinesRef.current = [];
     };
-  }, [map, currentLegs, currentStepIndex]);
+  }, [map, currentLegs, currentStepIndex, reroutePolyline]);
 
   return null;
 }

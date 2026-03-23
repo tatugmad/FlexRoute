@@ -23,6 +23,9 @@ type NavigationStoreState = {
   distanceToNextStepM: number;
   isOffRoute: boolean;
   offRouteDistance: number;
+  showRerouteDialog: boolean;
+  reroutePolyline: string | null;
+  isRerouting: boolean;
 };
 
 type NavigationActions = {
@@ -47,6 +50,10 @@ type NavigationActions = {
   setNextInstruction: (instruction: string | null, distanceM: number) => void;
   resetStepProgression: () => void;
   setOffRoute: (isOff: boolean, distance: number) => void;
+  openRerouteDialog: () => void;
+  closeRerouteDialog: () => void;
+  setReroutePolyline: (polyline: string | null) => void;
+  setIsRerouting: (isRerouting: boolean) => void;
 };
 
 const initialState: NavigationStoreState = {
@@ -69,6 +76,9 @@ const initialState: NavigationStoreState = {
   distanceToNextStepM: 0,
   isOffRoute: false,
   offRouteDistance: 0,
+  showRerouteDialog: false,
+  reroutePolyline: null,
+  isRerouting: false,
 };
 
 export const useNavigationStore = create<
@@ -78,7 +88,7 @@ export const useNavigationStore = create<
 
   startNavigation: () => {
     fr.info(C.NAV, "nav.started", {});
-    set({ status: "navigating", currentLegIndex: 0, currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0, isOffRoute: false, offRouteDistance: 0 });
+    set({ status: "navigating", currentLegIndex: 0, currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0, isOffRoute: false, offRouteDistance: 0, showRerouteDialog: false, reroutePolyline: null, isRerouting: false });
   },
 
   pauseNavigation: () => {
@@ -132,4 +142,8 @@ export const useNavigationStore = create<
     set({ currentStepIndex: 0, stepPassages: [], nextInstruction: null, distanceToNextStepM: 0, isOffRoute: false, offRouteDistance: 0 }),
   setOffRoute: (isOff, distance) =>
     set({ isOffRoute: isOff, offRouteDistance: distance }),
+  openRerouteDialog: () => set({ showRerouteDialog: true }),
+  closeRerouteDialog: () => set({ showRerouteDialog: false }),
+  setReroutePolyline: (polyline) => set({ reroutePolyline: polyline }),
+  setIsRerouting: (isRerouting) => set({ isRerouting }),
 }));
