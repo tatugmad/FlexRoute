@@ -1,4 +1,7 @@
-const EDGE_MARGIN_PX = 60;
+// getBounds() は heading 回転を考慮しない軸平行矩形を返すため、
+// headingUp 時に実際の表示領域とずれる。大きめのマージンでカバーする。
+// Phase 2 で projection + heading のピクセル座標変換による精密判定を検討。
+const EDGE_MARGIN_PX = 120;
 
 /**
  * D-036: free モードのエッジ追従。
@@ -50,19 +53,19 @@ export function computeEdgeFollow(
 
   // 北にはみ出し
   if (markerPos.lat >= innerNorth) {
-    shiftLat = markerPos.lat - innerNorth + marginLat * 0.5;
+    shiftLat = markerPos.lat - innerNorth;
   }
   // 南にはみ出し
   if (markerPos.lat <= innerSouth) {
-    shiftLat = markerPos.lat - innerSouth - marginLat * 0.5;
+    shiftLat = markerPos.lat - innerSouth;
   }
   // 東にはみ出し
   if (markerPos.lng >= innerEast) {
-    shiftLng = markerPos.lng - innerEast + marginLng * 0.5;
+    shiftLng = markerPos.lng - innerEast;
   }
   // 西にはみ出し
   if (markerPos.lng <= innerWest) {
-    shiftLng = markerPos.lng - innerWest - marginLng * 0.5;
+    shiftLng = markerPos.lng - innerWest;
   }
 
   if (shiftLat === 0 && shiftLng === 0) return null;

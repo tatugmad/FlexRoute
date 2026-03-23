@@ -57,6 +57,7 @@ GitHub Pages は HTTPS のため、Geolocation を含む全機能をテスト可
 - TOP画面ヘッダーに `v{APP_VERSION} ({branch}@{commitHash})` 形式で表示する
 - マイルストーンが変わったら第2セグメントをリセット（例: 1.5.x → 1.6.1）
 - 完了報告で更新後のバージョン番号を必ず明記すること
+- sim-remote.html の SIM_VERSION も APP_VERSION と同じ値に更新すること（バージョン不一致警告の正常動作に必要）
 
 ### 開発サイクル
 1. チャット（claude.ai）で設計を固める
