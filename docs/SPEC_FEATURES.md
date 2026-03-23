@@ -712,23 +712,29 @@ flexroute-bug-{timestamp}.json に以下を集約:
 概要: ナビゲーション画面で followMode=auto 時に現在地マーカーをピボットとしたズーム制御を提供する。ホイール・ボタン・P/Nモード切替の3要素で構成。
 
 #### ホイールズーム（followMode=auto 時）
-- Google Maps のネイティブ wheel ズームを scrollwheel: false で無効化
+- CameraController.init() で map div に wheel リスナーを登録（D-037）
 - normalize-wheel ライブラリで deltaY をデバイス間で正規化
-- 正規化ステップでマーカーピボットズームを実行（cameraController.wheelZoom）
+- ModeA.applyWheel() でマーカーピボットズームを実行
 - ホイール停止後 150ms の debounce で moveCamera を呼び、Google Maps の余韻アニメーションを即時カット
 - followMode=free 時は Google Maps のネイティブ動作を維持
 
-#### ピボット計算（pivotZoom 関数）
-- cameraController.ts の private メソッド（D-037）
+#### ピボット計算（calcPivotCenter）
+- cameraController/utils.ts の純粋関数（D-037）
 - 計算式: newCenter = marker + (oldCenter - marker) x 2^(oldZoom - newZoom)
 - マーカーの画面上ピクセル位置を不変に保つ
 - setZoom + setCenter の2呼び出しでアニメーション付きズームを実現
 - ホイールと +/- ボタン（Pモード）の両方から共有使用
 
 #### ZoomInOutButtons（+/- ボタン + P/N トグル）
-- +/- ボタン: idle イベントチェーンによる長押し加速。zoomStepFactor でズームレベルに応じたステップ補正
-- P モード（pivot-fine）: cameraController.zoomStep() を使用。ホイールと同一挙動
+- pure UI コンポーネント。cameraController.onZoomButtonDown/Up を呼ぶだけ
+- 長押し加速（idle チェーン）、zoomStepFactor は ModeA 内部で処理
+- P モード（pivot-fine）: マーカーピボットズーム。ホイールと同一挙動
 - N モード（native）: Google Maps のネイティブズームを使用。将来の動作比較用に保持
+
+#### autoZoom（CameraController 内部）
+- useAutoZoom フックを廃止し、CameraController 内部に吸収（v1.6.93）
+- 計算ロジック: cameraController/utils.ts の calcAutoZoomTarget
+- rate-limit（±0.5/回、4.5秒間隔）: cameraController/index.ts の calcAutoZoom
 
 入力: マウスホイール、+/- ボタンタップ/長押し、P/N トグル
 出力: 地図ズームレベル変更（マーカーピボット or ネイティブ）
@@ -754,7 +760,7 @@ flexroute-bug-{timestamp}.json に以下を集約:
 | Step | 内容 | 主な成果物 | 依存 |
 |------|------|-----------|------|
 | Step 1 | ステップ通過判定 + 案内文表示 | useStepProgression, StepPassage型, NavHeader案内文, ポリライン通過表現 | — |
-| Step 2 | オートズーム（D-023） | useAutoZoom, 時間先読みモデル, ターン接近ズーム | Step 1 |
+| Step 2 | オートズーム（D-023） | cameraController 内 autoZoom, 時間先読みモデル, ターン接近ズーム | Step 1 |
 | Step 3 | 逸脱検知 + リルートダイアログ | useOffRouteDetection, RerouteDialog, リルートポリライン | Step 1 |
 | Step 4 | ワイプマップ（F-NAV-WIPE） | WipeMap, 動的配置, サイズ切替 | Step 2 |
 | Step 5 | GPS走行記録（F-GPS-LOG） | GpsLog/TravelPoint型, gpsLogStore, gpsLogStorageService | Step 1 |

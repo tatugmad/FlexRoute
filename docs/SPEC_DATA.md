@@ -840,13 +840,9 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **依存utils**: geometry（closestPointOnSegment）, offRouteCheck（checkOffRoute）, polylineCodec（decodePolyline）
 - **呼び出し元**: NavigationScreen.tsx
 
-### useAutoZoom（src/hooks/useAutoZoom.ts）
+### useAutoZoom — 廃止（v1.6.93 で cameraController に吸収）
 
-- **責務**: オートズーム（D-023）。時間先読みモデル（15秒）でベースラインズームを算出し、ターン接近時（300m→100m）に最大+2レベルのブーストを適用する。レート制限 ±0.5/更新、4.5秒間隔
-- **依存store**: navigationStore（zoomMode, currentStepIndex）, routeStore（currentLegs）
-- **引数**: speed: number, distanceToNextStepM: number
-- **戻り値**: number（算出されたズームレベル）
-- **呼び出し元**: NavCameraSync.tsx
+- 計算ロジックは `src/services/cameraController/utils.ts`（calcAutoZoomTarget）に、state 管理（rate-limit）は `src/services/cameraController/index.ts`（calcAutoZoom）に移動
 
 ### useRouteCalculation（src/hooks/useRouteCalculation.ts）
 
@@ -1059,21 +1055,26 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 #### navigation/
 
-### cameraController（src/services/cameraController.ts）
+### cameraController（src/services/cameraController/）
 
-- **種別**: シングルトンサービス
-- **責務**: Google Maps カメラ API の唯一のインターフェース（D-037）。heading 補間、pivotZoom、wheelMode 管理、edge-follow 判定、panTo/moveCamera 選択を一元管理
-- **依存**: navigationStore（getState のみ）, utils/edgeFollow, utils/headingUtils
-- **使用箇所**: NavCameraSync, NavWheelZoom, ZoomInOutButtons
+- **種別**: シングルトンサービス（ディレクトリモジュール）
+- **責務**: Google Maps カメラ API の唯一のインターフェース（D-037）。heading 補間、pivotZoom、wheelMode 管理、edge-follow 判定、panTo/moveCamera 選択、autoZoom 計算、ホイール debounce、ズームボタン長押し加速を一元管理
+- **ファイル構成**:
+  - `index.ts` — CameraControllerImpl クラス（public インターフェース + dispatch）、CameraMode インターフェース定義
+  - `modeA.ts` — Mode A 実装（v1.6.92 の動作を完全再現）
+  - `utils.ts` — モード共通ユーティリティ（calcPivotCenter, calcAutoZoomTarget, zoomStepFactor, ACCEL_PHASES）
+- **CameraMode インターフェース**: init, applyPosition, applyWheel, onZoomButtonDown/Up, onMapZoomChanged, toggleWheelMode, getWheelMode, dispose
+- **依存**: navigationStore（getState のみ）, utils/edgeFollow, utils/headingUtils, normalize-wheel, flightRecorder
+- **使用箇所**: NavCameraSync, ZoomInOutButtons
 
 ### NavCameraSync.tsx（src/components/navigation/）
 
-- **責務**: navigationStore → cameraController への橋渡し（D-037）。ドラッグ検知による followMode 遷移、zoom_changed によるズームモード遷移
-- **依存**: cameraController, navigationStore, useAutoZoom
+- **責務**: store → cameraController.onPositionUpdate の 1 行ブリッジ（D-037）。position/heading/speed が変わったら cameraController に伝えるだけ
+- **依存**: cameraController, navigationStore
 
 ### ZoomInOutButtons.tsx（src/components/navigation/）
 
-- **責務**: +/- ズームボタンと P/N モードトグル。cameraController.zoomStep() を使用。idle イベントチェーンによる長押し加速、zoomStepFactor でズームレベル補正
+- **責務**: pure UI。+/- ズームボタンと P/N モードトグル。cameraController.onZoomButtonDown/Up を呼ぶだけ
 - **依存**: cameraController
 
 ### NavigationScreen.tsx（src/components/navigation/）
@@ -1121,10 +1122,9 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: autoZoom/lockedZoom トグルボタン。SVG アイコンで Auto/Lock 表示。Lock 時は赤文字
 - **依存**: navigationStore（zoomMode, setZoomMode）
 
-### NavWheelZoom.tsx（src/components/navigation/）
+### NavWheelZoom.tsx — 廃止（v1.6.93 で cameraController に吸収）
 
-- **責務**: ホイールイベント検知 → cameraController.wheelZoom() への委譲（D-037）。150ms debounce で余韻カット
-- **依存**: cameraController, normalize-wheel, navigationStore（followMode）
+- ホイールリスナー登録は cameraController.init() に、wheelZoom ロジックは modeA.applyWheel() に、debounce は modeA 内部に移動
 
 ### NavRoutePolyline.tsx（src/components/navigation/）
 
@@ -1396,7 +1396,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: free モードでマーカーが画面端に到達した際の最小シフト計算（D-036）
 - **公開関数**:
   - `computeEdgeFollow(markerPosition, mapBounds, marginPx, zoom)` — マーカーが画面端120pxマージン内に入った場合に、マーカーを画面内に留めるための最小 lat/lng シフトベクトルを返す。マージン外なら null
-- **使用箇所**: cameraController.ts（followMode=free 時）
+- **使用箇所**: cameraController/modeA.ts（followMode=free 時）
 
 ### offRouteCheck.ts（src/utils/offRouteCheck.ts）
 
@@ -1469,11 +1469,11 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `ENTER_THRESHOLD_M` | utils/offRouteCheck.ts | `50` |
 | `EXIT_THRESHOLD_M` | utils/offRouteCheck.ts | `30` |
 | `EDGE_MARGIN_PX` | utils/edgeFollow.ts | `120` |
-| `LOOKAHEAD_SEC` | hooks/useAutoZoom.ts | `15` |
-| `TURN_BOOST_MAX` | hooks/useAutoZoom.ts | `2`（ズームレベル） |
-| `TURN_BOOST_START_M` | hooks/useAutoZoom.ts | `300` |
-| `TURN_BOOST_END_M` | hooks/useAutoZoom.ts | `100` |
-| `ZOOM_RATE_LIMIT` | hooks/useAutoZoom.ts | `±0.5 / 4.5秒` |
+| `LOOKAHEAD_SEC` | services/cameraController/utils.ts | `15` |
+| `TURN_BOOST_MAX` | services/cameraController/utils.ts | `2`（ズームレベル） |
+| `TURN_BOOST_START_M` | services/cameraController/utils.ts | `300` |
+| `TURN_BOOST_END_M` | services/cameraController/utils.ts | `100` |
+| `ZOOM_RATE_LIMIT` | services/cameraController/index.ts | `±0.5 / 4.5秒` |
 | `CARD_WIDTH` | constants/cardLayout.ts | `280` |
 | `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
 | `APP_VERSION` | constants/appVersion.ts | 現在のバージョン番号（CLAUDE.md のバージョン運用ルール参照） |

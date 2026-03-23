@@ -8,7 +8,6 @@ import { NavHeader } from "@/components/navigation/NavHeader";
 import { NavControls } from "@/components/navigation/NavControls";
 import { NavRoutePolyline } from "@/components/navigation/NavRoutePolyline";
 import { NavCameraSync } from "@/components/navigation/NavCameraSync";
-import { NavWheelZoom } from "@/components/navigation/NavWheelZoom";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { SimRouteFeeder } from "@/components/navigation/SimRouteFeeder";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
@@ -56,7 +55,6 @@ function NavMap() {
     >
       <NavMapInitialFit />
       <NavCameraSync />
-      <NavWheelZoom />
       <NavRoutePolyline />
       <NavCurrentLocationMarker />
       <NavGeolocationRunner />
