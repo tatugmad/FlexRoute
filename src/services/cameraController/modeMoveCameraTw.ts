@@ -1,4 +1,4 @@
-import { Tween, Easing, update as tweenUpdate } from "@tweenjs/tween.js";
+import { Tween, Easing, Group } from "@tweenjs/tween.js";
 import { useNavigationStore } from "@/stores/navigationStore";
 import { shortestDelta } from "@/utils/headingUtils";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
@@ -23,6 +23,7 @@ export class ModeMoveCameraTw implements CameraMode {
   private zoomTween: Tween<{ zoom: number }> | null = null;
   private animFrameId: number | null = null;
   private tweenState: TweenState = { lat: 0, lng: 0, heading: 0 };
+  private tweenGroup = new Group();
 
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
@@ -44,7 +45,9 @@ export class ModeMoveCameraTw implements CameraMode {
 
       this.positionTween?.stop();
       this.tweenState = { ...from };
-      this.positionTween = new Tween(this.tweenState)
+      this.positionTween = new Tween(this.tweenState);
+      this.tweenGroup.add(this.positionTween);
+      this.positionTween
         .to(to, FOLLOW_DURATION)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => {
@@ -59,7 +62,9 @@ export class ModeMoveCameraTw implements CameraMode {
         this.isAutoZooming = true;
         this.zoomTween?.stop();
         const zoomState = { zoom: map.getZoom() ?? 15 };
-        this.zoomTween = new Tween(zoomState)
+        this.zoomTween = new Tween(zoomState);
+        this.tweenGroup.add(this.zoomTween);
+        this.zoomTween
           .to({ zoom: zoomTarget }, FOLLOW_DURATION)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => map.moveCamera({ zoom: zoomState.zoom }))
@@ -89,7 +94,9 @@ export class ModeMoveCameraTw implements CameraMode {
       );
       this.positionTween?.stop();
       const tweenObj = { lat: center!.lat(), lng: center!.lng(), zoom: cur };
-      new Tween(tweenObj)
+      const tween = new Tween(tweenObj);
+      this.tweenGroup.add(tween);
+      tween
         .to({ lat: nc.lat, lng: nc.lng, zoom: next }, ZOOM_WHEEL_DURATION)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => map.moveCamera({
@@ -139,12 +146,13 @@ export class ModeMoveCameraTw implements CameraMode {
     if (this.zoomDelayTimer) { clearTimeout(this.zoomDelayTimer); this.zoomDelayTimer = null; }
     this.zoomActive = false;
     if (this.idleListener) { google.maps.event.removeListener(this.idleListener); this.idleListener = null; }
+    this.tweenGroup.removeAll();
   }
 
   private ensureAnimLoop(): void {
     if (this.animFrameId !== null) return;
     const loop = (time: number) => {
-      tweenUpdate(time);
+      this.tweenGroup.update(time);
       this.animFrameId = requestAnimationFrame(loop);
     };
     this.animFrameId = requestAnimationFrame(loop);
@@ -162,7 +170,9 @@ export class ModeMoveCameraTw implements CameraMode {
         { lat: center!.lat(), lng: center!.lng() }, marker, curZoom, next,
       );
       const tweenObj = { lat: center!.lat(), lng: center!.lng(), zoom: curZoom };
-      new Tween(tweenObj)
+      const tween = new Tween(tweenObj);
+      this.tweenGroup.add(tween);
+      tween
         .to({ lat: nc.lat, lng: nc.lng, zoom: next }, ZOOM_WHEEL_DURATION)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => map.moveCamera({
