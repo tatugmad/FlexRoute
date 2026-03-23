@@ -41,6 +41,7 @@ export function NavMapController() {
   const setFollowMode = useNavigationStore((s) => s.setFollowMode);
   const setZoomMode = useNavigationStore((s) => s.setZoomMode);
   const isAutoZoomingRef = useRef(false);
+  const isDraggingRef = useRef(false);
   const mountedAtRef = useRef(Date.now());
   const prevHeadingRef = useRef(0);
 
@@ -50,12 +51,19 @@ export function NavMapController() {
   useEffect(() => {
     if (!map) return;
     const listener = map.addListener("dragstart", () => {
+      isDraggingRef.current = true;
       if (useNavigationStore.getState().followMode === "auto") {
         setFollowMode("free");
         fr.debug(C.NAV, "nav.dragToFree", {});
       }
     });
-    return () => google.maps.event.removeListener(listener);
+    const dragEndListener = map.addListener("dragend", () => {
+      isDraggingRef.current = false;
+    });
+    return () => {
+      google.maps.event.removeListener(listener);
+      google.maps.event.removeListener(dragEndListener);
+    };
   }, [map, setFollowMode]);
 
   // Detect user zoom → switch to lockedZoom
@@ -109,6 +117,7 @@ export function NavMapController() {
       map.moveCamera(cameraOptions);
     } else {
       // --- free モード (D-036) ---
+      if (isDraggingRef.current) return; // ドラッグ中は介入しない
       const cameraOptions: google.maps.CameraOptions = {
         heading: mapHeading,
       };

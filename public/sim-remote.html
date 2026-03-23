@@ -189,7 +189,8 @@
 </div>
 <script>
 (function() {
-  var SIM_VERSION = '1.6.81';
+  var SIM_VERSION = '1.6.87';
+  document.getElementById('appVersionDisplay').textContent = 'v' + SIM_VERSION;
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
@@ -335,11 +336,8 @@
         if (!connected) { connected = true; clearTimeout(connectTimer); setConnectionStatus('connected'); }
         state.channelModes = msg.channelModes;
         state.simValues = msg.simValues;
-        if (msg.appVersion) {
-          document.getElementById('appVersionDisplay').textContent = 'v' + msg.appVersion;
-          if (msg.appVersion !== SIM_VERSION) {
-            showVersionWarning(msg.appVersion);
-          }
+        if (msg.appVersion && msg.appVersion !== SIM_VERSION) {
+          showVersionWarning(msg.appVersion);
         }
         updateUI();
         break;
