@@ -83,6 +83,33 @@ export function calcRotationPivotCenter(
   };
 }
 
+/**
+ * heading-master 方式の center 導出。
+ * GPS 移動（startPos → targetPos の線形補間 t）と
+ * 回転ピボット（startCenter を markerPos 中心に headingDelta 回転）を合成する。
+ */
+export function deriveCenter(
+  startCenter: { lat: number; lng: number },
+  startPos: { lat: number; lng: number },
+  targetPos: { lat: number; lng: number },
+  markerPos: { lat: number; lng: number },
+  startHeading: number,
+  currentHeading: number,
+  t: number,
+): { lat: number; lng: number } {
+  // 1. 回転ピボット: startCenter を markerPos 中心に回転
+  const headingDelta = currentHeading - startHeading;
+  const rotCenter = calcRotationPivotCenter(startCenter, markerPos, headingDelta);
+  // 2. GPS 移動オフセット（線形補間）
+  const moveLat = (targetPos.lat - startPos.lat) * t;
+  const moveLng = (targetPos.lng - startPos.lng) * t;
+  // 3. 合成
+  return {
+    lat: rotCenter.lat + moveLat,
+    lng: rotCenter.lng + moveLng,
+  };
+}
+
 /** ズームレベルに応じたステップ補正係数 */
 export function zoomStepFactor(currentZoom: number, direction: 1 | -1): number {
   if (direction > 0) {
