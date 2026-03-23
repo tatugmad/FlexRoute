@@ -1,17 +1,14 @@
 import { useNavigationStore } from "@/stores/navigationStore";
-import { shortestDelta } from "@/utils/headingUtils";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
 import type { CameraMode } from "./index";
 import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
-const AUTO_ZOOM_THRESHOLD = 0.3;
 const LONG_PRESS_DELAY = 200;
 
-/** Mode A: v1.6.92 の動作を完全再現する CameraMode 実装。 */
-export class ModeA implements CameraMode {
+/** Mode SET+PAN: setter 系ベース + panTo で center アニメーション付き移動。 */
+export class ModeSetterPan implements CameraMode {
   private wheelMode: "pivot" | "native" = "pivot";
   private isAutoZooming = false;
-  private wheelStopTimer: ReturnType<typeof setTimeout> | null = null;
   private zoomActive = false;
   private zoomDelayTimer: ReturnType<typeof setTimeout> | null = null;
   private zoomStepCount = 0;
@@ -26,28 +23,17 @@ export class ModeA implements CameraMode {
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
     if (followMode === "auto") {
-      let zoomValue: number | undefined;
+      map.setHeading(mapHeading);
       if (zoomTarget !== null) {
-        const cur = map.getZoom() ?? 15;
-        if (Math.abs(cur - zoomTarget) >= AUTO_ZOOM_THRESHOLD) {
-          this.isAutoZooming = true;
-          zoomValue = zoomTarget;
-        }
+        this.isAutoZooming = true;
+        map.setZoom(zoomTarget);
       }
-      const curHeading = map.getHeading() ?? 0;
-      if (Math.abs(shortestDelta(curHeading, mapHeading)) < 1 && zoomValue === undefined) {
-        map.panTo(pos);
-      } else {
-        const opts: google.maps.CameraOptions = { center: pos, heading: mapHeading };
-        if (zoomValue !== undefined) opts.zoom = zoomValue;
-        map.moveCamera(opts);
-      }
+      map.panTo(pos);
     } else {
       if (isDragging) return;
-      const opts: google.maps.CameraOptions = { heading: mapHeading };
+      map.setHeading(mapHeading);
       const edgeCenter = computeEdgeFollow(map, pos);
-      if (edgeCenter) opts.center = edgeCenter;
-      if (opts.heading !== undefined || opts.center !== undefined) map.moveCamera(opts);
+      if (edgeCenter) map.panTo(edgeCenter);
     }
   }
 
@@ -58,16 +44,16 @@ export class ModeA implements CameraMode {
     const next = Math.max(1, Math.min(22, cur + step));
     if (next === cur) return true;
     const marker = state.currentPosition;
-    if (marker) this.pivotZoom(map, marker, next);
-    else map.setZoom(next);
-    // Debounce: snap camera after 150ms idle
-    if (this.wheelStopTimer) clearTimeout(this.wheelStopTimer);
-    this.wheelStopTimer = setTimeout(() => {
-      const z = map.getZoom();
-      const c = map.getCenter();
-      if (z != null && c) map.moveCamera({ zoom: z, center: c });
-      this.wheelStopTimer = null;
-    }, 150);
+    if (marker) {
+      const nc = calcPivotCenter(
+        { lat: map.getCenter()!.lat(), lng: map.getCenter()!.lng() },
+        marker, cur, next,
+      );
+      map.setZoom(next);
+      map.panTo(nc);
+    } else {
+      map.setZoom(next);
+    }
     return true;
   }
 
@@ -101,20 +87,9 @@ export class ModeA implements CameraMode {
   getWheelMode(): "pivot" | "native" { return this.wheelMode; }
 
   dispose(): void {
-    if (this.wheelStopTimer) { clearTimeout(this.wheelStopTimer); this.wheelStopTimer = null; }
     if (this.zoomDelayTimer) { clearTimeout(this.zoomDelayTimer); this.zoomDelayTimer = null; }
     this.zoomActive = false;
     if (this.idleListener) { google.maps.event.removeListener(this.idleListener); this.idleListener = null; }
-  }
-
-  // --- Private helpers ---
-  private pivotZoom(map: google.maps.Map, marker: { lat: number; lng: number }, newZoom: number): void {
-    const curZoom = map.getZoom() ?? 15;
-    const center = map.getCenter();
-    if (!center) { map.setZoom(newZoom); return; }
-    const nc = calcPivotCenter({ lat: center.lat(), lng: center.lng() }, marker, curZoom, newZoom);
-    map.setZoom(newZoom);
-    map.setCenter(nc);
   }
 
   private applyZoomStep(map: google.maps.Map, direction: 1 | -1, baseStep: number): void {
@@ -123,8 +98,16 @@ export class ModeA implements CameraMode {
     const next = Math.max(1, Math.min(22, curZoom + direction * step));
     if (next === curZoom) return;
     const marker = useNavigationStore.getState().currentPosition;
-    if (this.wheelMode === "pivot" && marker) this.pivotZoom(map, marker, next);
-    else map.setZoom(next);
+    if (this.wheelMode === "pivot" && marker) {
+      const nc = calcPivotCenter(
+        { lat: map.getCenter()!.lat(), lng: map.getCenter()!.lng() },
+        marker, curZoom, next,
+      );
+      map.setZoom(next);
+      map.panTo(nc);
+    } else {
+      map.setZoom(next);
+    }
   }
 
   private startIdleChain(map: google.maps.Map, direction: 1 | -1): void {
