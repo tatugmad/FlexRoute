@@ -109,13 +109,11 @@ export function NavMapController() {
       map.moveCamera(cameraOptions);
     } else {
       // --- free モード (D-036) ---
-      const cameraOptions: google.maps.CameraOptions = {};
-      // headingUp なら heading を適用
-      if (headingMode === "headingUp") {
-        cameraOptions.heading = mapHeading;
-      }
+      const cameraOptions: google.maps.CameraOptions = {
+        heading: mapHeading,
+      };
       // エッジ追従: マーカーが画面端に接近したらスクロール
-      const edgeCenter = computeEdgeFollow(map, currentPosition, mapHeading);
+      const edgeCenter = computeEdgeFollow(map, currentPosition);
       if (edgeCenter) {
         cameraOptions.center = edgeCenter;
       }
