@@ -4,7 +4,11 @@ import { shortestDelta } from "@/utils/headingUtils";
 import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
 import { calcAutoZoomTarget } from "./utils";
-import { ModeA } from "./modeA";
+import { ModeOrg } from "./modeOrg";
+import { ModeSetter } from "./modeSetter";
+import { ModeSetterPan } from "./modeSetterPan";
+import { ModeMoveCamera } from "./modeMoveCamera";
+import { ModeMoveCameraTw } from "./modeMoveCameraTw";
 
 const MAX_ZOOM_DELTA = 0.5;
 const MIN_UPDATE_INTERVAL_MS = 4500;
@@ -27,8 +31,8 @@ export interface CameraMode {
 /** D-037: Google Maps カメラ API の唯一のインターフェース */
 class CameraControllerImpl {
   private map: google.maps.Map | null = null;
-  private mode: CameraMode = new ModeA();
-  private modeName = "A";
+  private mode: CameraMode = new ModeOrg();
+  private modeName = "ORG";
   private prevHeading = 0;
   private isDragging = false;
   private mountedAt = 0;
@@ -103,7 +107,13 @@ class CameraControllerImpl {
     if (!this.map) { this.modeName = name; return; }
     this.mode.dispose();
     this.modeName = name;
-    this.mode = new ModeA();
+    switch (name) {
+      case "SETTER":     this.mode = new ModeSetter(); break;
+      case "SET+PAN":    this.mode = new ModeSetterPan(); break;
+      case "MOVE":       this.mode = new ModeMoveCamera(); break;
+      case "MOVE+TW":    this.mode = new ModeMoveCameraTw(); break;
+      default:           this.mode = new ModeOrg(); break;
+    }
     this.mode.init(this.map);
   }
   getMode(): string { return this.modeName; }

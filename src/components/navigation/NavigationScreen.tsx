@@ -12,6 +12,7 @@ import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { SimRouteFeeder } from "@/components/navigation/SimRouteFeeder";
 import { BugReportButton } from "@/components/navigation/BugReportButton";
 import { ZoomInOutButtons } from "@/components/navigation/ZoomInOutButtons";
+import { CameraModeSelector } from "@/components/navigation/CameraModeSelector";
 import { StepDebugMarkers } from "@/components/navigation/StepDebugMarkers";
 import { OffRouteBanner } from "@/components/navigation/OffRouteBanner";
 import { RerouteDialog } from "@/components/navigation/RerouteDialog";
@@ -31,6 +32,7 @@ export function NavigationScreen() {
         <NavControls />
         <BugReportButton />
         <ZoomInOutButtons />
+        <CameraModeSelector />
       </div>
     </APIProvider>
   );
