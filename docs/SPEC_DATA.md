@@ -1,6 +1,6 @@
 # FlexRoute データ仕様書
 
-> 最終更新: 2026-03-22
+> 最終更新: 2026-03-23
 
 ## 型定義一覧
 
@@ -143,6 +143,19 @@ type SavedRoute = {
   thumbnailUrl: string | null;
   thumbnailUrlSmall: string | null;
   labelIds: string[];
+};
+```
+
+### StepPassage
+
+ステップ通過記録。navigationStore で管理（永続化しない）。
+
+```ts
+type StepPassage = {
+  legIndex: number;
+  stepIndex: number;
+  exitTimestamp: string;      // ISO 8601（出口通過時刻）
+  exitPosition: LatLng;       // 通過時の実GPS座標
 };
 ```
 
@@ -820,6 +833,21 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **呼び出し元**: なし（将来 NavigationScreen で使用予定）
 - **ステータス**: スケルトンのみ。sensor.ts に型定義あり
 
+### useStepProgression（src/hooks/useStepProgression.ts）
+
+- **責務**: ステップ通過判定。legs/steps のポリラインを平坦化したセグメント配列を構築し、GPS位置更新ごとに最近接セグメントを特定してステップ進行を管理する。逸脱距離の計算、残距離・残時間の算出、次の案内文の更新を含む
+- **依存store**: navigationStore（currentStepIndex, advanceStep, setNextInstruction, setOffRoute, openRerouteDialog）, routeStore（currentLegs）
+- **依存utils**: geometry（closestPointOnSegment）, offRouteCheck（checkOffRoute）, polylineCodec（decodePolyline）
+- **呼び出し元**: NavigationScreen.tsx
+
+### useAutoZoom（src/hooks/useAutoZoom.ts）
+
+- **責務**: オートズーム（D-023）。時間先読みモデル（15秒）でベースラインズームを算出し、ターン接近時（300m→100m）に最大+2レベルのブーストを適用する。レート制限 ±0.5/更新、4.5秒間隔
+- **依存store**: navigationStore（zoomMode, currentStepIndex）, routeStore（currentLegs）
+- **引数**: speed: number, distanceToNextStepM: number
+- **戻り値**: number（算出されたズームレベル）
+- **呼び出し元**: NavMapController.tsx
+
 ### useRouteCalculation（src/hooks/useRouteCalculation.ts）
 
 - **責務**: ウェイポイント変更を検知し、Routes API v2 でルートを自動計算する。レスポンスからlegs/stepsを解析し道路種別を判定してstoreに反映
@@ -927,6 +955,16 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `fetchPlaceDetails(placeId: string)` — placeId から施設情報を取得。戻り値: `{ name, address, rating, photoUrl }`（全て nullable）
 - **使用箇所**: useMapClickHandler, usePlaceCache
 
+### rerouteService.ts（src/services/rerouteService.ts）
+
+- **責務**: 逸脱時の3選択肢リルート。Routes API v2 を呼び出し、リルートポリラインを返す
+- **公開関数**:
+  - `rerouteBackToRoute(currentPosition, steps, currentStepIndex)` — 現在地から未通過の直近ステップ開始地点へのルート計算
+  - `rerouteToNextWaypoint(currentPosition, waypoints, currentLegIndex)` — 現在地から次の経由地までのルート計算
+  - `rerouteToDestination(currentPosition, waypoints, currentLegIndex)` — 現在地から残り全経由地を経由して目的地までのルート計算
+- **依存**: routeApi（computeRoutes）, flightRecorder
+- **使用箇所**: RerouteDialog.tsx
+
 ### simGeolocation.ts（src/services/simGeolocation.ts）
 
 - **責務**: navigator.geolocation の watchPosition / getCurrentPosition / clearWatch をパッチし、sensorStore の sim 値に基づいて PG の callback を制御する（D-029, D-030）
@@ -1023,9 +1061,9 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### NavMapController.tsx（src/components/navigation/）
 
-- **責務**: ナビゲーション地図の制御。followMode=auto 時のホイールズーム無効化（scrollwheel: false）+ normalize-wheel による正規化ステップでのマーカーピボットズーム。ホイール停止時 150ms debounce + moveCamera で余韻カット。wheelmode-changed カスタムイベントのリスナーで P/N モード切替時の scrollwheel 設定を一元管理
+- **責務**: ナビゲーション地図の統一カメラ制御（D-032, D-036）。followMode 状態マシン管理（auto: moveCamera で center/heading/zoom を一括制御、free: heading 回転 + エッジ追従のみ）。ドラッグ検知で auto→free 遷移、ユーザーズームで autoZoom→lockedZoom 遷移。scrollwheel 一元管理（wheelmode-changed カスタムイベント）
 - **export**: pivotZoom 関数（ZoomInOutButtons と共有）
-- **依存**: normalize-wheel, @types/normalize-wheel
+- **依存**: normalize-wheel, navigationStore, routeStore, utils/edgeFollow, utils/headingUtils
 
 ### ZoomInOutButtons.tsx（src/components/navigation/）
 
@@ -1077,10 +1115,30 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: autoZoom/lockedZoom トグルボタン。SVG アイコンで Auto/Lock 表示。Lock 時は赤文字
 - **依存**: navigationStore（zoomMode, setZoomMode）
 
+### NavWheelZoom.tsx（src/components/navigation/）
+
+- **責務**: ナビ画面のホイールズーム制御（NavMapController から分離）。followMode=auto 時にネイティブズームを無効化し、normalize-wheel で正規化したステップで pivotZoom を実行。150ms debounce で余韻カット
+- **依存**: NavMapController（pivotZoom）, normalize-wheel, navigationStore（followMode）
+
 ### NavRoutePolyline.tsx（src/components/navigation/）
 
-- **責務**: ナビ画面のルートポリライン描画。routeSteps から道路種別色分け。google.maps.Polyline を直接操作
-- **依存**: routeStore（routeSteps）、utils/roadType
+- **責務**: ナビ画面のルートポリライン描画。routeSteps から道路種別色分け。ステップ通過状態に応じて opacity 制御（通過済み=0.3、未通過=元の色）。リルートポリラインをグレー破線で表示
+- **依存**: routeStore（routeSteps）, navigationStore（currentStepIndex, stepPassages, reroutePolyline）, utils/roadType
+
+### StepDebugMarkers.tsx（src/components/navigation/）
+
+- **責務**: デバッグ用ステップマーカー。?debug=1 時に各ステップ端点を色分け AdvancedMarker で表示（緑=通過済み、青=現在、灰=未到達）。クリックでステップ詳細ポップオーバー
+- **依存**: navigationStore（currentStepIndex, stepPassages）, routeStore（currentLegs）
+
+### OffRouteBanner.tsx（src/components/navigation/）
+
+- **責務**: 逸脱警告バナー。isOffRoute=true 時に画面上部中央に「ルートから逸脱しています（Xm）」を rose-600 背景で表示
+- **依存**: navigationStore（isOffRoute, offRouteDistance）
+
+### RerouteDialog.tsx（src/components/navigation/）
+
+- **責務**: リルートダイアログ（3選択肢）。逸脱地点に戻る / 次の経由地までリルート / 目的地までリルート。ローディング状態・エラーハンドリング付き
+- **依存**: navigationStore（showRerouteDialog, isRerouting）, services/rerouteService, flightRecorder
 
 ### BugReportButton.tsx（src/components/navigation/）
 
@@ -1320,6 +1378,27 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `generateRouteThumbnailUrlSmall(saved, apiKey)` — スモール版（150x86）サムネイルURLを生成（sm未満のカード用）
 - **使用箇所**: routeStore（saveCurrentRoute）
 
+### geometry.ts（src/utils/geometry.ts）
+
+- **責務**: 線分上の最近接点を計算する幾何ユーティリティ
+- **公開関数**:
+  - `closestPointOnSegment(point, segStart, segEnd)` — 点から線分への垂線の足を計算し、最近接点と距離（メートル）を返す。heading/distance ベースの投影計算
+- **使用箇所**: useStepProgression, useRouteSnap
+
+### edgeFollow.ts（src/utils/edgeFollow.ts）
+
+- **責務**: free モードでマーカーが画面端に到達した際の最小シフト計算（D-036）
+- **公開関数**:
+  - `computeEdgeFollow(markerPosition, mapBounds, marginPx, zoom)` — マーカーが画面端120pxマージン内に入った場合に、マーカーを画面内に留めるための最小 lat/lng シフトベクトルを返す。マージン外なら null
+- **使用箇所**: NavMapController.tsx（followMode=free 時）
+
+### offRouteCheck.ts（src/utils/offRouteCheck.ts）
+
+- **責務**: ヒステリシス付き逸脱判定。進入閾値50m / 復帰閾値30m でフリッカーを防止
+- **公開関数**:
+  - `checkOffRoute(distance, currentlyOffRoute)` — 距離と現在の逸脱状態から、次の逸脱状態（boolean）を返す。ステートレスな純関数
+- **使用箇所**: useStepProgression
+
 ### headingUtils.ts（src/utils/headingUtils.ts）
 
 - **責務**: 0度/360度 境界を跨ぐ回転で最短方向のデルタを計算する
@@ -1381,6 +1460,14 @@ useRouteCalculation でもルート計算前にフィルタ:
 | `NATIONAL_KEYWORDS` | utils/roadType.ts | `["国道"]` |
 | `PREFECTURAL_KEYWORDS` | utils/roadType.ts | `["県道", "都道", "府道", "道道"]` |
 | `ROAD_COLORS` | utils/roadType.ts | highway=#ec4899, national=#eab308, prefectural=#22c55e, local=#4f46e5 |
+| `ENTER_THRESHOLD_M` | utils/offRouteCheck.ts | `50` |
+| `EXIT_THRESHOLD_M` | utils/offRouteCheck.ts | `30` |
+| `EDGE_MARGIN_PX` | utils/edgeFollow.ts | `120` |
+| `LOOKAHEAD_SEC` | hooks/useAutoZoom.ts | `15` |
+| `TURN_BOOST_MAX` | hooks/useAutoZoom.ts | `2`（ズームレベル） |
+| `TURN_BOOST_START_M` | hooks/useAutoZoom.ts | `300` |
+| `TURN_BOOST_END_M` | hooks/useAutoZoom.ts | `100` |
+| `ZOOM_RATE_LIMIT` | hooks/useAutoZoom.ts | `±0.5 / 4.5秒` |
 | `CARD_WIDTH` | constants/cardLayout.ts | `280` |
 | `CARD_THUMBNAIL_HEIGHT` | constants/cardLayout.ts | `160` |
 | `APP_VERSION` | constants/appVersion.ts | 現在のバージョン番号（CLAUDE.md のバージョン運用ルール参照） |
