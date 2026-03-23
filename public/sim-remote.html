@@ -175,7 +175,7 @@
     </div>
     <div class="slider-row" style="margin-top:16px;">
       <button class="step-btn" disabled id="spd-down" data-target="speedSlider" data-step="-1">&#9664;</button>
-      <input type="range" min="0" max="150" step="1" value="0" disabled id="speedSlider" oninput="onSpeed(this.value)">
+      <input type="range" min="0" max="150" step="1" value="30" disabled id="speedSlider" oninput="onSpeed(this.value)">
       <button class="step-btn" disabled id="spd-up" data-target="speedSlider" data-step="1">&#9654;</button>
     </div>
     <div style="text-align:right;margin-top:4px;">
@@ -189,13 +189,13 @@
 </div>
 <script>
 (function() {
-  var SIM_VERSION = '1.6.88';
+  var SIM_VERSION = '1.6.89';
   document.getElementById('appVersionDisplay').textContent = 'v' + SIM_VERSION;
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
     channelModes: { position: 'real', heading: 'real', speed: 'real' },
-    simValues: { position: null, heading: 0, speed: 0, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true }
+    simValues: { position: null, heading: 0, speed: 8.33, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true }
   };
   var connected = false;
   var connectTimer = setTimeout(function() { if (!connected) setConnectionStatus('disconnected'); }, 3000);
@@ -321,11 +321,40 @@
   document.addEventListener('mouseup', stopDpad);
   document.addEventListener('touchend', stopDpad);
 
-  // Center button click
-  document.getElementById('followBtn').addEventListener('click', function() {
-    if (this.classList.contains('disabled')) return;
-    toggleRouteFollow();
-  });
+  // Center button: click = toggle follow, long-press (1s) = restart from beginning
+  var followResetTimer = null;
+  var centerBtn = document.getElementById('followBtn');
+  function centerDown(e) {
+    if (centerBtn.classList.contains('disabled')) return;
+    if (e.type === 'touchstart') e.preventDefault();
+    followResetTimer = setTimeout(function() {
+      followResetTimer = null;
+      // Long-press: restart from beginning
+      currentSegment = 0;
+      progressM = 0;
+      if (isFollowing) {
+        clearInterval(followTimer);
+        followTimer = null;
+        isFollowing = false;
+      }
+      // Visual feedback: show ↺ briefly
+      var txt = document.getElementById('followText');
+      txt.textContent = '\u21BA';
+      setTimeout(function() { updateFollowButton(); }, 500);
+    }, 1000);
+  }
+  function centerUp() {
+    if (followResetTimer !== null) {
+      // Short press: normal toggle
+      clearTimeout(followResetTimer);
+      followResetTimer = null;
+      if (!centerBtn.classList.contains('disabled')) toggleRouteFollow();
+    }
+  }
+  centerBtn.addEventListener('mousedown', centerDown);
+  centerBtn.addEventListener('mouseup', centerUp);
+  centerBtn.addEventListener('touchstart', centerDown, { passive: false });
+  centerBtn.addEventListener('touchend', centerUp);
 
   channel.postMessage({ type: 'remote-ready' });
   channel.onmessage = function(event) {
