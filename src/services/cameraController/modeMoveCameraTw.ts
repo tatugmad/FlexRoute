@@ -54,6 +54,7 @@ export class ModeMoveCameraTw implements CameraMode {
         .to(to, FOLLOW_DURATION)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => {
+          if (useNavigationStore.getState().followMode !== "auto") return;
           map.moveCamera({
             center: { lat: this.tweenState.lat, lng: this.tweenState.lng },
             heading: this.tweenState.heading,
@@ -70,7 +71,10 @@ export class ModeMoveCameraTw implements CameraMode {
         this.zoomTween
           .to({ zoom: zoomTarget }, FOLLOW_DURATION)
           .easing(Easing.Quadratic.Out)
-          .onUpdate(() => map.moveCamera({ zoom: zoomState.zoom }))
+          .onUpdate(() => {
+            if (useNavigationStore.getState().followMode !== "auto") return;
+            map.moveCamera({ zoom: zoomState.zoom });
+          })
           .start();
       }
       this.ensureAnimLoop();
@@ -162,6 +166,11 @@ export class ModeMoveCameraTw implements CameraMode {
     this.zoomActive = false;
     if (this.zoomDelayTimer) { clearTimeout(this.zoomDelayTimer); this.zoomDelayTimer = null; }
     if (this.idleListener) { google.maps.event.removeListener(this.idleListener); this.idleListener = null; }
+  }
+
+  onDragStart(): void {
+    this.positionTween?.stop();
+    this.zoomTween?.stop();
   }
 
   onMapZoomChanged(): boolean {
