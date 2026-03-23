@@ -23,6 +23,7 @@ export interface CameraMode {
   onZoomButtonDown(map: google.maps.Map, direction: 1 | -1): void;
   onZoomButtonUp(map: google.maps.Map): void;
   onMapZoomChanged(): boolean;
+  onDragStart(): void;
   toggleWheelMode(map: google.maps.Map): "pivot" | "native";
   getWheelMode(): "pivot" | "native";
   dispose(): void;
@@ -53,6 +54,7 @@ class CameraControllerImpl {
     this.listeners.push(
       map.addListener("dragstart", () => {
         this.isDragging = true;
+        this.mode.onDragStart();
         if (useNavigationStore.getState().followMode === "auto") {
           useNavigationStore.getState().setFollowMode("free");
           fr.debug(C.NAV, "nav.dragToFree", {});

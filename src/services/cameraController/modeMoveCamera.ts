@@ -93,6 +93,10 @@ export class ModeMoveCamera implements CameraMode {
     return false;
   }
 
+  onDragStart(): void {
+    // アニメーションなし。処理不要。
+  }
+
   toggleWheelMode(map: google.maps.Map): "pivot" | "native" {
     this.wheelMode = this.wheelMode === "pivot" ? "native" : "pivot";
     const auto = useNavigationStore.getState().followMode === "auto";
