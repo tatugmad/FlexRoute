@@ -7,7 +7,7 @@ import { NavCurrentLocationMarker } from "@/components/navigation/CurrentLocatio
 import { NavHeader } from "@/components/navigation/NavHeader";
 import { NavControls } from "@/components/navigation/NavControls";
 import { NavRoutePolyline } from "@/components/navigation/NavRoutePolyline";
-import { NavMapController } from "@/components/navigation/NavMapController";
+import { NavCameraSync } from "@/components/navigation/NavCameraSync";
 import { NavWheelZoom } from "@/components/navigation/NavWheelZoom";
 import { SimPositionCross } from "@/components/navigation/SimPositionCross";
 import { SimRouteFeeder } from "@/components/navigation/SimRouteFeeder";
@@ -45,7 +45,7 @@ function NavMap() {
     : { lat: 35.6895, lng: 139.6917 };
 
   return (
-    // D-032: heading は NavMapController が moveCamera で制御
+    // D-032 + D-037: heading は cameraController が moveCamera で制御
     <Map
       defaultCenter={defaultCenter}
       defaultZoom={15}
@@ -55,7 +55,7 @@ function NavMap() {
       className="w-full h-full"
     >
       <NavMapInitialFit />
-      <NavMapController />
+      <NavCameraSync />
       <NavWheelZoom />
       <NavRoutePolyline />
       <NavCurrentLocationMarker />

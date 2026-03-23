@@ -1,7 +1,6 @@
 import { useRef, useCallback, useState } from "react";
 import { useMap } from "@vis.gl/react-google-maps";
-import { useNavigationStore } from "@/stores/navigationStore";
-import { pivotZoom } from "@/components/navigation/NavMapController";
+import { cameraController } from "@/services/cameraController";
 
 const LONG_PRESS_DELAY = 200;
 // リピート回数に応じてステップが大きくなる加速テーブル
@@ -13,13 +12,11 @@ const ACCEL_PHASES = [
 
 function zoomStepFactor(currentZoom: number, direction: 1 | -1): number {
   if (direction > 0) {
-    // ズームイン: 高倍率ほど繊細に
     if (currentZoom >= 18) return 0.3;
     if (currentZoom >= 15) return 0.5;
     if (currentZoom >= 10) return 0.8;
     return 1.0;
   } else {
-    // ズームアウト: 低倍率でも加速を維持
     if (currentZoom <= 5) return 0.5;
     if (currentZoom <= 8) return 0.8;
     return 1.0;
@@ -35,18 +32,9 @@ export function ZoomInOutButtons() {
 
   const applyZoom = useCallback(
     (direction: 1 | -1, step: number = 0.25) => {
-      if (!map) return;
-      const current = map.getZoom() ?? 15;
-      const next = Math.max(1, Math.min(22, current + direction * step));
-      if (next === current) return;
-      const isNative = (window as unknown as Record<string, unknown>)
-        .__wheelMode === "native";
-      const marker = useNavigationStore.getState().currentPosition;
-      if (!isNative && marker) {
-        pivotZoom(map as google.maps.Map, marker, next);
-      } else {
-        map.setZoom(next);
-      }
+      const currentZoom = map?.getZoom() ?? 15;
+      const effectiveStep = step * zoomStepFactor(currentZoom, direction);
+      cameraController.zoomStep(direction, effectiveStep);
     },
     [map],
   );
@@ -65,19 +53,16 @@ export function ZoomInOutButtons() {
         ) ?? ACCEL_PHASES[ACCEL_PHASES.length - 1]!;
         const currentZoom = map.getZoom() ?? 15;
         const effectiveStep = phase.baseStep * zoomStepFactor(currentZoom, direction);
-        applyZoom(direction, effectiveStep);
-        // アニメーション完了を待ってから次を呼ぶ
+        cameraController.zoomStep(direction, effectiveStep);
         google.maps.event.addListenerOnce(map, "idle", onIdle);
       };
 
-      // 長押し検知後に idle チェーン開始
       delayTimerRef.current = setTimeout(() => {
         if (!activeRef.current) return;
-        // 最初の1回を実行し、idle を待つ
         onIdle();
       }, LONG_PRESS_DELAY);
     },
-    [map, applyZoom],
+    [map],
   );
 
   const stopContinuous = useCallback(() => {
@@ -86,8 +71,6 @@ export function ZoomInOutButtons() {
       clearTimeout(delayTimerRef.current);
       delayTimerRef.current = null;
     }
-    // idle リスナーは activeRef.current === false で自然停止する
-    // moveCamera 不要（キューが溜まっていないため）
   }, []);
 
   const handlePointerDown = useCallback(
@@ -120,11 +103,8 @@ export function ZoomInOutButtons() {
       <div className="border-t border-slate-200" />
       <button
         onClick={() => {
-          const w = window as unknown as Record<string, unknown>;
-          const isNative = w.__wheelMode === "native";
-          w.__wheelMode = isNative ? undefined : "native";
-          setModeLabel(isNative ? "P" : "N");
-          window.dispatchEvent(new Event("wheelmode-changed"));
+          const newMode = cameraController.toggleWheelMode();
+          setModeLabel(newMode === "pivot" ? "P" : "N");
         }}
         className="w-10 h-10 flex items-center justify-center text-slate-600 text-sm font-bold hover:bg-slate-100 active:bg-slate-200 select-none"
         title="Wheel zoom: P=pivot-fine / N=native"

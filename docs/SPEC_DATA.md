@@ -846,7 +846,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **依存store**: navigationStore（zoomMode, currentStepIndex）, routeStore（currentLegs）
 - **引数**: speed: number, distanceToNextStepM: number
 - **戻り値**: number（算出されたズームレベル）
-- **呼び出し元**: NavMapController.tsx
+- **呼び出し元**: NavCameraSync.tsx
 
 ### useRouteCalculation（src/hooks/useRouteCalculation.ts）
 
@@ -1059,16 +1059,22 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 #### navigation/
 
-### NavMapController.tsx（src/components/navigation/）
+### cameraController（src/services/cameraController.ts）
 
-- **責務**: ナビゲーション地図の統一カメラ制御（D-032, D-036）。followMode 状態マシン管理（auto: moveCamera で center/heading/zoom を一括制御、free: heading 回転 + エッジ追従のみ）。ドラッグ検知で auto→free 遷移、ユーザーズームで autoZoom→lockedZoom 遷移。scrollwheel 一元管理（wheelmode-changed カスタムイベント）
-- **export**: pivotZoom 関数（ZoomInOutButtons と共有）
-- **依存**: normalize-wheel, navigationStore, routeStore, utils/edgeFollow, utils/headingUtils
+- **種別**: シングルトンサービス
+- **責務**: Google Maps カメラ API の唯一のインターフェース（D-037）。heading 補間、pivotZoom、wheelMode 管理、edge-follow 判定、panTo/moveCamera 選択を一元管理
+- **依存**: navigationStore（getState のみ）, utils/edgeFollow, utils/headingUtils
+- **使用箇所**: NavCameraSync, NavWheelZoom, ZoomInOutButtons
+
+### NavCameraSync.tsx（src/components/navigation/）
+
+- **責務**: navigationStore → cameraController への橋渡し（D-037）。ドラッグ検知による followMode 遷移、zoom_changed によるズームモード遷移
+- **依存**: cameraController, navigationStore, useAutoZoom
 
 ### ZoomInOutButtons.tsx（src/components/navigation/）
 
-- **責務**: +/- ズームボタンと P/N モードトグル。P モードは pivotZoom 共有関数を使用しホイールと同一挙動。N モードは Google Maps ネイティブ。idle イベントチェーンによる長押し加速、zoomStepFactor でズームレベル補正
-- **依存**: NavMapController.tsx の pivotZoom 関数
+- **責務**: +/- ズームボタンと P/N モードトグル。cameraController.zoomStep() を使用。idle イベントチェーンによる長押し加速、zoomStepFactor でズームレベル補正
+- **依存**: cameraController
 
 ### NavigationScreen.tsx（src/components/navigation/）
 
@@ -1117,8 +1123,8 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### NavWheelZoom.tsx（src/components/navigation/）
 
-- **責務**: ナビ画面のホイールズーム制御（NavMapController から分離）。followMode=auto 時にネイティブズームを無効化し、normalize-wheel で正規化したステップで pivotZoom を実行。150ms debounce で余韻カット
-- **依存**: NavMapController（pivotZoom）, normalize-wheel, navigationStore（followMode）
+- **責務**: ホイールイベント検知 → cameraController.wheelZoom() への委譲（D-037）。150ms debounce で余韻カット
+- **依存**: cameraController, normalize-wheel, navigationStore（followMode）
 
 ### NavRoutePolyline.tsx（src/components/navigation/）
 
@@ -1390,7 +1396,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: free モードでマーカーが画面端に到達した際の最小シフト計算（D-036）
 - **公開関数**:
   - `computeEdgeFollow(markerPosition, mapBounds, marginPx, zoom)` — マーカーが画面端120pxマージン内に入った場合に、マーカーを画面内に留めるための最小 lat/lng シフトベクトルを返す。マージン外なら null
-- **使用箇所**: NavMapController.tsx（followMode=free 時）
+- **使用箇所**: cameraController.ts（followMode=free 時）
 
 ### offRouteCheck.ts（src/utils/offRouteCheck.ts）
 
