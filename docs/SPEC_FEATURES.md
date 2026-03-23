@@ -714,12 +714,12 @@ flexroute-bug-{timestamp}.json に以下を集約:
 #### ホイールズーム（followMode=auto 時）
 - Google Maps のネイティブ wheel ズームを scrollwheel: false で無効化
 - normalize-wheel ライブラリで deltaY をデバイス間で正規化
-- 正規化ステップでマーカーピボットズームを実行（pivotZoom 関数）
+- 正規化ステップでマーカーピボットズームを実行（cameraController.wheelZoom）
 - ホイール停止後 150ms の debounce で moveCamera を呼び、Google Maps の余韻アニメーションを即時カット
 - followMode=free 時は Google Maps のネイティブ動作を維持
 
 #### ピボット計算（pivotZoom 関数）
-- NavMapController.tsx で export
+- cameraController.ts の private メソッド（D-037）
 - 計算式: newCenter = marker + (oldCenter - marker) x 2^(oldZoom - newZoom)
 - マーカーの画面上ピクセル位置を不変に保つ
 - setZoom + setCenter の2呼び出しでアニメーション付きズームを実現
@@ -727,7 +727,7 @@ flexroute-bug-{timestamp}.json に以下を集約:
 
 #### ZoomInOutButtons（+/- ボタン + P/N トグル）
 - +/- ボタン: idle イベントチェーンによる長押し加速。zoomStepFactor でズームレベルに応じたステップ補正
-- P モード（pivot-fine）: pivotZoom 共有関数を使用。ホイールと同一挙動
+- P モード（pivot-fine）: cameraController.zoomStep() を使用。ホイールと同一挙動
 - N モード（native）: Google Maps のネイティブズームを使用。将来の動作比較用に保持
 
 入力: マウスホイール、+/- ボタンタップ/長押し、P/N トグル
@@ -772,7 +772,7 @@ Step 2 の詳細:
 - ズーム変化量 ±0.5 制限、更新間隔 4.5秒以上（OsmAnd 準拠）
 - ターン接近ズーム: 次ステップ 300m→100m で線形ズームイン、100m 以下でベースライン+2（上限 z18）、通過後 0.5秒でベースライン復帰
 - lockedZoom 時はベースライン・ターン接近ズームとも全スキップ
-- NavMapController に autoZoom 結果を統合
+- NavCameraSync に autoZoom 結果を統合し cameraController 経由でカメラ制御
 
 Step 3 の詳細:
 - useOffRouteDetection フック新規作成: ポリラインからの距離 50m 超で逸脱判定
@@ -1175,7 +1175,7 @@ Google Maps API 依存部分の方針:
 
 リグレッションテスト優先対象:
 - F-NAV Step 6（仕上げ）のタイミングで、変更頻度が高くリグレッションが実際に発生したコードから優先的にテストを書く
-- 対象: NavMapController（カメラ制御）、edgeFollow（エッジ追従）、useStepProgression（ステップ通過判定）
+- 対象: NavCameraSync / cameraController（カメラ制御）、edgeFollow（エッジ追従）、useStepProgression（ステップ通過判定）
 - テスト内容: 特定の入力（followMode, headingMode, position 等）に対する moveCamera 呼び出しの検証
 
 関連: F-SECURITY
@@ -1218,7 +1218,7 @@ Google Maps API 依存部分の方針:
 - 再現手順: 未確定（繰り返し操作中に散発的に発生）
 - 推定原因: scrollwheel 設定または handleWheel リスナー登録の競合が疑われるが未確定
 - 関連: F-ZOOM, D-035
-- 対処: v1.6.66 で scrollwheel 設定を NavMapController に一元化（方法B: カスタムイベント wheelmode-changed）。ZoomInOutButtons の P/N トグルから map.setOptions({ scrollwheel }) を削除。修正後の再現テストでは発生せず。根本解消か未確定
+- 対処: v1.6.66 で scrollwheel 設定を一元化。v1.6.92 で CameraController に wheelMode を内部状態化し window.__wheelMode / wheelmode-changed イベントを廃止（D-037）。修正後の再現テストでは発生せず
 
 ## MD反映待ちドラフト
 
