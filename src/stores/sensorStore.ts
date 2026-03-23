@@ -34,7 +34,7 @@ const DEFAULT_CHANNEL_MODES: SensorChannelModes = {
 const DEFAULT_SIM_VALUES: SimValues = {
   position: null,
   heading: 0,
-  speed: 0,
+  speed: 8.33,
   accuracy: 10,
   callbackIntervalMs: 1000,
   denied: false,
