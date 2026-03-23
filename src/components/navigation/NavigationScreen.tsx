@@ -15,6 +15,7 @@ import { BugReportButton } from "@/components/navigation/BugReportButton";
 import { ZoomInOutButtons } from "@/components/navigation/ZoomInOutButtons";
 import { StepDebugMarkers } from "@/components/navigation/StepDebugMarkers";
 import { OffRouteBanner } from "@/components/navigation/OffRouteBanner";
+import { RerouteDialog } from "@/components/navigation/RerouteDialog";
 import { useStepProgression } from "@/hooks/useStepProgression";
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
@@ -27,6 +28,7 @@ export function NavigationScreen() {
         <NavMap />
         <NavHeader />
         <OffRouteBanner />
+        <RerouteDialog />
         <NavControls />
         <BugReportButton />
         <ZoomInOutButtons />

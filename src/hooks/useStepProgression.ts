@@ -51,11 +51,26 @@ function buildSegmentsAndMeta(legs: SavedRouteLeg[]) {
   return { segments, stepMetas };
 }
 
+/** Off-route detection with reroute dialog trigger */
+function handleOffRouteCheck(bestDist: number) {
+  const { isOffRoute: wasOff, showRerouteDialog, isRerouting } = useNavigationStore.getState();
+  const isOff = checkOffRoute(wasOff, bestDist);
+  const { setOffRoute, openRerouteDialog, setReroutePolyline } = useNavigationStore.getState();
+  if (!wasOff && isOff) {
+    fr.warn(C.NAV, "nav.offRoute", { distM: Math.round(bestDist) });
+    if (!showRerouteDialog && !isRerouting) openRerouteDialog();
+  } else if (wasOff && !isOff) {
+    fr.info(C.NAV, "nav.backOnRoute", { distM: Math.round(bestDist) });
+    setReroutePolyline(null);
+  }
+  setOffRoute(isOff, Math.round(bestDist));
+  return isOff;
+}
+
 export function useStepProgression(legs: SavedRouteLeg[], position: LatLng | null) {
   const advanceStep = useNavigationStore((s) => s.advanceStep);
   const setNextInstruction = useNavigationStore((s) => s.setNextInstruction);
   const setRemaining = useNavigationStore((s) => s.setRemaining);
-  const setOffRoute = useNavigationStore((s) => s.setOffRoute);
   const prevGlobalRef = useRef(0);
 
   const { segments, stepMetas } = useMemo(() => {
@@ -84,65 +99,44 @@ export function useStepProgression(legs: SavedRouteLeg[], position: LatLng | nul
       }
     }
 
-    // Monotonic: never go backward
-    if (bestGlobal < prevGlobalRef.current) {
-      bestGlobal = prevGlobalRef.current;
-    }
+    if (bestGlobal < prevGlobalRef.current) bestGlobal = prevGlobalRef.current;
 
-    // Off-route detection (hysteresis)
-    const wasOff = useNavigationStore.getState().isOffRoute;
-    const isOff = checkOffRoute(wasOff, bestDist);
-    if (!wasOff && isOff) fr.warn(C.NAV, "nav.offRoute", { distM: Math.round(bestDist) });
-    else if (wasOff && !isOff) fr.info(C.NAV, "nav.backOnRoute", { distM: Math.round(bestDist) });
-    setOffRoute(isOff, Math.round(bestDist));
+    const isOff = handleOffRouteCheck(bestDist);
 
-    // Skip step advancement while off-route
     if (!isOff) {
       while (prevGlobalRef.current < bestGlobal) {
         const meta = stepMetas.find((m) => m.globalStepIndex === prevGlobalRef.current);
         if (meta) {
           advanceStep({
-            legIndex: meta.legIndex,
-            stepIndex: meta.stepIndex,
-            exitTimestamp: new Date().toISOString(),
-            exitPosition: position,
+            legIndex: meta.legIndex, stepIndex: meta.stepIndex,
+            exitTimestamp: new Date().toISOString(), exitPosition: position,
           });
           fr.debug(C.NAV, "step.advance", {
-            legIndex: meta.legIndex, stepIndex: meta.stepIndex,
-            globalStepIndex: meta.globalStepIndex,
+            legIndex: meta.legIndex, stepIndex: meta.stepIndex, globalStepIndex: meta.globalStepIndex,
           });
         }
         prevGlobalRef.current++;
       }
     }
 
-    // Distance to current step endpoint
     const currentMeta = stepMetas.find((m) => m.globalStepIndex === bestGlobal);
     let distToStepEnd = 0;
     if (currentMeta) {
-      distToStepEnd = google.maps.geometry.spherical.computeDistanceBetween(
-        p, currentMeta.endpoint,
-      );
+      distToStepEnd = google.maps.geometry.spherical.computeDistanceBetween(p, currentMeta.endpoint);
     }
 
-    // Next instruction
     const nextMeta = stepMetas.find((m) => m.globalStepIndex === bestGlobal + 1);
     setNextInstruction(nextMeta?.instruction ?? null, distToStepEnd);
     fr.trace(C.NAV, "step.distance", { distM: Math.round(distToStepEnd), stepIndex: bestGlobal });
 
-    // Remaining distance/duration
     const passedDistance = stepMetas
       .filter((m) => m.globalStepIndex < bestGlobal)
       .reduce((sum, m) => sum + m.distanceMeters, 0);
     const currentStepDist = currentMeta?.distanceMeters ?? 0;
-    const currentStepProgress = currentStepDist > 0
-      ? Math.max(0, 1 - distToStepEnd / currentStepDist)
-      : 0;
+    const currentStepProgress = currentStepDist > 0 ? Math.max(0, 1 - distToStepEnd / currentStepDist) : 0;
     const passedCurrent = currentStepDist * currentStepProgress;
     const remainDist = Math.max(0, totalDistance - passedDistance - passedCurrent);
-    const remainDur = totalDistance > 0
-      ? (remainDist / totalDistance) * totalDuration
-      : 0;
+    const remainDur = totalDistance > 0 ? (remainDist / totalDistance) * totalDuration : 0;
     setRemaining(remainDist, remainDur);
-  }, [position, segments, stepMetas, totalDistance, totalDuration, advanceStep, setNextInstruction, setRemaining, setOffRoute]);
+  }, [position, segments, stepMetas, totalDistance, totalDuration, advanceStep, setNextInstruction, setRemaining]);
 }
