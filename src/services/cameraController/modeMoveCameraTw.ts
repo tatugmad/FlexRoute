@@ -3,7 +3,7 @@ import { useNavigationStore } from "@/stores/navigationStore";
 import { shortestDelta } from "@/utils/headingUtils";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
 import type { CameraMode } from "./index";
-import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
+import { calcPivotCenter, calcRotationPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
 const LONG_PRESS_DELAY = 200;
 const FOLLOW_DURATION = 900;
@@ -14,6 +14,7 @@ type TweenState = { lat: number; lng: number; heading: number };
 /** Mode MOVE+TW: Tween.js で全パラメータをフレーム補間し moveCamera で適用。 */
 export class ModeMoveCameraTw implements CameraMode {
   private wheelMode: "pivot" | "native" = "pivot";
+  private prevHeading = 0;
   private isAutoZooming = false;
   private zoomActive = false;
   private zoomDelayTimer: ReturnType<typeof setTimeout> | null = null;
@@ -28,12 +29,14 @@ export class ModeMoveCameraTw implements CameraMode {
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
     map.setOptions({ scrollwheel: !auto || this.wheelMode === "native" });
+    this.prevHeading = map.getHeading() ?? 0;
   }
 
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
     if (followMode === "auto") {
+      this.prevHeading = mapHeading;
       const center = map.getCenter();
       const from: TweenState = {
         lat: center?.lat() ?? pos.lat,
@@ -73,10 +76,46 @@ export class ModeMoveCameraTw implements CameraMode {
       this.ensureAnimLoop();
     } else {
       if (isDragging) return;
-      const opts: google.maps.CameraOptions = { heading: mapHeading };
+      const headingDelta = mapHeading - this.prevHeading;
+      this.prevHeading = mapHeading;
+      const center = map.getCenter();
+      const from = {
+        lat: center?.lat() ?? pos.lat,
+        lng: center?.lng() ?? pos.lng,
+        heading: map.getHeading() ?? 0,
+      };
+      let targetCenter: { lat: number; lng: number };
       const edgeCenter = computeEdgeFollow(map, pos);
-      if (edgeCenter) opts.center = edgeCenter;
-      if (opts.heading !== undefined || opts.center !== undefined) map.moveCamera(opts);
+      if (edgeCenter) {
+        targetCenter = edgeCenter;
+      } else if (Math.abs(headingDelta) >= 0.01 && center) {
+        targetCenter = calcRotationPivotCenter(
+          { lat: center.lat(), lng: center.lng() }, pos, headingDelta,
+        );
+      } else {
+        targetCenter = { lat: from.lat, lng: from.lng };
+      }
+      const delta = shortestDelta(from.heading, mapHeading);
+      const to = {
+        lat: targetCenter.lat,
+        lng: targetCenter.lng,
+        heading: from.heading + delta,
+      };
+      this.positionTween?.stop();
+      this.tweenState = { ...from };
+      this.positionTween = new Tween(this.tweenState);
+      this.tweenGroup.add(this.positionTween);
+      this.positionTween
+        .to(to, 900)
+        .easing(Easing.Quadratic.Out)
+        .onUpdate(() => {
+          map.moveCamera({
+            center: { lat: this.tweenState.lat, lng: this.tweenState.lng },
+            heading: this.tweenState.heading,
+          });
+        })
+        .start();
+      this.ensureAnimLoop();
     }
   }
 

@@ -57,6 +57,32 @@ export function calcAutoZoomTarget(
   return Math.min(baseline + turnBoost, ZOOM_CAP);
 }
 
+/**
+ * heading 変更時にマーカーの画面位置を保つ新しい center を計算する。
+ * 地図は center を支点に回転するため、マーカーが画面中央にいないとき、
+ * heading 変更でマーカーが画面上で弧を描いて動く。
+ * これを防ぐには center をマーカーを支点に逆回転させればよい。
+ */
+export function calcRotationPivotCenter(
+  curCenter: { lat: number; lng: number },
+  markerPos: { lat: number; lng: number },
+  headingDeltaDeg: number,
+): { lat: number; lng: number } {
+  if (Math.abs(headingDeltaDeg) < 0.01) return curCenter;
+  const rad = -headingDeltaDeg * Math.PI / 180;
+  const cosR = Math.cos(rad);
+  const sinR = Math.sin(rad);
+  const cosLat = Math.cos(markerPos.lat * Math.PI / 180);
+  const dx = (curCenter.lng - markerPos.lng) * cosLat;
+  const dy = curCenter.lat - markerPos.lat;
+  const rotDx = dx * cosR - dy * sinR;
+  const rotDy = dx * sinR + dy * cosR;
+  return {
+    lat: markerPos.lat + rotDy,
+    lng: markerPos.lng + rotDx / cosLat,
+  };
+}
+
 /** ズームレベルに応じたステップ補正係数 */
 export function zoomStepFactor(currentZoom: number, direction: 1 | -1): number {
   if (direction > 0) {

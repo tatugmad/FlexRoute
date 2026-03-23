@@ -1,13 +1,14 @@
 import { useNavigationStore } from "@/stores/navigationStore";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
 import type { CameraMode } from "./index";
-import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
+import { calcPivotCenter, calcRotationPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
 const LONG_PRESS_DELAY = 200;
 
 /** Mode SET+PAN: setter 系ベース + panTo で center アニメーション付き移動。 */
 export class ModeSetterPan implements CameraMode {
   private wheelMode: "pivot" | "native" = "pivot";
+  private prevHeading = 0;
   private isAutoZooming = false;
   private zoomActive = false;
   private zoomDelayTimer: ReturnType<typeof setTimeout> | null = null;
@@ -17,12 +18,14 @@ export class ModeSetterPan implements CameraMode {
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
     map.setOptions({ scrollwheel: !auto || this.wheelMode === "native" });
+    this.prevHeading = map.getHeading() ?? 0;
   }
 
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
     if (followMode === "auto") {
+      this.prevHeading = mapHeading;
       map.setHeading(mapHeading);
       if (zoomTarget !== null) {
         this.isAutoZooming = true;
@@ -31,7 +34,16 @@ export class ModeSetterPan implements CameraMode {
       map.panTo(pos);
     } else {
       if (isDragging) return;
+      const headingDelta = mapHeading - this.prevHeading;
+      this.prevHeading = mapHeading;
       map.setHeading(mapHeading);
+      const center = map.getCenter();
+      if (center && Math.abs(headingDelta) >= 0.01) {
+        const rc = calcRotationPivotCenter(
+          { lat: center.lat(), lng: center.lng() }, pos, headingDelta,
+        );
+        map.setCenter(rc);
+      }
       const edgeCenter = computeEdgeFollow(map, pos);
       if (edgeCenter) map.panTo(edgeCenter);
     }
