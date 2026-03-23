@@ -1,13 +1,14 @@
 import { useNavigationStore } from "@/stores/navigationStore";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
 import type { CameraMode } from "./index";
-import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
+import { calcPivotCenter, calcRotationPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
 const LONG_PRESS_DELAY = 200;
 
 /** Mode MOVE: moveCamera のみ使用。アニメーション完全ゼロ。 */
 export class ModeMoveCamera implements CameraMode {
   private wheelMode: "pivot" | "native" = "pivot";
+  private prevHeading = 0;
   private isAutoZooming = false;
   private zoomActive = false;
   private zoomDelayTimer: ReturnType<typeof setTimeout> | null = null;
@@ -17,12 +18,14 @@ export class ModeMoveCamera implements CameraMode {
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
     map.setOptions({ scrollwheel: !auto || this.wheelMode === "native" });
+    this.prevHeading = map.getHeading() ?? 0;
   }
 
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
     if (followMode === "auto") {
+      this.prevHeading = mapHeading;
       const opts: google.maps.CameraOptions = { center: pos, heading: mapHeading };
       if (zoomTarget !== null) {
         this.isAutoZooming = true;
@@ -31,10 +34,23 @@ export class ModeMoveCamera implements CameraMode {
       map.moveCamera(opts);
     } else {
       if (isDragging) return;
-      const opts: google.maps.CameraOptions = { heading: mapHeading };
+      const headingDelta = mapHeading - this.prevHeading;
+      this.prevHeading = mapHeading;
+      const center = map.getCenter();
+      let newCenter: { lat: number; lng: number } | undefined;
+      if (center && Math.abs(headingDelta) >= 0.01) {
+        newCenter = calcRotationPivotCenter(
+          { lat: center.lat(), lng: center.lng() }, pos, headingDelta,
+        );
+      }
       const edgeCenter = computeEdgeFollow(map, pos);
-      if (edgeCenter) opts.center = edgeCenter;
-      if (opts.heading !== undefined || opts.center !== undefined) map.moveCamera(opts);
+      const opts: google.maps.CameraOptions = { heading: mapHeading };
+      if (edgeCenter) {
+        opts.center = edgeCenter;
+      } else if (newCenter) {
+        opts.center = newCenter;
+      }
+      map.moveCamera(opts);
     }
   }
 

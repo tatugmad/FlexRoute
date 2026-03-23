@@ -2,7 +2,7 @@ import { useNavigationStore } from "@/stores/navigationStore";
 import { shortestDelta } from "@/utils/headingUtils";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
 import type { CameraMode } from "./index";
-import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
+import { calcPivotCenter, calcRotationPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
 const AUTO_ZOOM_THRESHOLD = 0.3;
 const LONG_PRESS_DELAY = 200;
@@ -10,6 +10,7 @@ const LONG_PRESS_DELAY = 200;
 /** Mode ORG: v1.6.92 の動作を完全再現する CameraMode 実装。 */
 export class ModeOrg implements CameraMode {
   private wheelMode: "pivot" | "native" = "pivot";
+  private prevHeading = 0;
   private isAutoZooming = false;
   private wheelStopTimer: ReturnType<typeof setTimeout> | null = null;
   private zoomActive = false;
@@ -20,12 +21,14 @@ export class ModeOrg implements CameraMode {
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
     map.setOptions({ scrollwheel: !auto || this.wheelMode === "native" });
+    this.prevHeading = map.getHeading() ?? 0;
   }
 
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
     if (followMode === "auto") {
+      this.prevHeading = mapHeading;
       let zoomValue: number | undefined;
       if (zoomTarget !== null) {
         const cur = map.getZoom() ?? 15;
@@ -44,10 +47,23 @@ export class ModeOrg implements CameraMode {
       }
     } else {
       if (isDragging) return;
-      const opts: google.maps.CameraOptions = { heading: mapHeading };
+      const headingDelta = mapHeading - this.prevHeading;
+      this.prevHeading = mapHeading;
+      const center = map.getCenter();
+      let newCenter: { lat: number; lng: number } | undefined;
+      if (center && Math.abs(headingDelta) >= 0.01) {
+        newCenter = calcRotationPivotCenter(
+          { lat: center.lat(), lng: center.lng() }, pos, headingDelta,
+        );
+      }
       const edgeCenter = computeEdgeFollow(map, pos);
-      if (edgeCenter) opts.center = edgeCenter;
-      if (opts.heading !== undefined || opts.center !== undefined) map.moveCamera(opts);
+      const opts: google.maps.CameraOptions = { heading: mapHeading };
+      if (edgeCenter) {
+        opts.center = edgeCenter;
+      } else if (newCenter) {
+        opts.center = newCenter;
+      }
+      map.moveCamera(opts);
     }
   }
 
