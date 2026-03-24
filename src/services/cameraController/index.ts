@@ -148,13 +148,7 @@ class CameraControllerImpl {
     const now = Date.now();
     if (this.prevAutoZoomTime && now - this.prevAutoZoomTime < MIN_UPDATE_INTERVAL_MS) return this.prevAutoZoom;
     const screenHalfH = this.map.getDiv()?.offsetHeight / 2 || 300;
-    let target = calcAutoZoomTarget(speed, distanceToNextStepM, lat, screenHalfH);
-    if (distanceToNextStepM > 0 && distanceToNextStepM <= 300) {
-      fr.debug(C.NAV, "zoom.turnApproach", {
-        distM: Math.round(distanceToNextStepM),
-        boost: Math.round((target - calcAutoZoomTarget(speed, 0, lat, screenHalfH)) * 100) / 100,
-      });
-    }
+    let target = calcAutoZoomTarget(speed, 0, lat, screenHalfH);
     if (this.prevAutoZoom !== null) {
       const d = target - this.prevAutoZoom;
       if (Math.abs(d) > MAX_ZOOM_DELTA) target = this.prevAutoZoom + Math.sign(d) * MAX_ZOOM_DELTA;
