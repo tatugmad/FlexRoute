@@ -14,6 +14,7 @@ import { ModeSetter2 } from "./modeSetter2";
 import { ModeSetterPan2 } from "./modeSetterPan2";
 import { ModeMoveCamera2 } from "./modeMoveCamera2";
 import { ModeMoveCameraTw2 } from "./modeMoveCameraTw2";
+import { ModeMoveCameraTw3 } from "./modeMoveCameraTw3";
 
 const MAX_ZOOM_DELTA = 0.5;
 const MIN_UPDATE_INTERVAL_MS = 4500;
@@ -124,6 +125,7 @@ class CameraControllerImpl {
       case "SET+PAN2":   this.mode = new ModeSetterPan2(); break;
       case "MOVE2":      this.mode = new ModeMoveCamera2(); break;
       case "MOVE+TW2":   this.mode = new ModeMoveCameraTw2(); break;
+      case "MOVE+TW3":   this.mode = new ModeMoveCameraTw3(); break;
       default:           this.mode = new ModeOrg(); break;
     }
     this.mode.init(this.map);

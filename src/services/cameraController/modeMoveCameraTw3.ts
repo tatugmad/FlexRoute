@@ -3,62 +3,73 @@ import { useNavigationStore } from "@/stores/navigationStore";
 import { shortestDelta } from "@/utils/headingUtils";
 import { computeEdgeFollow } from "@/utils/edgeFollow";
 import type { CameraMode } from "./index";
-import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES, deriveCenter } from "./utils";
+import { calcPivotCenter, calcRotationPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
 const LONG_PRESS_DELAY = 200;
 const ZOOM_WHEEL_DURATION = 200;
 
-/** Mode MOVE+TW2: Tween.js + heading-master 方式。heading を Tween で補間し center を毎フレーム導出。 */
-export class ModeMoveCameraTw2 implements CameraMode {
+type CenterTweenState = { lat: number; lng: number };
+
+/** Mode MOVE+TW3: center-first / heading-deferred 方式。
+ *  center の Tween 中は heading を変えず、次の position 更新時に前回の heading を即時適用する。 */
+export class ModeMoveCameraTw3 implements CameraMode {
   private wheelMode: "pivot" | "native" = "pivot";
+  private prevHeading = 0;
   private isAutoZooming = false;
   private zoomActive = false;
   private zoomDelayTimer: ReturnType<typeof setTimeout> | null = null;
   private zoomStepCount = 0;
   private idleListener: google.maps.MapsEventListener | null = null;
-  private positionTween: Tween<{ heading: number; t: number }> | null = null;
+  private positionTween: Tween<CenterTweenState> | null = null;
   private zoomTween: Tween<{ zoom: number }> | null = null;
   private animFrameId: number | null = null;
+  private tweenState: CenterTweenState = { lat: 0, lng: 0 };
   private tweenGroup = new Group();
+  private pendingHeading: number | null = null;
 
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
     map.setOptions({ scrollwheel: !auto || this.wheelMode === "native" });
+    this.prevHeading = map.getHeading() ?? 0;
   }
 
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
     const dur = (window as any).__followDuration ?? 900;
-    if (followMode === "auto") {
 
+    if (followMode === "auto") {
+      // 1. 前回保留していた heading があれば即時適用
+      if (this.pendingHeading !== null) {
+        map.moveCamera({ heading: this.pendingHeading });
+      }
+      // 2. 今回の heading を保留
+      this.pendingHeading = mapHeading;
+      this.prevHeading = mapHeading;
+
+      // 3. center のみ Tween で移動
       const center = map.getCenter();
-      const fromHeading = map.getHeading() ?? 0;
-      const startCenter = center
-        ? { lat: center.lat(), lng: center.lng() }
-        : pos;
-      const startPos = { ...startCenter }; // 近似: 現在の center ≈ 前の GPS 位置
-      const delta = shortestDelta(fromHeading, mapHeading);
-      const toHeading = fromHeading + delta;
+      const from: CenterTweenState = {
+        lat: center?.lat() ?? pos.lat,
+        lng: center?.lng() ?? pos.lng,
+      };
 
       this.positionTween?.stop();
-      const tweenObj = { heading: fromHeading, t: 0 };
-      this.positionTween = new Tween(tweenObj);
+      this.tweenState = { ...from };
+      this.positionTween = new Tween(this.tweenState);
       this.tweenGroup.add(this.positionTween);
       this.positionTween
-        .to({ heading: toHeading, t: 1 }, dur)
+        .to({ lat: pos.lat, lng: pos.lng }, dur)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => {
           if (useNavigationStore.getState().followMode !== "auto") return;
-          const c = deriveCenter(
-            startCenter, startPos, pos, pos,
-            fromHeading, tweenObj.heading, tweenObj.t,
-          );
-          map.moveCamera({ center: c, heading: tweenObj.heading });
+          map.moveCamera({
+            center: { lat: this.tweenState.lat, lng: this.tweenState.lng },
+          });
         })
         .start();
 
-      // zoom は別 Tween（v1 と同一）
+      // 4. zoom は別 Tween
       if (zoomTarget !== null) {
         this.isAutoZooming = true;
         this.zoomTween?.stop();
@@ -80,59 +91,71 @@ export class ModeMoveCameraTw2 implements CameraMode {
       this.ensureAnimLoop();
     } else {
       if (isDragging) return;
-
+      const headingDelta = mapHeading - this.prevHeading;
+      this.prevHeading = mapHeading;
       const center = map.getCenter();
-      const fromHeading = map.getHeading() ?? 0;
-      const startCenter = center
-        ? { lat: center.lat(), lng: center.lng() }
-        : pos;
-      const delta = shortestDelta(fromHeading, mapHeading);
+      const from = {
+        lat: center?.lat() ?? pos.lat,
+        lng: center?.lng() ?? pos.lng,
+        heading: map.getHeading() ?? 0,
+      };
+      let targetCenter: { lat: number; lng: number };
       const edgeCenter = computeEdgeFollow(map, pos);
-
-      if (Math.abs(delta) >= 0.01 || edgeCenter || zoomTarget !== null) {
-        const toHeading = fromHeading + delta;
-        this.positionTween?.stop();
-        const tweenObj = { heading: fromHeading, t: 0 };
-        this.positionTween = new Tween(tweenObj);
-        this.tweenGroup.add(this.positionTween);
-        this.positionTween
-          .to({ heading: toHeading, t: 1 }, dur)
+      if (edgeCenter) {
+        targetCenter = edgeCenter;
+      } else if (Math.abs(headingDelta) >= 0.01 && center) {
+        targetCenter = calcRotationPivotCenter(
+          { lat: center.lat(), lng: center.lng() }, pos, headingDelta,
+        );
+      } else {
+        targetCenter = { lat: from.lat, lng: from.lng };
+      }
+      const delta = shortestDelta(from.heading, mapHeading);
+      const to = {
+        lat: targetCenter.lat,
+        lng: targetCenter.lng,
+        heading: from.heading + delta,
+      };
+      this.positionTween?.stop();
+      const tweenObj = { lat: from.lat, lng: from.lng };
+      this.tweenState = { ...tweenObj };
+      const headingTweenObj = { heading: from.heading };
+      this.positionTween = new Tween(tweenObj);
+      this.tweenGroup.add(this.positionTween);
+      const headingTween = new Tween(headingTweenObj);
+      this.tweenGroup.add(headingTween);
+      this.positionTween
+        .to({ lat: to.lat, lng: to.lng }, 900)
+        .easing(Easing.Quadratic.Out)
+        .onUpdate(() => {
+          map.moveCamera({
+            center: { lat: tweenObj.lat, lng: tweenObj.lng },
+            heading: headingTweenObj.heading,
+          });
+        })
+        .start();
+      headingTween
+        .to({ heading: to.heading }, 900)
+        .easing(Easing.Quadratic.Out)
+        .start();
+      if (zoomTarget !== null) {
+        this.isAutoZooming = true;
+        this.zoomTween?.stop();
+        const zoomState = { zoom: map.getZoom() ?? 15 };
+        this.zoomTween = new Tween(zoomState);
+        this.tweenGroup.add(this.zoomTween);
+        this.zoomTween
+          .to({ zoom: zoomTarget }, dur)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
-            const c = deriveCenter(
-              startCenter, pos, pos, pos,
-              fromHeading, tweenObj.heading, tweenObj.t,
-            );
-            // edgeCenter がある場合は回転ピボット + エッジを合成
-            let finalCenter = c;
-            if (edgeCenter) {
-              finalCenter = {
-                lat: c.lat + (edgeCenter.lat - startCenter.lat) * tweenObj.t,
-                lng: c.lng + (edgeCenter.lng - startCenter.lng) * tweenObj.t,
-              };
-            }
-            map.moveCamera({ center: finalCenter, heading: tweenObj.heading });
+            map.moveCamera({ zoom: zoomState.zoom });
+          })
+          .onComplete(() => {
+            this.isAutoZooming = false;
           })
           .start();
-        if (zoomTarget !== null) {
-          this.isAutoZooming = true;
-          this.zoomTween?.stop();
-          const zoomState = { zoom: map.getZoom() ?? 15 };
-          this.zoomTween = new Tween(zoomState);
-          this.tweenGroup.add(this.zoomTween);
-          this.zoomTween
-            .to({ zoom: zoomTarget }, dur)
-            .easing(Easing.Quadratic.Out)
-            .onUpdate(() => {
-              map.moveCamera({ zoom: zoomState.zoom });
-            })
-            .onComplete(() => {
-              this.isAutoZooming = false;
-            })
-            .start();
-        }
-        this.ensureAnimLoop();
       }
+      this.ensureAnimLoop();
     }
   }
 
@@ -207,6 +230,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
     this.zoomActive = false;
     if (this.idleListener) { google.maps.event.removeListener(this.idleListener); this.idleListener = null; }
     this.tweenGroup.removeAll();
+    this.pendingHeading = null;
   }
 
   private ensureAnimLoop(): void {

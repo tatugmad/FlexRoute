@@ -6,7 +6,6 @@ import type { CameraMode } from "./index";
 import { calcPivotCenter, calcRotationPivotCenter, zoomStepFactor, ACCEL_PHASES } from "./utils";
 
 const LONG_PRESS_DELAY = 200;
-const FOLLOW_DURATION = 900;
 const ZOOM_WHEEL_DURATION = 200;
 
 type TweenState = { lat: number; lng: number; heading: number };
@@ -35,6 +34,7 @@ export class ModeMoveCameraTw implements CameraMode {
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
+    const dur = (window as any).__followDuration ?? 900;
     if (followMode === "auto") {
       this.prevHeading = mapHeading;
       const center = map.getCenter();
@@ -51,7 +51,7 @@ export class ModeMoveCameraTw implements CameraMode {
       this.positionTween = new Tween(this.tweenState);
       this.tweenGroup.add(this.positionTween);
       this.positionTween
-        .to(to, FOLLOW_DURATION)
+        .to(to, dur)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => {
           if (useNavigationStore.getState().followMode !== "auto") return;
@@ -69,7 +69,7 @@ export class ModeMoveCameraTw implements CameraMode {
         this.zoomTween = new Tween(zoomState);
         this.tweenGroup.add(this.zoomTween);
         this.zoomTween
-          .to({ zoom: zoomTarget }, FOLLOW_DURATION)
+          .to({ zoom: zoomTarget }, dur)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
             if (useNavigationStore.getState().followMode !== "auto") return;
@@ -129,7 +129,7 @@ export class ModeMoveCameraTw implements CameraMode {
         this.zoomTween = new Tween(zoomState);
         this.tweenGroup.add(this.zoomTween);
         this.zoomTween
-          .to({ zoom: zoomTarget }, FOLLOW_DURATION)
+          .to({ zoom: zoomTarget }, dur)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
             map.moveCamera({ zoom: zoomState.zoom });
