@@ -143,7 +143,7 @@ class CameraControllerImpl {
     return this.prevHeading;
   }
 
-  private calcAutoZoom(speed: number, distanceToNextStepM: number, lat: number): number | null {
+  private calcAutoZoom(speed: number, _distanceToNextStepM: number, lat: number): number | null {
     if (!this.map) return null;
     const now = Date.now();
     if (this.prevAutoZoomTime && now - this.prevAutoZoomTime < MIN_UPDATE_INTERVAL_MS) return this.prevAutoZoom;
