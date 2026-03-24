@@ -75,6 +75,9 @@ export class ModeMoveCameraTw implements CameraMode {
             if (useNavigationStore.getState().followMode !== "auto") return;
             map.moveCamera({ zoom: zoomState.zoom });
           })
+          .onComplete(() => {
+            this.isAutoZooming = false;
+          })
           .start();
       }
       this.ensureAnimLoop();
@@ -119,6 +122,23 @@ export class ModeMoveCameraTw implements CameraMode {
           });
         })
         .start();
+      if (zoomTarget !== null) {
+        this.isAutoZooming = true;
+        this.zoomTween?.stop();
+        const zoomState = { zoom: map.getZoom() ?? 15 };
+        this.zoomTween = new Tween(zoomState);
+        this.tweenGroup.add(this.zoomTween);
+        this.zoomTween
+          .to({ zoom: zoomTarget }, FOLLOW_DURATION)
+          .easing(Easing.Quadratic.Out)
+          .onUpdate(() => {
+            map.moveCamera({ zoom: zoomState.zoom });
+          })
+          .onComplete(() => {
+            this.isAutoZooming = false;
+          })
+          .start();
+      }
       this.ensureAnimLoop();
     }
   }
@@ -174,8 +194,7 @@ export class ModeMoveCameraTw implements CameraMode {
   }
 
   onMapZoomChanged(): boolean {
-    if (this.isAutoZooming) { this.isAutoZooming = false; return true; }
-    return false;
+    return this.isAutoZooming;
   }
 
   toggleWheelMode(map: google.maps.Map): "pivot" | "native" {

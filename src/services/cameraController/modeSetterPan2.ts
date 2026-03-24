@@ -42,6 +42,7 @@ export class ModeSetterPan2 implements CameraMode {
       if (zoomTarget !== null) {
         this.isAutoZooming = true;
         map.setZoom(zoomTarget);
+        this.isAutoZooming = false;
       }
       map.panTo(pos); // GPS 移動はアニメーション
     } else {
@@ -72,6 +73,11 @@ export class ModeSetterPan2 implements CameraMode {
       map.setHeading(mapHeading);
       const edgeCenter = computeEdgeFollow(map, pos);
       if (edgeCenter) map.panTo(edgeCenter);
+      if (zoomTarget !== null) {
+        this.isAutoZooming = true;
+        map.setZoom(zoomTarget);
+        this.isAutoZooming = false;
+      }
     }
   }
 
@@ -111,8 +117,7 @@ export class ModeSetterPan2 implements CameraMode {
   }
 
   onMapZoomChanged(): boolean {
-    if (this.isAutoZooming) { this.isAutoZooming = false; return true; }
-    return false;
+    return this.isAutoZooming;
   }
 
   onDragStart(): void {}

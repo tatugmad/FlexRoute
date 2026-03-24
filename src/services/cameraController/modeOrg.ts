@@ -45,6 +45,7 @@ export class ModeOrg implements CameraMode {
         if (zoomValue !== undefined) opts.zoom = zoomValue;
         map.moveCamera(opts);
       }
+      this.isAutoZooming = false;
     } else {
       if (isDragging) return;
       const headingDelta = mapHeading - this.prevHeading;
@@ -63,7 +64,15 @@ export class ModeOrg implements CameraMode {
       } else if (newCenter) {
         opts.center = newCenter;
       }
+      if (zoomTarget !== null) {
+        const cur = map.getZoom() ?? 15;
+        if (Math.abs(cur - zoomTarget) >= AUTO_ZOOM_THRESHOLD) {
+          this.isAutoZooming = true;
+          opts.zoom = zoomTarget;
+        }
+      }
       map.moveCamera(opts);
+      this.isAutoZooming = false;
     }
   }
 
@@ -103,8 +112,7 @@ export class ModeOrg implements CameraMode {
   }
 
   onMapZoomChanged(): boolean {
-    if (this.isAutoZooming) { this.isAutoZooming = false; return true; }
-    return false;
+    return this.isAutoZooming;
   }
 
   onDragStart(): void {
