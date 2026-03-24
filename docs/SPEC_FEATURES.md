@@ -1232,13 +1232,20 @@ Google Maps API 依存部分の方針:
 整理セッション時にこのリストを確認し、該当する MD の正式セクションに移す。移し終わった項目は削除する。
 
 ### 反映先: SPEC_FEATURES.md
-（なし）
+- CameraController 10 モード比較実験中（v1.6.94〜v1.6.98）。ORG / SETTER / SET+PAN / MOVE / MOVE+TW の各 v1 と heading-master 方式の v2。MOVE+TW2 で回転中マーカー振り回しが完全解消（SETTER2 / SET+PAN2 は heading_changed の発火頻度不足で不十分）。モード確定後に F-ZOOM セクションを更新する
+- P/N ホイールモードトグル廃止（v1.6.94）。pivot モード固定
+- CameraModeSelector コンポーネント追加（実験用 UI。地図左下に 10 モード切替ボタン）
 
 ### 反映先: SPEC_SCREENS.md
 （なし）
 
 ### 反映先: SPEC_DATA.md
-（なし）
+- cameraController ディレクトリ構成更新: index.ts + modeOrg.ts / modeSetter.ts / modeSetterPan.ts / modeMoveCamera.ts / modeMoveCameraTw.ts + 各 v2 + utils.ts。全 12 ファイル
+- utils.ts に calcRotationPivotCenter, deriveCenter 追加
+- CameraMode インターフェースに onDragStart 追加（v1.6.97）
+- NavWheelZoom 削除済み（v1.6.93 で CameraController に吸収）
+- useAutoZoom 削除済み（v1.6.93 で CameraController に吸収）
+- CameraModeSelector コンポーネント追加（v1.6.94）
 
 ### 反映先: DESIGN_REFERENCE.md
 （なし）
@@ -1247,7 +1254,9 @@ Google Maps API 依存部分の方針:
 （なし）
 
 ### 反映先: CLAUDE.md
-（なし）
+- 用語変更予定: followMode の "auto" → "follow" にリネーム（モード確定後の整理セッションで実施）
 
 ### 反映先: DECISIONS.md
-（なし）
+- D-038（Google Maps API 依存の段階的抽象化方針）新規追加
+- D-039（heading-master / center-slave カメラ制御方式）新規追加
+- D-040（setHeading にはアニメーションがある — D-032 改訂）新規追加

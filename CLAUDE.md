@@ -564,3 +564,6 @@ RouteSnapshot {
 | 都道府県走破率・統計 | フェーズ2 |
 | 個人APIキー設定（F-APIKEY） | フェーズ2 |
 | APIコスト監視・無料枠超過停止（ローカルカウンタ + Cloud Monitoring同期） | フェーズ2 |
+| CameraController 一元化 (D-037) | 1-6 カメラ実験 |
+| CameraController 理想インターフェース化 | 1-6 カメラ実験（v1.6.93） |
+| CameraController 10 モード比較実験 | 1-6 カメラ実験（v1.6.94〜v1.6.98 進行中） |
