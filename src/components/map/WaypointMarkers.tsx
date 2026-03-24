@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AdvancedMarker } from "@vis.gl/react-google-maps";
 import { useRouteStore } from "@/stores/routeStore";
 import type { Waypoint } from "@/types";
@@ -10,7 +11,7 @@ function getPinColor(index: number, total: number) {
   return "#f59e0b";
 }
 
-function WaypointPin({
+const WaypointPin = memo(function WaypointPin({
   color,
   label,
   scale = 1,
@@ -41,7 +42,7 @@ function WaypointPin({
       </svg>
     </div>
   );
-}
+});
 
 export function WaypointMarkers() {
   const waypoints = useRouteStore(
