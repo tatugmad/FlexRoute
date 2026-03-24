@@ -176,14 +176,14 @@ navigationStore が管理する:
 - ユーザーが「経路を追加」ボタンをタップ
 - uiStore.searchModalOpen → true、insertIndex → null（末尾追加）
 - M-SEARCH モーダルが表示
-- テキスト入力 → Google Places Autocomplete API で候補取得
-- placeStore に結果を保持、リスト表示
+- テキスト入力 → placeSuggestService.fetchSuggestions() で候補取得（AutocompleteSuggestion API）
+- SuggestionEntry[] をローカル state に保持、リスト表示
 - ユーザーが候補を選択
 - addWaypoint({ label: place名, position, placeId, placeData: null }, insertIndex)
 - モーダルを閉じ、insertIndex をクリア
 - isDirty → true → 自動保存
 
-入力: 検索テキスト入力 → Places Autocomplete API
+入力: 検索テキスト入力 → AutocompleteSuggestion API（placeSuggestService 経由）
 出力: ウェイポイント追加。2件以上ならルート計算発火
 エラー: Places API 失敗時 → 検索結果なしを表示
 関連: F-WP-ADD, F-WP-INSERT, F-ROUTE-CALC

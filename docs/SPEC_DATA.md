@@ -951,6 +951,16 @@ useRouteCalculation でもルート計算前にフィルタ:
   - `fetchPlaceDetails(placeId: string)` — placeId から施設情報を取得。戻り値: `{ name, address, rating, photoUrl }`（全て nullable）
 - **使用箇所**: useMapClickHandler, usePlaceCache
 
+### placeSuggestService.ts（src/services/placeSuggestService.ts）
+
+- **責務**: Google Places API (AutocompleteSuggestion) を使って場所検索候補を取得し、選択された候補の座標を取得するサービス
+- **公開関数**:
+  - `fetchSuggestions(input: string, token: AutocompleteSessionToken)` — 入力テキストから候補を取得。includedRegionCodes: ["jp"]。戻り値: SuggestionEntry[]
+  - `fetchPlaceLocation(suggestion, token)` — 候補から Place オブジェクトを生成し location を取得。戻り値: { lat, lng, name }
+- **内部型**: SuggestionEntry（候補の placeId, name, address, placePrediction を保持）
+- **使用箇所**: PlaceSearch.tsx
+- **技術備考**: v1.7.0 で旧 API（AutocompleteService + PlacesService）から移行。セッショントークンによるコスト最適化対応
+
 ### rerouteService.ts（src/services/rerouteService.ts）
 
 - **責務**: 逸脱時の3選択肢リルート。Routes API v2 を呼び出し、リルートポリラインを返す
@@ -1190,8 +1200,8 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### PlaceSearch.tsx（src/components/places/）
 
-- **責務**: 場所検索。Places Autocomplete API で候補取得、選択でウェイポイント追加。insertIndex 対応
-- **依存**: routeStore, uiStore, PlaceResultList
+- **責務**: 場所検索 UI。テキスト入力 → placeSuggestService で候補取得・座標取得 → ウェイポイント追加。insertIndex 対応
+- **依存**: routeStore, uiStore, placeSuggestService, PlaceResultList
 
 ### SearchModal.tsx（src/components/places/）
 
