@@ -38,7 +38,6 @@ export function NavCurrentLocationMarker() {
   const position = useNavigationStore((s) => s.currentPosition);
   const heading = useNavigationStore((s) => s.heading);
   const headingMode = useNavigationStore((s) => s.headingMode);
-  const followMode = useNavigationStore((s) => s.followMode);
   const positionQuality = useNavigationStore((s) => s.positionQuality);
   const prevMarkerHeadingRef = useRef(0);
   const isPositionSim = useSensorStore((s) => s.channelModes.position === "sim");
@@ -54,33 +53,32 @@ export function NavCurrentLocationMarker() {
 
   const colorClass = getPointerColor(positionQuality);
   const extraClass = getPointerExtra(positionQuality);
-  const isMarkerLock = followMode === "auto";
 
   return (
     <>
       <AccuracyCircle />
 
-      {isMarkerLock ? (
-        <FixedCenterPointer
-          heading={markerHeading}
-          colorClass={colorClass}
-          extraClass={extraClass}
-        />
-      ) : (
-        <AdvancedMarker position={markerPosition} zIndex={100}>
-          <div className="relative flex items-center justify-center" style={{ transform: 'translateY(50%)' }}>
-            <div
-              className={`w-8 h-8 ${colorClass} ${extraClass} relative z-10`}
-              style={{
-                transform: `rotate(${markerHeading}deg)`,
-                transition: "transform 0.3s ease-out",
-              }}
-            >
-              <PointerSvg />
-            </div>
+      <AdvancedMarker position={markerPosition} zIndex={100}>
+        <div className="relative flex items-center justify-center" style={{ transform: 'translateY(50%)' }}>
+          <div
+            className={`w-8 h-8 ${colorClass} ${extraClass} relative z-10`}
+            style={{
+              transform: `rotate(${markerHeading}deg)`,
+              transition: "transform 0.3s ease-out",
+            }}
+          >
+            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
+              <path
+                d="M 50 10 L 85 85 L 50 70 L 15 85 Z"
+                fill="currentColor"
+                stroke="white"
+                strokeWidth="4"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
-        </AdvancedMarker>
-      )}
+        </div>
+      </AdvancedMarker>
 
       {isPositionSim && (
         <AdvancedMarker position={position} zIndex={101}>
@@ -97,52 +95,5 @@ export function NavCurrentLocationMarker() {
         </AdvancedMarker>
       )}
     </>
-  );
-}
-
-function PointerSvg() {
-  return (
-    <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
-      <path
-        d="M 50 10 L 85 85 L 50 70 L 15 85 Z"
-        fill="currentColor"
-        stroke="white"
-        strokeWidth="4"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function FixedCenterPointer({
-  heading,
-  colorClass,
-  extraClass,
-}: {
-  heading: number;
-  colorClass: string;
-  extraClass: string;
-}) {
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        zIndex: 9999,
-        pointerEvents: "none",
-      }}
-    >
-      <div
-        className={`w-8 h-8 ${colorClass} ${extraClass} relative z-10`}
-        style={{
-          transform: `rotate(${heading}deg)`,
-          transition: "transform 0.3s ease-out",
-        }}
-      >
-        <PointerSvg />
-      </div>
-    </div>
   );
 }
