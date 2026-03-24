@@ -123,6 +123,17 @@ navigationStore が管理する:
   - denied: 赤（#ef4444）
 - パルスリング（周囲の円）: accuracy メートル値を地図のズームに合わせた半径で描画。pointer-events: none でクリック透過
 
+**ナビ画面マーカー一覧:**
+
+| マーカー | コンポーネント | 座標ソース | 色 | 用途 |
+|---|---|---|---|---|
+| 青ポインター（三角矢印） | CurrentLocationMarker.tsx | useRouteSnap 後の座標（ポリラインスナップ）。スナップ失敗時は生 GPS | 青 #2563eb | ルート上の現在位置を表示 |
+| パルスリング（精度円） | AccuracyCircle.tsx | navigationStore.currentPosition（生 GPS 座標） | 白半透明 + 青枠 | GPS 精度範囲を表示。この円の範囲内に端末が存在する |
+| オレンジドット | CurrentLocationMarker.tsx 内 | navigationStore.currentPosition（生 GPS 座標） | オレンジ #f97316 | sim 時のみ表示。スナップ前の生 GPS 座標を可視化し、青ポインターとの差を確認するデバッグ用途 |
+| 緑十字 | SimPositionCross.tsx | sensorStore.simValues.position（sim リアルタイム座標） | 緑 #4ade80 | sim 時のみ表示。sim-remote が speed とポリラインから 100ms ごとに算出するリアルタイム座標。オレンジドットは callback interval（デフォルト 1000ms）周期でしか更新されないため、緑十字が先行しオレンジドットが interval ごとに追いつく |
+
+注意: パルスリング（精度円）は生 GPS 座標を中心に描画する。青ポインター（スナップ後座標）ではない。精度円の範囲内に端末がいるという意味を正しく保つため。
+
 **GPS アイコン（ナビヘッダー「ナビゲーション中」の右に表示）:**
 - ナビ開始直後は lost 状態（位置情報がまだ返っていない）
 - lost: lost 継続時間を秒で表示。クリックで状況説明
@@ -1104,7 +1115,7 @@ ternview の挙動はユーザーの好みに合わせて調整可能とする:
 - simChannel.ts: BroadcastChannel でリモコンポップアップと通信
 - sim-remote.html: リモコン UI（Position D-pad、Heading 円形ダイヤル、Speed/Accuracy/Interval スライダー、Denied チェック、Callback mode）
 - SimButton.tsx: ?debug=1 で SIM ボタン表示、ポップアップ open/close 管理
-- SimPositionCross.tsx: sim 座標の青十字マーカー（sensorStore 直接参照）
+- SimPositionCross.tsx: sim リアルタイム座標の緑十字マーカー（緑 #4ade80）。sensorStore.simValues.position を直接参照。sim-remote が speed とポリラインから 100ms ごとに算出するリアルタイム座標を表示する
 
 #### sim チャンネル一覧
 
