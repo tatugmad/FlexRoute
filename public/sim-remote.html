@@ -187,15 +187,25 @@
     </div>
   </div>
 </div>
+<div class="section border-bottom">
+  <div class="section-label">TW Duration</div>
+  <div class="slider-row">
+    <button class="step-btn" id="twdur-down" data-target="twDurSlider" data-step="-50">&#9664;</button>
+    <input type="range" min="50" max="1500" step="50" value="900" id="twDurSlider" oninput="onTwDuration(this.value)">
+    <button class="step-btn" id="twdur-up" data-target="twDurSlider" data-step="50">&#9654;</button>
+    <span class="slider-val" id="twDurVal">900ms</span>
+  </div>
+</div>
 <script>
 (function() {
-  var SIM_VERSION = '1.7.8';
+  var SIM_VERSION = '1.7.9';
   document.getElementById('appVersionDisplay').textContent = 'v' + SIM_VERSION;
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
     channelModes: { position: 'real', heading: 'real', speed: 'real' },
-    simValues: { position: null, heading: 0, speed: 8.33, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true }
+    simValues: { position: null, heading: 0, speed: 8.33, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true },
+    followDuration: 900
   };
   var connected = false;
   var connectTimer = setTimeout(function() { if (!connected) setConnectionStatus('disconnected'); }, 3000);
@@ -657,6 +667,12 @@
     state.simValues.headingSync = sync;
     channel.postMessage({ type: 'set-heading-sync', value: sync });
     updateUI();
+  };
+  window.onTwDuration = function(val) {
+    var v = parseInt(val, 10);
+    state.followDuration = v;
+    channel.postMessage({ type: 'set-follow-duration', value: v });
+    document.getElementById('twDurVal').textContent = v + 'ms';
   };
   window.setSpeedSync = function(sync) {
     state.simValues.speedSync = sync;

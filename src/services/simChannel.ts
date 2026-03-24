@@ -82,6 +82,13 @@ export function openSimChannel(): void {
         if (typeof msg.value === 'boolean') store.setSpeedSync(msg.value);
         break;
 
+      case 'set-follow-duration':
+        if (msg.value != null) {
+          (window as any).__followDuration = msg.value;
+          fr.trace(C.SIM, "simChannel.followDuration", { value: msg.value });
+        }
+        break;
+
       case 'remote-close':
         store.resetAllToReal();
         break;
