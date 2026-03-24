@@ -1,11 +1,18 @@
 # 利用規約調査・知財戦略
-> 最終更新: 2026-03-16
+> 最終更新: 2026-03-17
 > ※ 法的助言ではなく一般的な知見に基づく記録
 ## Google Maps Platform 利用規約の重要条項
 ### 料金回避の禁止（最重要）
 > "Customer will not access or use the Services in a manner intended to avoid incurring Fees"
 > — Google Maps Platform Terms of Service, Section 3.2.1(c)(ii)
-この条項により、無料枠の増大を意図したアカウント分割は規約違反と解釈されうる。
+#### 当初の解釈（撤回済み）
+この条項により、無料枠の増大を意図したアカウント分割は規約違反と解釈した。→ **再精査で撤回。**
+#### 再精査後の解釈（採用）
+"Customer" = Google Cloud の利用規約に同意した者。
+- FlexRoute が複数アカウントを作成して自社トラフィックを分割する → FlexRoute が Customer。回避意図が明確。**規約違反。**
+- 各ユーザーが自分で Google Cloud アカウントを作成し、自分のAPIキーで FlexRoute を使う → 各ユーザーが Customer。自分の無料枠を正当に利用。**回避すべき Fees が存在しない。規約違反ではない。**
+補強条項: Section 2.1（Customer ごとの無料枠）、Section 1.2（アカウント管理責任）、Section 3.1（non-sublicensable だが直接契約なので該当せず）。
+詳細は PERSONAL_APIKEY_STRATEGY.md を参照。
 ### その他の主要制限
 | 制限 | 条項 | FlexRoute への影響 |
 |---|---|---|
