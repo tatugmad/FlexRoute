@@ -1320,7 +1320,7 @@ Google Maps API 依存部分の方針:
 （なし）
 
 ### 反映先: SPEC_DATA.md
-- useAutoZoom 削除済み（v1.6.93 で CameraController に吸収）
+（なし）
 
 ### 反映先: DESIGN_REFERENCE.md
 （なし）
@@ -1329,7 +1329,7 @@ Google Maps API 依存部分の方針:
 （なし）
 
 ### 反映先: CLAUDE.md
-- 用語変更予定: followMode の "auto" → "follow" にリネーム（モード確定後の整理セッションで実施）
+（なし）
 
 ### 反映先: DECISIONS.md
 （なし）
