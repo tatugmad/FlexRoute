@@ -237,6 +237,49 @@ Google アカウントのみの状態からの手順:
 
 合計約10分。クイックセットアップURL使用で短縮可能。
 
+## 前例調査
+「ユーザー本人の Google Maps API キーをアプリに設定して使う」パターンの前例。
+### Google 公式認定: WordPress エコシステム
+Google 自身が https://developers.google.com/maps/third-party-platforms/wordpress で「自分のAPIキーを発行してプラグインに設定する」手順を公式に案内。対象プラグイン: WP Go Maps, GeoDirectory, Otter Blocks, API KEY for Google Maps 等多数。
+GeoDirectory は Maps JS API + Geocoding + Places API を含む11個のAPIを使用しており、単純な地図埋め込みを超えた前例。
+### SetCompass（Webアプリ）
+ハイキング・ウォーキング向けルート計画 Web アプリ。ユーザー登録時に自分の Google Maps API キーの貼り付けを要求。サブスクリプション料金は Google Maps の課金とは別であると明記。使用API: Maps JS API + Places API。
+FlexRoute との最大の類似点: 「ユーザーがキーを貼り付けて Web アプリを使う」構造が完全に同一。
+### Traccar（セルフホスト型 GPS トラッキング）
+オープンソースの GPS トラッキングプラットフォーム。サーバー設定の属性として Google Maps API キーを入力。ユーザーグループごとの個別キー設定も議論されている。使用API: Maps Tiles API + Geocoding API。
+### Checkmate（レストラン注文アプリ）
+レストラン向け Web・モバイル注文システム。事業者が自分の Google Maps API キーを設定し、Maps JS API + Places API + Routes API を含む複数のAPIを使用。使用 API の範囲が FlexRoute に近い。
+### OpenRouter BYOK（AI分野の構造的前例）
+「Bring Your Own Key」モデルを公式に提供。ユーザーが自分の API キーとクレジットを活用して LLM サービスを利用。上流プロバイダコストの5%を手数料とする。Google Maps ではないが、「アプリ提供者のインフラで、ユーザーの API キーを使ってサービスを提供する」ビジネスモデルの構造は同一。
+### FlexRoute と前例の差異
+| 比較軸 | WordPress | SetCompass | Traccar | Checkmate | FlexRoute |
+|---|---|---|---|---|---|
+| 形態 | プラグイン | Web アプリ | セルフホスト | B2B SaaS | Web → ネイティブ |
+| キー設定主体 | サイト管理者 | エンドユーザー | サーバー管理者 | 事業者 | エンドユーザー |
+| Maps JS API | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Places API | 一部 | ✅ | ✗ | ✅ | ✅ |
+| Routes API | ✗ | ✗ | ✗ | ✅ | ✅ |
+| Roads API | ✗ | ✗ | ✗ | ✗ | ✅（Phase 2） |
+| ナビゲーション | ✗ | ✗ | ✗ | ✗ | ✅ |
+| Google 公式認定 | ✅ | ✗ | ✗ | ✗ | ✗ |
+Routes/Roads API を個人キーで使う前例は確認できなかった。ただし規約は API の種類ごとに異なる制限を設けておらず、全 SKU に同一の ToS が適用されるため、Maps JS API で許されるパターンが Routes API で禁止される根拠はない。
+## 停止リスク評価
+### Google Maps Platform ToS の停止規定
+| 状況 | Google の義務 |
+|---|---|
+| AUP 違反の疑い（Section 5.1） | 先に通知 → 24時間の猶予 → 未是正なら停止 |
+| インフラ保護・法令・不正アクセス（Section 5.2） | 即時停止可能（事後に理由通知の義務あり） |
+| ライセンス制限 Section 3.2 違反（Section 5.2d） | 即時停止可能 |
+### FlexRoute の場合
+個人キー方式では各ユーザーが自分の Customer として無料枠を正当に使用。Section 3.2 違反がないため即時停止の要件に該当しない。仮に Google が問題視しても、まず通知 → 24時間の猶予がある手続きになる。
+さらに重要: 停止されるのは個々のユーザーの Google Cloud アカウントであり、FlexRoute のサービス自体ではない。
+### 現実的なリスクの順序
+1. Google が問題視する → まずない（無料枠の20%未満の利用、異常パターンなし）
+2. 仮に問題視しても → 通知が先、24時間の猶予
+3. 影響範囲 → 個々のユーザーのアカウント。FlexRoute 全体が止まるわけではない
+### Google への事前問い合わせについて
+得策ではないと判断。Google のサポートは収益を守る立場にあり、グレーゾーンの質問には保守的に回答する動機がある。規約の文言上問題がなく、Google 公式が同パターンを WordPress で推奨している現状を維持する方が合理的。数万ユーザー規模で Google から直接連絡が来る段階では、個人キーの是非ではなくボリュームディスカウントや Enterprise 契約の交渉になる。
+
 ## v1（POSTMORTEM）との差異
 
 | 論点 | v1（断念） | v2（採用） |
