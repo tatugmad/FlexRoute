@@ -31,7 +31,7 @@
 | F-LABEL | ラベル管理（CRUD） | ✅ | 1-5 |
 | F-PLACE | 場所保存・一覧 | ✅ | 1-5 |
 | F-THUMB | ルートサムネイル（Static Maps API） | ✅ | 1-5 |
-| F-ZOOM | ズーム制御（ホイール + ボタン + P/Nトグル） | ✅ | 1-6 |
+| F-ZOOM | ズーム制御（ホイール + ボタン） | ✅ | 1-6 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 🔧 Step 1-3 実装済み | 1-6 |
 | F-NAV-WIPE | ワイプマップ（PiP） | 未実装 | 1-6 |
 | F-TERNVIEW | ターン接近拡大表示（ternview） | 未実装 | 1-6後 |
@@ -710,7 +710,7 @@ flexroute-bug-{timestamp}.json に以下を集約:
 
 ### F-ZOOM: ズーム制御（1-6で実装）
 
-概要: ナビゲーション画面でのズーム制御。dynamic zoom（速度・ターン接近に応じた自動ズーム）、ホイール・ボタン・P/Nモード切替の4要素で構成。
+概要: ナビゲーション画面でのズーム制御。dynamic zoom（速度に応じた自動ズーム）、ホイール・ボタンの3要素で構成。ターン接近時の拡大表示は ternview（F-TERNVIEW）で実装予定。
 
 #### ナビゲーション用語定義
 
@@ -739,18 +739,41 @@ flexroute-bug-{timestamp}.json に以下を集約:
 - setZoom + setCenter の2呼び出しでアニメーション付きズームを実現
 - ホイールと +/- ボタン（Pモード）の両方から共有使用
 
-#### ZoomInOutButtons（+/- ボタン + P/N トグル）
+#### ZoomInOutButtons（+/- ボタン）
 - pure UI コンポーネント。cameraController.onZoomButtonDown/Up を呼ぶだけ
-- 長押し加速（idle チェーン）、zoomStepFactor は ModeA 内部で処理
-- P モード（pivot-fine）: マーカーピボットズーム。ホイールと同一挙動
-- N モード（native）: Google Maps のネイティブズームを使用。将来の動作比較用に保持
+- 長押し加速（idle チェーン）、zoomStepFactor は各モード内部で処理
+- マーカーピボットズーム固定（pivot モード）。ホイールと同一挙動
+- P/N モードトグルは v1.6.94 で廃止
 
 #### dynamic zoom（CameraController 内部）
 - useAutoZoom フックを廃止し、CameraController 内部に吸収（v1.6.93）
 - 計算ロジック: cameraController/utils.ts の calcAutoZoomTarget
 - rate-limit（±0.5/回、4.5秒間隔）: cameraController/index.ts の calcAutoZoom
 
-入力: マウスホイール、+/- ボタンタップ/長押し、P/N トグル
+#### CameraController 10 モード比較実験（v1.6.94〜v1.6.98）
+
+CameraController のカメラ制御方式を 10 モードで比較実験中。モード確定後に不採用モードを削除する。
+
+| モード名 | API 方式 | heading 制御 | 回転中マーカー振り回し |
+|---|---|---|---|
+| ORG (v1) | panTo / setHeading | ネイティブ | 大 |
+| SETTER (v1) | setCenter+setHeading | ネイティブ | 大 |
+| SET+PAN (v1) | setCenter+panTo | ネイティブ | 大 |
+| MOVE (v1) | moveCamera | ネイティブ | 中 |
+| MOVE+TW (v1) | moveCamera + Tween | 自前 RAF 補間 | 小 |
+| ORG2 (v2) | panTo / setHeading | heading-master | 中 |
+| SETTER2 (v2) | setCenter+setHeading | heading-master | 中（heading_changed 不足） |
+| SET+PAN2 (v2) | setCenter+panTo | heading-master | 中（heading_changed 不足） |
+| MOVE2 (v2) | moveCamera | heading-master | 中 |
+| MOVE+TW2 (v2) | moveCamera + Tween | heading-master + RAF | **完全解消** |
+
+- v2 モードは heading-master / center-slave 方式（D-039）。heading を master とし、毎フレーム deriveCenter で center を導出
+- MOVE+TW2 のみ requestAnimationFrame ループ内で heading 補間と center 導出が同期的に実行されるため、1フレームも漏れがない
+- SETTER2 / SET+PAN2 は heading_changed イベントが毎フレーム発火しないため不十分（D-039）
+- CameraModeSelector コンポーネント（地図左下）で実行時にモード切替可能（実験用 UI）
+- ZoomDebugOverlay コンポーネント（?debug=1 時のみ表示）でズーム状態を可視化
+
+入力: マウスホイール、+/- ボタンタップ/長押し
 出力: 地図ズームレベル変更（マーカーピボット or ネイティブ）
 エラー: なし
 関連: F-NAV, D-035
@@ -1291,20 +1314,13 @@ Google Maps API 依存部分の方針:
 整理セッション時にこのリストを確認し、該当する MD の正式セクションに移す。移し終わった項目は削除する。
 
 ### 反映先: SPEC_FEATURES.md
-- CameraController 10 モード比較実験中（v1.6.94〜v1.6.98）。ORG / SETTER / SET+PAN / MOVE / MOVE+TW の各 v1 と heading-master 方式の v2。MOVE+TW2 で回転中マーカー振り回しが完全解消（SETTER2 / SET+PAN2 は heading_changed の発火頻度不足で不十分）。モード確定後に F-ZOOM セクションを更新する
-- P/N ホイールモードトグル廃止（v1.6.94）。pivot モード固定
-- CameraModeSelector コンポーネント追加（実験用 UI。地図左下に 10 モード切替ボタン）
+（なし）
 
 ### 反映先: SPEC_SCREENS.md
 （なし）
 
 ### 反映先: SPEC_DATA.md
-- cameraController ディレクトリ構成更新: index.ts + modeOrg.ts / modeSetter.ts / modeSetterPan.ts / modeMoveCamera.ts / modeMoveCameraTw.ts + 各 v2 + utils.ts。全 12 ファイル
-- utils.ts に calcRotationPivotCenter, deriveCenter 追加
-- CameraMode インターフェースに onDragStart 追加（v1.6.97）
-- NavWheelZoom 削除済み（v1.6.93 で CameraController に吸収）
 - useAutoZoom 削除済み（v1.6.93 で CameraController に吸収）
-- CameraModeSelector コンポーネント追加（v1.6.94）
 
 ### 反映先: DESIGN_REFERENCE.md
 （なし）
@@ -1316,6 +1332,5 @@ Google Maps API 依存部分の方針:
 - 用語変更予定: followMode の "auto" → "follow" にリネーム（モード確定後の整理セッションで実施）
 
 ### 反映先: DECISIONS.md
-- D-038（Google Maps API 依存の段階的抽象化方針）新規追加
-- D-039（heading-master / center-slave カメラ制御方式）新規追加
-- D-040（setHeading にはアニメーションがある — D-032 改訂）新規追加
+（なし）
+※ D-038, D-039, D-040 は DECISIONS.md に反映済み
