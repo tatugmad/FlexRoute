@@ -72,6 +72,9 @@ export class ModeMoveCameraTw2 implements CameraMode {
             if (useNavigationStore.getState().followMode !== "auto") return;
             map.moveCamera({ zoom: zoomState.zoom });
           })
+          .onComplete(() => {
+            this.isAutoZooming = false;
+          })
           .start();
       }
       this.ensureAnimLoop();
@@ -86,7 +89,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
       const delta = shortestDelta(fromHeading, mapHeading);
       const edgeCenter = computeEdgeFollow(map, pos);
 
-      if (Math.abs(delta) >= 0.01 || edgeCenter) {
+      if (Math.abs(delta) >= 0.01 || edgeCenter || zoomTarget !== null) {
         const toHeading = fromHeading + delta;
         this.positionTween?.stop();
         const tweenObj = { heading: fromHeading, t: 0 };
@@ -111,6 +114,23 @@ export class ModeMoveCameraTw2 implements CameraMode {
             map.moveCamera({ center: finalCenter, heading: tweenObj.heading });
           })
           .start();
+        if (zoomTarget !== null) {
+          this.isAutoZooming = true;
+          this.zoomTween?.stop();
+          const zoomState = { zoom: map.getZoom() ?? 15 };
+          this.zoomTween = new Tween(zoomState);
+          this.tweenGroup.add(this.zoomTween);
+          this.zoomTween
+            .to({ zoom: zoomTarget }, FOLLOW_DURATION)
+            .easing(Easing.Quadratic.Out)
+            .onUpdate(() => {
+              map.moveCamera({ zoom: zoomState.zoom });
+            })
+            .onComplete(() => {
+              this.isAutoZooming = false;
+            })
+            .start();
+        }
         this.ensureAnimLoop();
       }
     }
@@ -167,8 +187,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
   }
 
   onMapZoomChanged(): boolean {
-    if (this.isAutoZooming) { this.isAutoZooming = false; return true; }
-    return false;
+    return this.isAutoZooming;
   }
 
   toggleWheelMode(map: google.maps.Map): "pivot" | "native" {

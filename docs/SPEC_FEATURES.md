@@ -709,7 +709,20 @@ flexroute-bug-{timestamp}.json に以下を集約:
 
 ### F-ZOOM: ズーム制御（1-6で実装）
 
-概要: ナビゲーション画面で followMode=auto 時に現在地マーカーをピボットとしたズーム制御を提供する。ホイール・ボタン・P/Nモード切替の3要素で構成。
+概要: ナビゲーション画面でのズーム制御。dynamic zoom（速度・ターン接近に応じた自動ズーム）、ホイール・ボタン・P/Nモード切替の4要素で構成。
+
+#### ナビゲーション用語定義
+
+| 軸 | モード名 | コード値 | 説明 |
+|---|---|---|---|
+| 追従 | center-auto | followMode: "auto" | 現在地を中心に自動追従 |
+| 追従 | center-lock | followMode: "free" | ユーザーが自由に地図操作 |
+| ズーム | zoom-auto | zoomMode: "autoZoom" | dynamic zoom が有効 |
+| ズーム | zoom-lock | zoomMode: "lockedZoom" | ユーザー手動ズームを固定 |
+| 方角 | head-up | headingMode: "headingUp" | 進行方向が上 |
+| 方角 | north-up | headingMode: "northUp" | 常に北が上 |
+
+**dynamic zoom**: zoom-auto モード時に動作するズーム自動調整機能。速度ベースの時間先読みモデル（speed × 15秒の到達距離を画面に収める）と、ターン接近ブースト（次ステップ 300m→100m で段階的にズームイン）を組み合わせる。レートリミット（±0.5/回、4.5秒間隔）で急激な変化を防止。center-auto / center-lock の両方で動作する。
 
 #### ホイールズーム（followMode=auto 時）
 - CameraController.init() で map div に wheel リスナーを登録（D-037）
@@ -731,7 +744,7 @@ flexroute-bug-{timestamp}.json に以下を集約:
 - P モード（pivot-fine）: マーカーピボットズーム。ホイールと同一挙動
 - N モード（native）: Google Maps のネイティブズームを使用。将来の動作比較用に保持
 
-#### autoZoom（CameraController 内部）
+#### dynamic zoom（CameraController 内部）
 - useAutoZoom フックを廃止し、CameraController 内部に吸収（v1.6.93）
 - 計算ロジック: cameraController/utils.ts の calcAutoZoomTarget
 - rate-limit（±0.5/回、4.5秒間隔）: cameraController/index.ts の calcAutoZoom

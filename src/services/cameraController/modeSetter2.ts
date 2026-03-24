@@ -43,6 +43,7 @@ export class ModeSetter2 implements CameraMode {
       if (zoomTarget !== null) {
         this.isAutoZooming = true;
         map.setZoom(zoomTarget);
+        this.isAutoZooming = false;
       }
     } else {
       if (isDragging) return;
@@ -72,6 +73,11 @@ export class ModeSetter2 implements CameraMode {
       map.setHeading(mapHeading);
       const edgeCenter = computeEdgeFollow(map, pos);
       if (edgeCenter) map.setCenter(edgeCenter);
+      if (zoomTarget !== null) {
+        this.isAutoZooming = true;
+        map.setZoom(zoomTarget);
+        this.isAutoZooming = false;
+      }
     }
   }
 
@@ -118,8 +124,7 @@ export class ModeSetter2 implements CameraMode {
   }
 
   onMapZoomChanged(): boolean {
-    if (this.isAutoZooming) { this.isAutoZooming = false; return true; }
-    return false;
+    return this.isAutoZooming;
   }
 
   onDragStart(): void {}
