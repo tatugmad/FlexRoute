@@ -1,6 +1,6 @@
 # FlexRoute 機能仕様書
 
-> 最終更新: 2026-03-23
+> 最終更新: 2026-03-24
 
 ## 機能一覧
 
@@ -34,6 +34,7 @@
 | F-ZOOM | ズーム制御（ホイール + ボタン + P/Nトグル） | ✅ | 1-6 |
 | F-NAV | ナビゲーション（GPS追従・案内） | 🔧 Step 1-3 実装済み | 1-6 |
 | F-NAV-WIPE | ワイプマップ（PiP） | 未実装 | 1-6 |
+| F-TERNVIEW | ターン接近拡大表示（ternview） | 未実装 | 1-6後 |
 | F-NAV-REROUTE | 逸脱検知・リルート（3選択肢） | 🔧 Step 3 実装済み | 1-6 |
 | F-GPS-LOG | GPS走行記録（ナビ中+常時） | 未実装 | 1-6 |
 | F-TRAVEL-VIEW | 走行記録画面（一覧・選択・表示） | 未実装 | 1-6後 |
@@ -715,14 +716,14 @@ flexroute-bug-{timestamp}.json に以下を集約:
 
 | 軸 | モード名 | コード値 | 説明 |
 |---|---|---|---|
-| 追従 | center-auto | followMode: "auto" | 現在地を中心に自動追従 |
-| 追従 | center-lock | followMode: "free" | ユーザーが自由に地図操作 |
+| 追従 | marker-lock | followMode: "auto" | 現在地を中心に自動追従 |
+| 追従 | marker-move | followMode: "free" | ユーザーが自由に地図操作 |
 | ズーム | zoom-auto | zoomMode: "autoZoom" | dynamic zoom が有効 |
 | ズーム | zoom-lock | zoomMode: "lockedZoom" | ユーザー手動ズームを固定 |
 | 方角 | head-up | headingMode: "headingUp" | 進行方向が上 |
 | 方角 | north-up | headingMode: "northUp" | 常に北が上 |
 
-**dynamic zoom**: zoom-auto モード時に動作するズーム自動調整機能。速度ベースの時間先読みモデル（speed × 15秒の到達距離を画面に収める）と、ターン接近ブースト（次ステップ 300m→100m で段階的にズームイン）を組み合わせる。レートリミット（±0.5/回、4.5秒間隔）で急激な変化を防止。center-auto / center-lock の両方で動作する。
+**dynamic zoom**: zoom-auto モード時に動作するズーム自動調整機能。速度ベースの時間先読みモデル（speed × 15秒の到達距離を画面に収める）で、走行速度に応じて地図のズームレベルを自動調整する。レートリミット（±0.5/回、4.5秒間隔）で急激な変化を防止。marker-lock / marker-move の両方で動作する。ターン接近時の拡大表示は ternview（F-TERNVIEW）で実装予定。
 
 #### ホイールズーム（followMode=auto 時）
 - CameraController.init() で map div に wheel リスナーを登録（D-037）
@@ -834,6 +835,51 @@ Step 6 の詳細:
 - イベント伝播: stopPropagation で分離（SPEC_NAVIGATION.md 参照）
 
 関連: F-NAV
+
+---
+
+### F-TERNVIEW: ターン接近拡大表示（将来実装）
+
+概要: ナビゲーション中にターン（方向転換）が接近すると、メイン地図の上にオーバーレイでターン地点の拡大表示を行う。メイン地図の動作（追従・ズーム・回転）には影響しない。
+
+#### 設計構想
+- メイン地図の上にオーバーレイ（スライドイン or ポップアップ）でターン地点を拡大表示
+- 2枚目の Map インスタンス、または Static Maps API で実現（コスト比較が必要）
+- ターン地点をセンタリングし、該当ステップのポリラインのみを描画
+- 曲がる方向が視覚的にわかる表示を目指す
+- ターン通過後に自動で消える
+
+#### ターン判定
+- useStepProgression が算出する distanceToNextStepM を監視
+- 全ステップ境界がターンではない（「直進」ステップもある）ため、以下のいずれかでターンを識別する:
+  - 次ステップの instruction に方向転換キーワード（「左折」「右折」「分岐」等）を含む
+  - 前後ステップの heading 差が閾値（例: 30°以上）を超える
+- 上記の組み合わせで精度を高める
+
+#### 表示トリガー
+- 次のターンまでの距離が出現閾値以下になったら表示
+- 出現閾値のデフォルトは検討中（300m 程度を想定）
+
+#### ナビ設定（ユーザー調整可能）
+ternview の挙動はユーザーの好みに合わせて調整可能とする:
+- ternview ON/OFF: ternview 自体の有効/無効
+- 出現距離: ternview が出現する距離の閾値（例: 200m / 300m / 500m）
+- 表示倍率: 拡大表示のズームレベル（例: z17 / z18 / z19）
+- 表示位置: オーバーレイの配置（左上 / 右上 / 自動）
+
+これらの設定は将来のナビ設定画面（F-NAV-SETTINGS）で管理する。
+
+#### 既存資産の活用
+- distanceToNextStepM: useStepProgression が毎 GPS 更新で算出済み
+- steps[].encodedPolyline: ターン地点のポリラインデータ（Routes API 保存済み）
+- steps[].instruction: ターン判定に使用可能
+- calcAutoZoomTarget の turnBoost ロジック: ternview の出現判定に転用可能
+
+#### 依存
+- F-NAV（Step 1: useStepProgression）
+- F-NAV-WIPE（オーバーレイ表示パターンの前例）
+
+ステータス: 未実装。1-6 後追加で実装予定。
 
 ---
 
