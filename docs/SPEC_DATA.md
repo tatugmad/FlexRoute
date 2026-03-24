@@ -1061,9 +1061,18 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: Google Maps カメラ API の唯一のインターフェース（D-037）。heading 補間、pivotZoom、wheelMode 管理、edge-follow 判定、panTo/moveCamera 選択、autoZoom 計算、ホイール debounce、ズームボタン長押し加速を一元管理
 - **ファイル構成**:
   - `index.ts` — CameraControllerImpl クラス（public インターフェース + dispatch）、CameraMode インターフェース定義
-  - `modeA.ts` — Mode A 実装（v1.6.92 の動作を完全再現）
-  - `utils.ts` — モード共通ユーティリティ（calcPivotCenter, calcAutoZoomTarget, zoomStepFactor, ACCEL_PHASES）
-- **CameraMode インターフェース**: init, applyPosition, applyWheel, onZoomButtonDown/Up, onMapZoomChanged, toggleWheelMode, getWheelMode, dispose
+  - `modeOrg.ts` — ORG モード（v1）。panTo / setHeading
+  - `modeSetter.ts` — SETTER モード（v1）。setCenter + setHeading
+  - `modeSetterPan.ts` — SET+PAN モード（v1）。setCenter + panTo
+  - `modeMoveCamera.ts` — MOVE モード（v1）。moveCamera
+  - `modeMoveCameraTw.ts` — MOVE+TW モード（v1）。moveCamera + Tween 自前 RAF 補間
+  - `modeOrg2.ts` — ORG2 モード（v2）。heading-master 方式
+  - `modeSetter2.ts` — SETTER2 モード（v2）。heading-master 方式
+  - `modeSetterPan2.ts` — SET+PAN2 モード（v2）。heading-master 方式
+  - `modeMoveCamera2.ts` — MOVE2 モード（v2）。heading-master 方式
+  - `modeMoveCameraTw2.ts` — MOVE+TW2 モード（v2）。heading-master + RAF（回転振り回し完全解消）
+  - `utils.ts` — モード共通ユーティリティ（calcPivotCenter, calcAutoZoomTarget, calcRotationPivotCenter, deriveCenter, zoomStepFactor, ACCEL_PHASES）
+- **CameraMode インターフェース**: init, applyPosition, applyWheel, onZoomButtonDown/Up, onMapZoomChanged, onDragStart, toggleWheelMode, getWheelMode, dispose
 - **依存**: navigationStore（getState のみ）, utils/edgeFollow, utils/headingUtils, normalize-wheel, flightRecorder
 - **使用箇所**: NavCameraSync, ZoomInOutButtons
 
@@ -1086,6 +1095,16 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 - **責務**: ナビ画面右側のコントロールボタン群レイアウト。HeadingButton / ZoomButton / FollowButton / SimButton を縦配置
 - **依存**: HeadingButton, ZoomButton, FollowButton, SimButton
+
+### CameraModeSelector.tsx（src/components/navigation/）
+
+- **責務**: 実験用 UI。10 モードの切替ボタンを地図左下に表示。cameraController.setMode() を呼ぶだけ
+- **依存**: cameraController
+
+### ZoomDebugOverlay.tsx（src/components/navigation/）
+
+- **責務**: デバッグ用 UI（?debug=1 時のみ表示）。現在のズームレベル・autoZoom 状態を可視化
+- **依存**: navigationStore
 
 ### NavHeader.tsx（src/components/navigation/）
 
@@ -1124,7 +1143,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### NavWheelZoom.tsx — 廃止（v1.6.93 で cameraController に吸収）
 
-- ホイールリスナー登録は cameraController.init() に、wheelZoom ロジックは modeA.applyWheel() に、debounce は modeA 内部に移動
+- ホイールリスナー登録は cameraController.init() に、wheelZoom ロジックは各モードの applyWheel() に、debounce は各モード内部に移動
 
 ### NavRoutePolyline.tsx（src/components/navigation/）
 
@@ -1396,7 +1415,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 - **責務**: free モードでマーカーが画面端に到達した際の最小シフト計算（D-036）
 - **公開関数**:
   - `computeEdgeFollow(markerPosition, mapBounds, marginPx, zoom)` — マーカーが画面端120pxマージン内に入った場合に、マーカーを画面内に留めるための最小 lat/lng シフトベクトルを返す。マージン外なら null
-- **使用箇所**: cameraController/modeA.ts（followMode=free 時）
+- **使用箇所**: cameraController の各モードファイル（followMode=free 時のエッジ追従）
 
 ### offRouteCheck.ts（src/utils/offRouteCheck.ts）
 
