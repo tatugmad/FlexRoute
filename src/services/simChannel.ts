@@ -89,6 +89,13 @@ export function openSimChannel(): void {
         }
         break;
 
+      case 'set-follow-duration-mode':
+        if (msg.value === 'auto' || msg.value === 'manual') {
+          (window as any).__followDurationMode = msg.value;
+          fr.trace(C.SIM, "simChannel.followDurationMode", { value: msg.value });
+        }
+        break;
+
       case 'remote-close':
         store.resetAllToReal();
         break;

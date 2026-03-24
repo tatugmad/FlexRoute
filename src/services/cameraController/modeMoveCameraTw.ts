@@ -34,7 +34,9 @@ export class ModeMoveCameraTw implements CameraMode {
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
-    const dur = (window as any).__followDuration ?? 900;
+    const dur = (window as any).__followDurationMode === "manual"
+      ? ((window as any).__followDuration ?? 900)
+      : ((window as any).__measuredInterval ?? 900);
     if (followMode === "auto") {
       this.prevHeading = mapHeading;
       const center = map.getCenter();
