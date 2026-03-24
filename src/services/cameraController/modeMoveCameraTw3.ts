@@ -21,6 +21,7 @@ export class ModeMoveCameraTw3 implements CameraMode {
   private zoomStepCount = 0;
   private idleListener: google.maps.MapsEventListener | null = null;
   private positionTween: Tween<CenterTweenState> | null = null;
+  private headingTween: Tween<{ heading: number }> | null = null;
   private zoomTween: Tween<{ zoom: number }> | null = null;
   private animFrameId: number | null = null;
   private tweenState: CenterTweenState = { lat: 0, lng: 0 };
@@ -39,9 +40,22 @@ export class ModeMoveCameraTw3 implements CameraMode {
     const dur = (window as any).__followDuration ?? 900;
 
     if (followMode === "auto") {
-      // 1. 前回保留していた heading があれば即時適用
+      // 1. 前回保留していた heading があれば Tween で補間適用
+      this.headingTween?.stop();
       if (this.pendingHeading !== null) {
-        map.moveCamera({ heading: this.pendingHeading });
+        const fromH = map.getHeading() ?? 0;
+        const deltaH = shortestDelta(fromH, this.pendingHeading);
+        const hdgObj = { heading: fromH };
+        this.headingTween = new Tween(hdgObj);
+        this.tweenGroup.add(this.headingTween);
+        this.headingTween
+          .to({ heading: fromH + deltaH }, dur)
+          .easing(Easing.Quadratic.Out)
+          .onUpdate(() => {
+            if (useNavigationStore.getState().followMode !== "auto") return;
+            map.moveCamera({ heading: hdgObj.heading });
+          })
+          .start();
       }
       // 2. 今回の heading を保留
       this.pendingHeading = mapHeading;
@@ -206,6 +220,7 @@ export class ModeMoveCameraTw3 implements CameraMode {
 
   onDragStart(): void {
     this.positionTween?.stop();
+    this.headingTween?.stop();
     this.zoomTween?.stop();
   }
 
@@ -224,6 +239,7 @@ export class ModeMoveCameraTw3 implements CameraMode {
 
   dispose(): void {
     this.positionTween?.stop();
+    this.headingTween?.stop();
     this.zoomTween?.stop();
     if (this.animFrameId) { cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
     if (this.zoomDelayTimer) { clearTimeout(this.zoomDelayTimer); this.zoomDelayTimer = null; }
