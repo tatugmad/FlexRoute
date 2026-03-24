@@ -26,6 +26,7 @@ export class ModeMoveCameraTw3 implements CameraMode {
   private tweenState: CenterTweenState = { lat: 0, lng: 0 };
   private tweenGroup = new Group();
   private pendingHeading: number | null = null;
+  private headingTween: Tween<{ heading: number }> | null = null;
 
   init(map: google.maps.Map): void {
     const auto = useNavigationStore.getState().followMode === "auto";
@@ -39,9 +40,23 @@ export class ModeMoveCameraTw3 implements CameraMode {
     const dur = (window as any).__followDuration ?? 900;
 
     if (followMode === "auto") {
-      // 1. 前回保留していた heading があれば即時適用
+      // 1. 前回保留していた heading があれば Tween で補間適用
       if (this.pendingHeading !== null) {
-        map.moveCamera({ heading: this.pendingHeading });
+        const fromH = map.getHeading() ?? 0;
+        const deltaH = shortestDelta(fromH, this.pendingHeading);
+        if (Math.abs(deltaH) > 0.1) {
+          this.headingTween?.stop();
+          const htObj = { heading: fromH };
+          this.headingTween = new Tween(htObj);
+          this.tweenGroup.add(this.headingTween);
+          this.headingTween
+            .to({ heading: fromH + deltaH }, dur)
+            .easing(Easing.Quadratic.Out)
+            .onUpdate(() => {
+              map.moveCamera({ heading: htObj.heading });
+            })
+            .start();
+        }
       }
       // 2. 今回の heading を保留
       this.pendingHeading = mapHeading;
@@ -207,6 +222,7 @@ export class ModeMoveCameraTw3 implements CameraMode {
   onDragStart(): void {
     this.positionTween?.stop();
     this.zoomTween?.stop();
+    this.headingTween?.stop();
   }
 
   onMapZoomChanged(): boolean {
@@ -225,6 +241,7 @@ export class ModeMoveCameraTw3 implements CameraMode {
   dispose(): void {
     this.positionTween?.stop();
     this.zoomTween?.stop();
+    this.headingTween?.stop();
     if (this.animFrameId) { cancelAnimationFrame(this.animFrameId); this.animFrameId = null; }
     if (this.zoomDelayTimer) { clearTimeout(this.zoomDelayTimer); this.zoomDelayTimer = null; }
     this.zoomActive = false;
