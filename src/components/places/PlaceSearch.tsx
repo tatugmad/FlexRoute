@@ -7,10 +7,12 @@ import { flightRecorder as fr } from "@/services/flightRecorder";
 import { LOG_CATEGORIES as C } from "@/types/log";
 import { generateId } from "@/utils/generateId";
 import type { PlaceResult } from "@/types";
+import {
+  initPlacesLib, createSessionToken, fetchSuggestions, resolvePlace,
+} from "@/services/placeSuggestService";
+import type { SuggestionEntry } from "@/services/placeSuggestService";
 
-type PlaceSearchProps = {
-  onClose: () => void;
-};
+type PlaceSearchProps = { onClose: () => void };
 
 export function PlaceSearch({ onClose }: PlaceSearchProps) {
   const [query, setQuery] = useState("");
@@ -20,50 +22,38 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
   const insertIndex = useUiStore((s) => s.insertIndex);
   const setInsertIndex = useUiStore((s) => s.setInsertIndex);
   const inputRef = useRef<HTMLInputElement>(null);
-  const serviceRef = useRef<google.maps.places.AutocompleteService | null>(
-    null,
-  );
-  const placesRef = useRef<google.maps.places.PlacesService | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestionsRef = useRef<SuggestionEntry[]>([]);
+  const tokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  const readyRef = useRef(false);
 
   useEffect(() => {
     inputRef.current?.focus();
-    if (!google.maps.places) return;
-    serviceRef.current = new google.maps.places.AutocompleteService();
-    const div = document.createElement("div");
-    placesRef.current = new google.maps.places.PlacesService(div);
+    initPlacesLib().then((ok) => {
+      if (!ok) return;
+      tokenRef.current = createSessionToken();
+      readyRef.current = true;
+    });
   }, []);
 
-  const searchPlaces = useCallback((input: string) => {
-    if (!input.trim() || !serviceRef.current) {
-      setResults([]);
-      return;
-    }
+  const searchPlaces = useCallback(async (input: string) => {
+    if (!input.trim() || !readyRef.current) { setResults([]); return; }
     setIsSearching(true);
     fr.info(C.UI, "search.query", { query: input });
-    serviceRef.current.getPlacePredictions(
-      { input, componentRestrictions: { country: "jp" } },
-      (predictions) => {
-        setIsSearching(false);
-        if (!predictions) {
-          fr.warn(C.PLACE_DETAILS, "search.noResults", { query: input });
-          setResults([]);
-          return;
-        }
-        setResults(
-          predictions.slice(0, 5).map((p) => ({
-            placeId: p.place_id,
-            name: p.structured_formatting.main_text,
-            address: p.structured_formatting.secondary_text ?? "",
-            position: { lat: 0, lng: 0 },
-            types: p.types ?? [],
-          })),
-        );
-        fr.debug(C.PLACE_DETAILS, "search.results", {
-          query: input, count: predictions.length,
-        });
-      },
-    );
+    try {
+      const entries = await fetchSuggestions(input, tokenRef.current!);
+      suggestionsRef.current = entries;
+      setResults(entries.map((e) => ({
+        placeId: e.placeId, name: e.name, address: e.address,
+        position: { lat: 0, lng: 0 }, types: [],
+      })));
+      fr.debug(C.PLACE_DETAILS, "search.results", { query: input, count: entries.length });
+    } catch (err) {
+      fr.warn(C.PLACE_DETAILS, "search.failed", {
+        query: input, error: err instanceof Error ? err.message : String(err),
+      });
+      setResults([]);
+    } finally { setIsSearching(false); }
   }, []);
 
   const handleInputChange = (value: string) => {
@@ -72,36 +62,18 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
     debounceRef.current = setTimeout(() => searchPlaces(value), 300);
   };
 
-  const handleSelect = (place: PlaceResult) => {
-    if (!placesRef.current) return;
-    placesRef.current.getDetails(
-      { placeId: place.placeId, fields: ["geometry", "name"] },
-      (detail) => {
-        const loc = detail?.geometry?.location;
-        if (!loc) {
-          fr.warn(C.PLACE_DETAILS, "search.detailFailed", {
-            placeId: place.placeId,
-          });
-          return;
-        }
-        fr.info(C.UI, "search.selectPlace", {
-          placeId: place.placeId,
-          name: detail?.name ?? place.name,
-          position: { lat: loc.lat(), lng: loc.lng() },
-        });
-        addWaypoint(
-          {
-            id: generateId(),
-            position: { lat: loc.lat(), lng: loc.lng() },
-            label: detail?.name ?? place.name,
-            placeId: place.placeId,
-          },
-          insertIndex ?? undefined,
-        );
-        setInsertIndex(null);
-        onClose();
-      },
+  const handleSelect = async (place: PlaceResult) => {
+    const entry = suggestionsRef.current.find((e) => e.placeId === place.placeId);
+    if (!entry) return;
+    const resolved = await resolvePlace(entry, place);
+    if (!resolved) return;
+    addWaypoint(
+      { id: generateId(), position: resolved.position, label: resolved.name, placeId: place.placeId },
+      insertIndex ?? undefined,
     );
+    setInsertIndex(null);
+    tokenRef.current = createSessionToken();
+    onClose();
   };
 
   return (
@@ -117,12 +89,7 @@ export function PlaceSearch({ onClose }: PlaceSearchProps) {
           className="flex-1 bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 outline-none placeholder-slate-400 focus:ring-2 focus:ring-indigo-500"
         />
       </div>
-      <PlaceResultList
-        results={results}
-        isSearching={isSearching}
-        query={query}
-        onSelect={handleSelect}
-      />
+      <PlaceResultList results={results} isSearching={isSearching} query={query} onSelect={handleSelect} />
     </div>
   );
 }
