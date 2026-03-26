@@ -1113,15 +1113,13 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### CurrentLocationMarker.tsx（src/components/navigation/）
 
-- **責務**: ナビ画面の現在地マーカー。以下の 2 要素を描画する:
-  - 青ポインター（三角矢印）: useRouteSnap でポリラインスナップした座標に表示。heading 連動回転。positionQuality に応じて色・点滅を切替
-  - オレンジドット（sim 時のみ）: 生 GPS 座標に AdvancedMarker で表示。スナップ前後の差をデバッグ可視化
-- **依存**: navigationStore（currentPosition, heading, headingMode, positionQuality）, sensorStore（channelModes）, useRouteSnap
+- **責務**: ナビ画面の現在地マーカー（三角ポインター）。heading に連動して回転。positionQuality に応じて色・点滅を切替
+- **依存**: navigationStore（currentPosition, heading, positionQuality）
 
 ### AccuracyCircle.tsx（src/components/navigation/）
 
-- **責務**: GPS 精度リング。生 GPS 座標（navigationStore.currentPosition）を中心に、google.maps.OverlayView でパルスアニメーション付き円を描画。accuracy メートル値を地図ズームに合わせた半径で表示。精度円の範囲内に端末が存在することを意味する。青ポインター（スナップ後座標）ではなく生 GPS 座標が中心
-- **依存**: navigationStore（currentPosition, accuracy）
+- **責務**: GPS 精度リング。google.maps.OverlayView でパルスアニメーション付き円を描画。accuracy メートル値を地図ズームに合わせた半径で表示
+- **依存**: navigationStore（currentPosition, accuracy, positionQuality）
 
 ### GpsStatusIcon.tsx（src/components/navigation/）
 
@@ -1179,7 +1177,7 @@ useRouteCalculation でもルート計算前にフィルタ:
 
 ### SimPositionCross.tsx（src/components/navigation/）
 
-- **責務**: sim リアルタイム座標の緑十字マーカー（緑 #4ade80）。sensorStore.simValues.position を直接参照し AdvancedMarker で表示。点滅アニメーション付き。sim-remote が speed とポリラインから 100ms ごとに算出するリアルタイム座標を表示する。オレンジドット（callback interval 周期）より高頻度で更新されるため先行して動く
+- **責務**: sim 座標の青十字マーカー。sensorStore の sim position を直接参照し AdvancedMarker で表示。点滅アニメーション付き
 - **依存**: sensorStore（channelModes, simValues）
 
 #### places/
