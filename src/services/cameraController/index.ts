@@ -14,7 +14,6 @@ import { ModeSetter2 } from "./modeSetter2";
 import { ModeSetterPan2 } from "./modeSetterPan2";
 import { ModeMoveCamera2 } from "./modeMoveCamera2";
 import { ModeMoveCameraTw2 } from "./modeMoveCameraTw2";
-import { ModeMoveCameraTw3 } from "./modeMoveCameraTw3";
 
 const MAX_ZOOM_DELTA = 0.5;
 const MIN_UPDATE_INTERVAL_MS = 4500;
@@ -47,7 +46,6 @@ class CameraControllerImpl {
   private prevAutoZoomTime = 0;
   private wheelHandler: ((e: WheelEvent) => void) | null = null;
   private listeners: google.maps.MapsEventListener[] = [];
-  private lastPositionUpdateTime = 0;
 
   init(map: google.maps.Map): void {
     this.map = map;
@@ -89,19 +87,11 @@ class CameraControllerImpl {
     this.listeners.forEach((l) => google.maps.event.removeListener(l));
     this.listeners = [];
     this.mode.dispose();
-    this.lastPositionUpdateTime = 0;
     this.map = null;
   }
 
   onPositionUpdate(pos: { lat: number; lng: number }, heading: number, speed: number): void {
     if (!this.map) return;
-    const now = Date.now();
-    if (this.lastPositionUpdateTime > 0) {
-      const elapsed = now - this.lastPositionUpdateTime;
-      const clamped = Math.max(100, Math.min(elapsed, 2000));
-      (window as any).__measuredInterval = clamped;
-    }
-    this.lastPositionUpdateTime = now;
     const state = useNavigationStore.getState();
     const rawHeading = state.headingMode === "headingUp" ? heading : 0;
     if (state.followMode === "auto") {
@@ -134,7 +124,6 @@ class CameraControllerImpl {
       case "SET+PAN2":   this.mode = new ModeSetterPan2(); break;
       case "MOVE2":      this.mode = new ModeMoveCamera2(); break;
       case "MOVE+TW2":   this.mode = new ModeMoveCameraTw2(); break;
-      case "MOVE+TW3":   this.mode = new ModeMoveCameraTw3(); break;
       default:           this.mode = new ModeOrg(); break;
     }
     this.mode.init(this.map);

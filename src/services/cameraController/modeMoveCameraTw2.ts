@@ -6,6 +6,7 @@ import type { CameraMode } from "./index";
 import { calcPivotCenter, zoomStepFactor, ACCEL_PHASES, deriveCenter } from "./utils";
 
 const LONG_PRESS_DELAY = 200;
+const FOLLOW_DURATION = 900;
 const ZOOM_WHEEL_DURATION = 200;
 
 /** Mode MOVE+TW2: Tween.js + heading-master 方式。heading を Tween で補間し center を毎フレーム導出。 */
@@ -29,9 +30,6 @@ export class ModeMoveCameraTw2 implements CameraMode {
   applyPosition(map: google.maps.Map, pos: { lat: number; lng: number },
     mapHeading: number, followMode: "auto" | "free",
     isDragging: boolean, zoomTarget: number | null): void {
-    const dur = (window as any).__followDurationMode === "manual"
-      ? ((window as any).__followDuration ?? 900)
-      : ((window as any).__measuredInterval ?? 900);
     if (followMode === "auto") {
 
       const center = map.getCenter();
@@ -48,7 +46,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
       this.positionTween = new Tween(tweenObj);
       this.tweenGroup.add(this.positionTween);
       this.positionTween
-        .to({ heading: toHeading, t: 1 }, dur)
+        .to({ heading: toHeading, t: 1 }, FOLLOW_DURATION)
         .easing(Easing.Quadratic.Out)
         .onUpdate(() => {
           if (useNavigationStore.getState().followMode !== "auto") return;
@@ -68,7 +66,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
         this.zoomTween = new Tween(zoomState);
         this.tweenGroup.add(this.zoomTween);
         this.zoomTween
-          .to({ zoom: zoomTarget }, dur)
+          .to({ zoom: zoomTarget }, FOLLOW_DURATION)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
             if (useNavigationStore.getState().followMode !== "auto") return;
@@ -98,7 +96,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
         this.positionTween = new Tween(tweenObj);
         this.tweenGroup.add(this.positionTween);
         this.positionTween
-          .to({ heading: toHeading, t: 1 }, dur)
+          .to({ heading: toHeading, t: 1 }, FOLLOW_DURATION)
           .easing(Easing.Quadratic.Out)
           .onUpdate(() => {
             const c = deriveCenter(
@@ -123,7 +121,7 @@ export class ModeMoveCameraTw2 implements CameraMode {
           this.zoomTween = new Tween(zoomState);
           this.tweenGroup.add(this.zoomTween);
           this.zoomTween
-            .to({ zoom: zoomTarget }, dur)
+            .to({ zoom: zoomTarget }, FOLLOW_DURATION)
             .easing(Easing.Quadratic.Out)
             .onUpdate(() => {
               map.moveCamera({ zoom: zoomState.zoom });
