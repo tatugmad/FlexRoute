@@ -187,30 +187,15 @@
     </div>
   </div>
 </div>
-<div class="section border-bottom">
-  <div class="section-label">
-    TW Duration
-    <button id="twDurModeBtn" onclick="toggleTwDurMode()" style="margin-left:8px; font-size:10px; padding:1px 6px; border:1px solid #888; border-radius:3px; cursor:pointer;">Auto</button>
-    <span id="twDurMeasured" style="margin-left:6px; font-size:10px; color:#4ade80;"></span>
-  </div>
-  <div class="slider-row">
-    <button class="step-btn" id="twdur-down" data-target="twDurSlider" data-step="-50" disabled>&#9664;</button>
-    <input type="range" min="50" max="1500" step="50" value="900" id="twDurSlider" oninput="onTwDuration(this.value)" disabled>
-    <button class="step-btn" id="twdur-up" data-target="twDurSlider" data-step="50" disabled>&#9654;</button>
-    <span class="slider-val" id="twDurVal">Auto</span>
-  </div>
-</div>
 <script>
 (function() {
-  var SIM_VERSION = '1.7.12';
+  var SIM_VERSION = '1.8.0';
   document.getElementById('appVersionDisplay').textContent = 'v' + SIM_VERSION;
   var CHANNEL_NAME = 'flexroute-sensor-bridge';
   var channel = new BroadcastChannel(CHANNEL_NAME);
   var state = {
     channelModes: { position: 'real', heading: 'real', speed: 'real' },
-    simValues: { position: null, heading: 0, speed: 8.33, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true },
-    followDuration: 900,
-    followDurationMode: 'auto'
+    simValues: { position: null, heading: 0, speed: 8.33, accuracy: 10, callbackIntervalMs: 1000, denied: false, positionCallbackMode: 'sync', headingSync: true, speedSync: true }
   };
   var connected = false;
   var connectTimer = setTimeout(function() { if (!connected) setConnectionStatus('disconnected'); }, 3000);
@@ -372,7 +357,6 @@
   centerBtn.addEventListener('touchend', centerUp);
 
   channel.postMessage({ type: 'remote-ready' });
-  channel.postMessage({ type: 'set-follow-duration-mode', value: state.followDurationMode });
   channel.onmessage = function(event) {
     var msg = event.data;
     if (!msg) return;
@@ -473,15 +457,6 @@
     document.getElementById('speedVal').textContent = kmh + ' km/h';
     document.getElementById('spd-down').disabled = !spdIsSim;
     document.getElementById('spd-up').disabled = !spdIsSim;
-    // TW Duration measured interval display
-    var measuredSpan = document.getElementById('twDurMeasured');
-    if (measuredSpan) {
-      if (state.followDurationMode === 'auto') {
-        measuredSpan.textContent = '\u2248' + state.simValues.callbackIntervalMs + 'ms';
-      } else {
-        measuredSpan.textContent = '';
-      }
-    }
   }
   function updateToggle(ch, mode) {
     var prefixes = { position: 'pos', heading: 'hdg', speed: 'spd' };
@@ -682,33 +657,6 @@
     state.simValues.headingSync = sync;
     channel.postMessage({ type: 'set-heading-sync', value: sync });
     updateUI();
-  };
-  window.onTwDuration = function(val) {
-    var v = parseInt(val, 10);
-    state.followDuration = v;
-    channel.postMessage({ type: 'set-follow-duration', value: v });
-    document.getElementById('twDurVal').textContent = v + 'ms';
-  };
-  window.toggleTwDurMode = function() {
-    state.followDurationMode = state.followDurationMode === 'auto' ? 'manual' : 'auto';
-    var btn = document.getElementById('twDurModeBtn');
-    var slider = document.getElementById('twDurSlider');
-    var valSpan = document.getElementById('twDurVal');
-    var downBtn = document.getElementById('twdur-down');
-    var upBtn = document.getElementById('twdur-up');
-    var isAuto = state.followDurationMode === 'auto';
-    btn.textContent = isAuto ? 'Auto' : 'Manual';
-    btn.style.background = isAuto ? '' : '#4f46e5';
-    btn.style.color = isAuto ? '' : 'white';
-    slider.disabled = isAuto;
-    downBtn.disabled = isAuto;
-    upBtn.disabled = isAuto;
-    if (isAuto) {
-      valSpan.textContent = 'Auto';
-    } else {
-      valSpan.textContent = slider.value + 'ms';
-    }
-    channel.postMessage({ type: 'set-follow-duration-mode', value: state.followDurationMode });
   };
   window.setSpeedSync = function(sync) {
     state.simValues.speedSync = sync;
